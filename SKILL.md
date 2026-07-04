@@ -1,87 +1,109 @@
 ---
 name: devflow
-description: Use when coordinating AI-assisted software development across requirements, specs, planning, implementation, testing, review, debugging, QA, or shipping, especially when deciding how to combine Superpowers, OpenSpec, Agent Skills, or GStack without overloading a task.
+description: Coordinate AI-assisted software development across requirements, specs, planning, implementation, testing, review, debugging, QA, and shipping by selecting the smallest useful bundled workflow stack.
 ---
 
 # Devflow
 
-## Overview
+## Purpose
 
-Devflow is a thin routing skill for choosing the right development workflow stack. Use the smallest useful combination: Superpowers for discipline, OpenSpec for persistent specs, Agent Skills for engineering lifecycle work, and GStack only for targeted expert challenge or QA when available.
+Devflow is a universal routing skill for AI-assisted software development. It works as a standalone instruction bundle in any AI tool that can read this folder.
+
+Use Devflow when the user asks for feature work, bug fixing, refactoring, code review, UI work, API design, security hardening, performance work, CI/CD, release work, or general software development coordination.
 
 ## Core Rule
 
-Do not load every framework by default. Pick the phase, then load only the sub-skills or tools needed for that phase.
+Pick the phase, then load only the bundled workflow files needed for that phase. Do not load every bundled skill by default.
 
 Before work starts, state the selected stack in one short line:
 
 ```text
-Using devflow: Superpowers TDD + OpenSpec change + Agent Skills frontend workflow. Skipping GStack because this is low-risk UI polish.
+Using devflow: Superpowers TDD + Agent Skills planning + verification before completion.
 ```
+
+## Bundled Workflow Contract
+
+This package is self-contained. When a workflow is selected, read and follow the referenced file relative to this `SKILL.md`.
+
+If the host AI app has a native skill loader, it may load these bundled folders as sub-skills. If it does not, treat each referenced `SKILL.md` or Markdown file as ordinary instructions and follow it directly.
+
+Prefer bundled files over assuming the host environment already has the same skill installed.
 
 ## Stack Roles
 
-| Stack | Use for | Avoid when |
-| --- | --- | --- |
-| Superpowers | Process discipline: brainstorming, TDD, systematic debugging, verification before completion, plans, subagent workflows | The user explicitly asks for a quick answer with no process work |
-| OpenSpec | Persistent change artifacts: proposal, specs, design, tasks, archive; useful across sessions and teams | No repo, no durable project, or a tiny one-off edit |
-| Agent Skills | Engineering lifecycle methods: spec, planning, implementation, UI, API, tests, review, security, performance, launch | A more specific local/project skill already covers the same work |
-| GStack | Optional expert challenge: product/CEO review, engineering review, design review, QA, release review | Routine implementation where extra review would add ceremony |
-
-Use OpenSpec only when an `openspec/` workspace exists, the OpenSpec CLI/commands are available, or the user asks to adopt it. Use GStack only when installed or explicitly requested; otherwise fall back to the closest Agent Skills review or QA workflow.
+| Stack | Bundled path | Use for | Avoid when |
+| --- | --- | --- | --- |
+| Superpowers | `skills/superpowers/` | Process discipline: brainstorming, TDD, systematic debugging, planning, subagent workflows, branch finishing, verification | The user explicitly asks for a quick answer with no process work |
+| OpenSpec | `skills/openspec/SKILL.md` | Persistent change artifacts: proposal, specs, design, tasks, archive | No repo, no durable project, or a tiny one-off edit |
+| Agent Skills | `skills/agent-skills/` | Engineering lifecycle work: specs, planning, implementation, UI, API, tests, review, security, performance, observability, shipping | A more specific bundled or project skill already covers the same work |
+| External review | Use host tools if available | Optional expert challenge, design review, engineering review, QA, release review | Routine implementation where extra review adds ceremony |
 
 ## Routing
 
 ### New Feature or Significant Change
 
-1. Use Superpowers `brainstorming` when requirements need shaping.
-2. If OpenSpec is available or requested, create/update an OpenSpec change before implementation.
-3. Use Agent Skills `spec-driven-development` when OpenSpec is not used, then `planning-and-task-breakdown`.
-4. Use Agent Skills `incremental-implementation` plus Superpowers `test-driven-development` for code.
-5. Add domain skills as needed: `frontend-ui-engineering`, `api-and-interface-design`, `security-and-hardening`, `performance-optimization`, or `observability-and-instrumentation`.
-6. Use GStack plan/design/engineering review only for high-impact, ambiguous, user-facing, or architecture-heavy work.
-7. Finish with code review and verification before completion.
+1. Use `skills/superpowers/brainstorming/SKILL.md` when requirements need shaping.
+2. If the project has an `openspec/` workspace, the user asks for durable specs, or the change is cross-session, use `skills/openspec/SKILL.md`.
+3. If OpenSpec is not used, use `skills/agent-skills/spec-driven-development/SKILL.md`, then `skills/agent-skills/planning-and-task-breakdown/SKILL.md`.
+4. Use `skills/superpowers/test-driven-development/SKILL.md` or `skills/agent-skills/test-driven-development/SKILL.md` for implementation discipline.
+5. Use `skills/agent-skills/incremental-implementation/SKILL.md` to deliver small verified slices.
+6. Add domain skills only when needed:
+   - API: `skills/agent-skills/api-and-interface-design/SKILL.md`
+   - Frontend UI: `skills/agent-skills/frontend-ui-engineering/SKILL.md`
+   - Frontend visual design: `skills/agent-skills/frontend-design/SKILL.md`
+   - Security: `skills/agent-skills/security-and-hardening/SKILL.md`
+   - Performance: `skills/agent-skills/performance-optimization/SKILL.md`
+   - Observability: `skills/agent-skills/observability-and-instrumentation/SKILL.md`
+7. Finish with review and verification:
+   - `skills/agent-skills/code-review-and-quality/SKILL.md`
+   - `skills/superpowers/verification-before-completion/SKILL.md`
 
 ### Bug or Failing Test
 
-1. Use Superpowers `systematic-debugging`.
-2. Pair with Agent Skills `debugging-and-error-recovery`.
+1. Use `skills/superpowers/systematic-debugging/SKILL.md`.
+2. Pair with `skills/agent-skills/debugging-and-error-recovery/SKILL.md`.
 3. Write or identify a failing regression test before fixing behavior.
 4. Fix minimally, run the focused test, then run the relevant broader suite.
-5. Use GStack `investigate` only for persistent, cross-system, or production-grade incidents.
+5. Finish with `skills/superpowers/verification-before-completion/SKILL.md`.
 
 ### Review, Refactor, or Quality Pass
 
-1. Use Agent Skills `code-review-and-quality` first.
-2. Add `code-simplification`, `security-and-hardening`, or `performance-optimization` only when the change touches those concerns.
-3. Use GStack `review`, design review, or QA when independent scrutiny is valuable.
+1. Use `skills/agent-skills/code-review-and-quality/SKILL.md`.
+2. Add `skills/agent-skills/code-simplification/SKILL.md`, `skills/agent-skills/security-and-hardening/SKILL.md`, or `skills/agent-skills/performance-optimization/SKILL.md` only when the request touches those concerns.
+3. For review response workflows, use:
+   - `skills/superpowers/requesting-code-review/SKILL.md`
+   - `skills/superpowers/receiving-code-review/SKILL.md`
 4. Do not refactor unrelated areas unless the user approves the scope.
+
+### UI, Frontend, or Browser QA
+
+1. Use `skills/agent-skills/frontend-ui-engineering/SKILL.md` for production UI implementation.
+2. Use `skills/agent-skills/frontend-design/SKILL.md` when visual direction, layout, or interaction quality matters.
+3. Use `skills/agent-skills/browser-testing-with-devtools/SKILL.md` when real browser verification is needed.
+4. Finish with screenshot, runtime, or interaction evidence where the host environment supports it.
 
 ### Shipping or Release Work
 
-1. Use Agent Skills `shipping-and-launch`, `ci-cd-and-automation`, and `git-workflow-and-versioning` as relevant.
-2. Use OpenSpec archive/update steps if the change was tracked there.
-3. Use GStack QA/release checks for user-facing or production deployments.
-4. Report concrete evidence: tests, build, runtime checks, rollout status, and known residual risk.
+1. Use `skills/agent-skills/git-workflow-and-versioning/SKILL.md`.
+2. Add `skills/agent-skills/ci-cd-and-automation/SKILL.md` and `skills/agent-skills/shipping-and-launch/SKILL.md` as relevant.
+3. If the change used OpenSpec, archive or update the change through `skills/openspec/SKILL.md`.
+4. Use `skills/superpowers/finishing-a-development-branch/SKILL.md` for final branch hygiene when applicable.
+5. Report concrete evidence: tests, build, runtime checks, rollout status, and known residual risk.
 
-## Sub-Skill Invocation
+## Parallel and Multi-Agent Work
 
-When this skill routes to another skill, load and follow that skill before acting. Prefer installed skill names exactly as exposed by the current environment, for example:
+Use these only when the task is large enough to benefit from coordination:
 
-- `superpowers:test-driven-development` or local `test-driven-development`
-- `superpowers:systematic-debugging`
-- `spec-driven-development`
-- `planning-and-task-breakdown`
-- `incremental-implementation`
-- `code-review-and-quality`
-
-If a routed stack is unavailable, do not block. Say what is missing and continue with the closest installed workflow.
+- `skills/superpowers/subagent-driven-development/SKILL.md`
+- `skills/superpowers/dispatching-parallel-agents/SKILL.md`
+- `skills/superpowers/using-git-worktrees/SKILL.md`
+- `skills/agent-skills/ci-cd-and-automation/SKILL.md`
 
 ## Common Mistakes
 
-- Loading Superpowers, OpenSpec, Agent Skills, and GStack for every task. This creates process drag.
-- Duplicating specs in both OpenSpec and ad hoc docs. Pick one source of truth.
-- Treating GStack as mandatory. It is a review layer, not the default implementation loop.
+- Loading the entire bundle for every task. Pick the smallest useful subset.
+- Treating OpenSpec as mandatory. Use it for durable, cross-session changes.
+- Treating external review tools as mandatory. They are optional; bundled review workflows are enough for routine work.
 - Skipping tests because a spec exists. Specs define intent; tests prove behavior.
 - Calling work complete without evidence from tests, builds, runtime checks, or review.
 
@@ -89,8 +111,8 @@ If a routed stack is unavailable, do not block. Say what is missing and continue
 
 | User asks | Use |
 | --- | --- |
-| "Build this feature" | Superpowers brainstorming if needed, OpenSpec or Agent Skills spec, plan, TDD, incremental implementation, review |
-| "Fix this bug" | Superpowers systematic debugging, Agent Skills debugging, regression test, minimal fix, verification |
-| "Review this PR" | Agent Skills code review, optional GStack review for high-risk changes |
-| "Improve this UI" | Agent Skills frontend UI, browser testing, optional GStack design review |
-| "Ship this" | Agent Skills shipping/CI/git workflow, OpenSpec archive if used, optional GStack QA |
+| "Build this feature" | Brainstorming if needed, OpenSpec or spec-driven development, planning, TDD, incremental implementation, review |
+| "Fix this bug" | Systematic debugging, debugging recovery, regression test, minimal fix, verification |
+| "Review this PR/code" | Code review and quality, optional requesting/receiving code review workflows |
+| "Improve this UI" | Frontend design, frontend UI engineering, browser testing when useful |
+| "Ship this" | Git workflow, CI/CD, shipping and launch, verification, OpenSpec archive if used |

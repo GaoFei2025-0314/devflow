@@ -1,25 +1,69 @@
-# Codex Devflow Skill
+# Devflow
 
-Devflow is a Codex skill that routes AI-assisted software development work to the smallest useful workflow stack.
+Devflow is a universal AI development workflow skill package. It is not tied to one app or runtime. Use it in any AI coding assistant that can load Markdown instructions, read a local folder, or import a skill directory.
 
-It helps decide when to use:
+Devflow is intentionally packaged as a complete bundle:
 
-- Superpowers for process discipline
-- OpenSpec for persistent change artifacts
-- Agent Skills for engineering lifecycle work
-- GStack for targeted expert review or QA
+- `SKILL.md` is the entrypoint.
+- `skills/agent-skills/` contains engineering lifecycle skills.
+- `skills/superpowers/` contains discipline and execution workflows.
+- `skills/openspec/` contains a portable OpenSpec-style workflow.
+- `agents/openai.yaml` is an optional adapter metadata file for tools that understand that format.
 
-## Files
+## What It Does
 
-- `SKILL.md` - the skill instructions
-- `agents/openai.yaml` - Codex app metadata for displaying and invoking the skill
+Devflow routes software development work to the smallest useful workflow stack:
+
+- Requirements and idea shaping
+- Specs and task plans
+- Test-first implementation
+- Debugging and root-cause analysis
+- Code review and refactoring
+- Frontend, API, security, performance, and observability work
+- CI, release, and shipping workflows
+
+The package includes the referenced workflow files, so another user does not need to already have those skills installed separately.
 
 ## Install
 
-Copy this directory into your Codex skills directory:
+Clone or download this repository and keep the folder intact:
 
-```powershell
-Copy-Item -Recurse -Force . "$env:USERPROFILE\.codex\skills\devflow"
+```bash
+git clone https://github.com/GaoFei2025-0314/devflow.git
 ```
 
-Then restart or refresh Codex so the skill is discovered.
+Then point your AI tool's skill, prompt, rules, or instruction loader at the repository folder, with `SKILL.md` as the entrypoint.
+
+If your tool supports skill folders, install the whole `devflow` directory as one skill. If your tool only supports plain instruction files, load `SKILL.md` first and let it reference the bundled files under `skills/`.
+
+## Usage
+
+Ask the assistant to use Devflow before a development task:
+
+```text
+Use devflow to plan and implement this feature.
+```
+
+Devflow will choose the relevant bundled files. For example:
+
+- New feature: brainstorming, spec, planning, TDD, incremental implementation, review
+- Bug: systematic debugging, regression test, minimal fix, verification
+- UI work: frontend design and UI engineering, browser testing when useful
+- Shipping: git workflow, CI/CD, launch checklist, verification
+
+## Package Layout
+
+```text
+devflow/
+  SKILL.md
+  README.md
+  MANIFEST.md
+  agents/
+    openai.yaml
+  skills/
+    agent-skills/
+    openspec/
+    superpowers/
+```
+
+See `MANIFEST.md` for the full bundled component list.
