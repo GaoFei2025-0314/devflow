@@ -1,6 +1,6 @@
 ---
 name: dispatching-parallel-agents
-description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+description: Use when facing 2+ independent failures or tasks with no shared state or ordering dependencies, dispatching one focused subagent per problem domain. Requires a host with subagent support; without it, work the same scoped domains sequentially.
 ---
 
 # Dispatching Parallel Agents

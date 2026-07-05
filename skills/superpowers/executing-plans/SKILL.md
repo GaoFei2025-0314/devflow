@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+description: Use when you have a written implementation plan to execute in a separate session with review checkpoints, or as the fallback execution mode when your host lacks subagent support.
 ---
 
 # Executing Plans

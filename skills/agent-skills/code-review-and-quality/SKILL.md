@@ -1,6 +1,6 @@
 ---
 name: code-review-and-quality
-description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
+description: Conducts multi-axis code review (correctness, readability, architecture, security, performance). Use when asked to review code, when evaluating code produced by another agent or a human, or as the pre-merge quality gate for a completed change. Not for requesting a review or responding to feedback you received — those are the superpowers review workflow skills.
 ---
 
 # Code Review and Quality

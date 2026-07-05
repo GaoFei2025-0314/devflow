@@ -1,6 +1,6 @@
 ---
 name: git-workflow-and-versioning
-description: Structures git workflow practices. Use when making any code change. Use when committing, branching, resolving conflicts, or when you need to organize work across multiple parallel streams.
+description: Structures git branching, commits, and versioning. Use when deciding commit granularity or messages, creating or merging branches, resolving conflicts, tagging releases, or organizing parallel work streams. Not for routine edits where the project's existing git conventions already answer the question.
 ---
 
 # Git Workflow and Versioning

@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: Turns half-formed ideas into validated designs through collaborative dialogue. Use when requirements are not yet shaped — the request is vague, has multiple viable directions, or intent needs exploring before specs and implementation. Not for requests that already state exactly what to build.
 ---
 
 # Brainstorming Ideas Into Designs

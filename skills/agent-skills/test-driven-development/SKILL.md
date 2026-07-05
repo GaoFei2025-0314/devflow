@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: Drives development with tests. Use when implementing any logic, fixing any bug, or changing any behavior. Use when you need to prove that code works, when a bug report arrives, or when you're about to modify existing functionality.
+description: Drives development with tests written before code. Use when implementing features with testable behavior, fixing a reported bug (write the reproduction test first), or modifying logic that existing tests cover. Not for configuration changes, documentation, static content, or throwaway prototypes.
 ---
 
 # Test-Driven Development
