@@ -1,5 +1,7 @@
 # Devflow
 
+English | [简体中文](README.zh-CN.md)
+
 Devflow is a self-contained AI development workflow skill package: one router plus a flat set of skills covering the full engineering lifecycle. It is not tied to one app or runtime — use it in any AI coding assistant that can load Markdown instructions, read a local folder, or install a plugin. Every skill uses the cross-tool SKILL.md format (Markdown with `name`/`description` frontmatter) supported by Claude Code, Codex, and other assistants.
 
 ## Layout
