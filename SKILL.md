@@ -29,6 +29,8 @@ If the host AI app has a native skill loader, it may load these bundled folders 
 
 Prefer bundled files over assuming the host environment already has the same skill installed.
 
+**Platform adaptation:** Skills reference Claude Code tool names in places. On other hosts, use the tool mappings in `skills/superpowers/using-superpowers/references/` (Codex, Copilot CLI, Gemini CLI). Skills that depend on subagent dispatch state an in-session fallback inline — on hosts without subagents, substitute `skills/superpowers/executing-plans/SKILL.md` for subagent-driven execution.
+
 ## Stack Roles
 
 | Stack | Bundled path | Use for | Avoid when |
@@ -60,7 +62,7 @@ Prefer bundled files over assuming the host environment already has the same ski
 
 ### Bug or Failing Test
 
-1. Use `skills/superpowers/systematic-debugging/SKILL.md`.
+1. Use `skills/superpowers/systematic-debugging/SKILL.md` (its `error-triage.md` reference has triage decision trees).
 2. Write or identify a failing regression test before fixing behavior.
 3. Fix minimally, run the focused test, then run the relevant broader suite.
 4. Finish with `skills/superpowers/verification-before-completion/SKILL.md`.
@@ -91,7 +93,7 @@ Prefer bundled files over assuming the host environment already has the same ski
 
 ## Parallel and Multi-Agent Work
 
-Use these only when the task is large enough to benefit from coordination:
+Use these only when the task is large enough to benefit from coordination, and only on hosts with subagent support (each states its in-session fallback):
 
 - `skills/superpowers/subagent-driven-development/SKILL.md`
 - `skills/superpowers/dispatching-parallel-agents/SKILL.md`
@@ -105,13 +107,3 @@ Use these only when the task is large enough to benefit from coordination:
 - Treating external review tools as mandatory. They are optional; bundled review workflows are enough for routine work.
 - Skipping tests because a spec exists. Specs define intent; tests prove behavior.
 - Calling work complete without evidence from tests, builds, runtime checks, or review.
-
-## Quick Recipes
-
-| User asks | Use |
-| --- | --- |
-| "Build this feature" | Brainstorming if needed, OpenSpec or spec-driven development, planning, TDD, incremental implementation, review |
-| "Fix this bug" | Systematic debugging, debugging recovery, regression test, minimal fix, verification |
-| "Review this PR/code" | Code review and quality, optional requesting/receiving code review workflows |
-| "Improve this UI" | Frontend design, frontend UI engineering, browser testing when useful |
-| "Ship this" | Git workflow, CI/CD, shipping and launch, verification, OpenSpec archive if used |
