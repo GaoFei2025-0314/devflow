@@ -17,7 +17,15 @@ Write a failing test before writing the code that makes it pass. For bug fixes, 
 - Adding edge case handling
 - Any change that could break existing behavior
 
-**When NOT to use:** Pure configuration changes, documentation updates, or static content changes that have no behavioral impact.
+**When NOT to use:** Pure configuration changes, documentation updates, or static content changes that have no behavioral impact. Throwaway prototypes and generated code are also exempt — but confirm with the user first.
+
+## The Iron Law
+
+```
+NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+```
+
+Wrote implementation code before its test? Delete it and start over from the test. Don't keep it as "reference", don't "adapt" it while writing the test — code written first biases the test toward what you built instead of what's required. Thinking "skip TDD just this once" is rationalization, not pragmatism.
 
 **Related:** For browser-based changes, combine TDD with runtime verification using Chrome DevTools MCP — see the Browser Testing section below.
 
@@ -34,7 +42,7 @@ Write a failing test before writing the code that makes it pass. For bug fixes, 
 
 ### Step 1: RED — Write a Failing Test
 
-Write the test first. It must fail. A test that passes immediately proves nothing.
+Write the test first, then **run it and watch it fail**. A test that passes immediately proves nothing. Confirm it fails for the expected reason — the feature is missing — not because of a typo or setup error (a test that *errors* is not a test that *fails*).
 
 ```typescript
 // RED: This test fails because createTask doesn't exist yet
@@ -342,9 +350,18 @@ then verifies the test passes.
 
 This separation ensures the test is written without knowledge of the fix, making it more robust.
 
+## When Stuck
+
+| Problem | Solution |
+|---------|----------|
+| Don't know how to test it | Write the wished-for API call and the assertion first; work backward from there. |
+| Test too complicated | The design is too complicated. Simplify the interface. |
+| Must mock everything | Code is too coupled. Use dependency injection. |
+| Test setup is huge | Extract helpers. Still complex? Simplify the design. |
+
 ## See Also
 
-For detailed testing patterns, examples, and anti-patterns across frameworks, see `references/testing-patterns.md`.
+For mock-related pitfalls — testing mock behavior instead of real behavior, test-only methods on production classes — see `references/testing-anti-patterns.md`.
 
 ## Common Rationalizations
 
@@ -356,12 +373,18 @@ For detailed testing patterns, examples, and anti-patterns across frameworks, se
 | "I tested it manually" | Manual testing doesn't persist. Tomorrow's change might break it with no way to know. |
 | "The code is self-explanatory" | Tests ARE the specification. They document what the code should do, not what it does. |
 | "It's just a prototype" | Prototypes become production code. Tests from day one prevent the "test debt" crisis. |
+| "Deleting X hours of work is wasteful" | Sunk cost fallacy. Keeping code you can't trust is the real waste — delete and rewrite test-first. |
+| "I'll keep the old code as reference" | You'll adapt it, which is testing after. Delete means delete. |
+| "I need to explore the design first" | Fine — explore, then throw the exploration away and start with a test. |
+| "This is hard to test" | Hard to test = hard to use. The test is telling you the design is too coupled. Simplify the interface. |
 | "Let me run the tests again just to be extra sure" | After a clean test run, repeating the same command adds nothing unless the code has changed since. Run again after subsequent edits, not as reassurance. |
 
 ## Red Flags
 
-- Writing code without any corresponding tests
+- Writing implementation code before its test
 - Tests that pass on the first run (they may not be testing what you think)
+- Can't explain why a test failed before the fix
+- Keeping pre-test code as "reference" to adapt later
 - "All tests pass" but no tests were actually run
 - Bug fixes without reproduction tests
 - Tests that test framework behavior instead of application behavior

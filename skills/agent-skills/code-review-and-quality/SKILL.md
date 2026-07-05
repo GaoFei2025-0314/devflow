@@ -9,6 +9,8 @@ description: Conducts multi-axis code review. Use before merging any change. Use
 
 Multi-dimensional code review with quality gates. Every change gets reviewed before merge — no exceptions. Review covers five axes: correctness, readability, architecture, security, and performance.
 
+**Boundary:** This skill defines the review *standard* — what to check and when to approve. For the *workflow* of dispatching a reviewer with the right context, see `../../superpowers/requesting-code-review/SKILL.md`; for responding to feedback you receive, see `../../superpowers/receiving-code-review/SKILL.md`.
+
 **The approval standard:** Approve a change when it definitely improves overall code health, even if it isn't perfect. Perfect code doesn't exist — the goal is continuous improvement. Don't block a change because it isn't exactly how you would have written it. If it improves the codebase and follows the project's conventions, approve it.
 
 ## When to Use

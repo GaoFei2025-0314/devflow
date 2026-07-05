@@ -45,7 +45,7 @@ Prefer bundled files over assuming the host environment already has the same ski
 1. Use `skills/superpowers/brainstorming/SKILL.md` when requirements need shaping.
 2. If the project has an `openspec/` workspace, the user asks for durable specs, or the change is cross-session, use `skills/openspec/SKILL.md`.
 3. If OpenSpec is not used, use `skills/agent-skills/spec-driven-development/SKILL.md`, then `skills/agent-skills/planning-and-task-breakdown/SKILL.md`.
-4. Use `skills/superpowers/test-driven-development/SKILL.md` or `skills/agent-skills/test-driven-development/SKILL.md` for implementation discipline.
+4. Use `skills/agent-skills/test-driven-development/SKILL.md` for implementation discipline.
 5. Use `skills/agent-skills/incremental-implementation/SKILL.md` to deliver small verified slices.
 6. Add domain skills only when needed:
    - API: `skills/agent-skills/api-and-interface-design/SKILL.md`
@@ -61,18 +61,17 @@ Prefer bundled files over assuming the host environment already has the same ski
 ### Bug or Failing Test
 
 1. Use `skills/superpowers/systematic-debugging/SKILL.md`.
-2. Pair with `skills/agent-skills/debugging-and-error-recovery/SKILL.md`.
-3. Write or identify a failing regression test before fixing behavior.
-4. Fix minimally, run the focused test, then run the relevant broader suite.
-5. Finish with `skills/superpowers/verification-before-completion/SKILL.md`.
+2. Write or identify a failing regression test before fixing behavior.
+3. Fix minimally, run the focused test, then run the relevant broader suite.
+4. Finish with `skills/superpowers/verification-before-completion/SKILL.md`.
 
 ### Review, Refactor, or Quality Pass
 
-1. Use `skills/agent-skills/code-review-and-quality/SKILL.md`.
+1. Use `skills/agent-skills/code-review-and-quality/SKILL.md` — this is the review standard (what to check, when to approve).
 2. Add `skills/agent-skills/code-simplification/SKILL.md`, `skills/agent-skills/security-and-hardening/SKILL.md`, or `skills/agent-skills/performance-optimization/SKILL.md` only when the request touches those concerns.
-3. For review response workflows, use:
-   - `skills/superpowers/requesting-code-review/SKILL.md`
-   - `skills/superpowers/receiving-code-review/SKILL.md`
+3. Workflow wrappers, only when the situation calls for them:
+   - Requesting a review with crafted context: `skills/superpowers/requesting-code-review/SKILL.md`
+   - Responding to review feedback you received: `skills/superpowers/receiving-code-review/SKILL.md`
 4. Do not refactor unrelated areas unless the user approves the scope.
 
 ### UI, Frontend, or Browser QA

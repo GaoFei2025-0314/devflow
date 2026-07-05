@@ -9,6 +9,8 @@ Dispatch a code-reviewer subagent to catch issues before they cascade. The revie
 
 **Core principle:** Review early, review often.
 
+**Boundary:** This skill covers *requesting* a review with well-crafted context. The review standard itself (what to check, when to approve) lives in `../../agent-skills/code-review-and-quality/SKILL.md`; responding to feedback is `../receiving-code-review/SKILL.md`.
+
 **Host compatibility:** If your host supports subagents, dispatch one as described below (tool names vary by platform — see `../using-superpowers/references/` for mappings). If it does not, run the review yourself in a fresh pass: fill the same template at `./code-reviewer.md` and work through it against the diff as a self-review checklist before proceeding.
 
 ## When to Request Review
