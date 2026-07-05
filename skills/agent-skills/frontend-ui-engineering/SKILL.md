@@ -294,7 +294,7 @@ function useToggleTask() {
 
 ## See Also
 
-For detailed accessibility requirements and testing tools, see `references/accessibility-checklist.md`.
+For accessibility, verify keyboard navigation, focus management, ARIA labeling, and color contrast with an automated audit (axe or Lighthouse) plus a manual keyboard-only pass. For visual direction and aesthetics, pair with `../frontend-design/SKILL.md`.
 
 ## Common Rationalizations
 

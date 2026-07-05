@@ -62,7 +62,7 @@ Prefer bundled files over assuming the host environment already has the same ski
 
 ### Bug or Failing Test
 
-1. Use `skills/superpowers/systematic-debugging/SKILL.md` (its `error-triage.md` reference has triage decision trees).
+1. Use `skills/superpowers/systematic-debugging/SKILL.md` (triage decision trees in `skills/superpowers/systematic-debugging/error-triage.md`).
 2. Write or identify a failing regression test before fixing behavior.
 3. Fix minimally, run the focused test, then run the relevant broader suite.
 4. Finish with `skills/superpowers/verification-before-completion/SKILL.md`.

@@ -32,8 +32,8 @@ creates generic agents from built-in roles (`default`, `explorer`, `worker`).
 
 When a skill says to dispatch such a subagent:
 
-1. Find the agent's prompt file (e.g., `agents/code-reviewer.md` or the skill's
-   local prompt template like `code-quality-reviewer-prompt.md`)
+1. Find the agent's prompt template (e.g., `../../requesting-code-review/code-reviewer.md`
+   or the skill's local template like `../../subagent-driven-development/code-quality-reviewer-prompt.md`)
 2. Read the prompt content
 3. Fill any template placeholders (`{BASE_SHA}`, `{WHAT_WAS_IMPLEMENTED}`, etc.)
 4. Spawn a `worker` agent with the filled content as the `message`
