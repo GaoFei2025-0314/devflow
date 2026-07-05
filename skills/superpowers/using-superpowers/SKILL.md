@@ -1,6 +1,6 @@
 ---
 name: using-superpowers
-description: Use when starting any conversation - establishes how to find and use skills, requiring Skill tool invocation before ANY response including clarifying questions
+description: Explains how to find, invoke, and prioritize the bundled skills, including platform tool mappings for non-Claude-Code hosts. Use at session start when this bundle is loaded, or whenever unsure which skill applies or how skills are invoked on your platform.
 ---
 
 <SUBAGENT-STOP>
@@ -37,7 +37,7 @@ If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "alw
 
 ## Platform Adaptation
 
-Skills use Claude Code tool names. Non-CC platforms: see `references/copilot-tools.md` (Copilot CLI), `references/codex-tools.md` (Codex) for tool equivalents. Gemini CLI users get the tool mapping loaded automatically via GEMINI.md.
+Skills use Claude Code tool names. On other platforms, see the mapping for your host: `references/codex-tools.md` (Codex), `references/copilot-tools.md` (Copilot CLI), `references/gemini-tools.md` (Gemini CLI). Hosts not listed: substitute your native file, shell, and subagent tools; skills that require subagents state their fallback inline.
 
 # Using Skills
 

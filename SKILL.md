@@ -29,6 +29,8 @@ If the host AI app has a native skill loader, it may load these bundled folders 
 
 Prefer bundled files over assuming the host environment already has the same skill installed.
 
+**Platform adaptation:** Skills reference Claude Code tool names in places. On other hosts, use the tool mappings in `skills/superpowers/using-superpowers/references/` (Codex, Copilot CLI, Gemini CLI). Skills that depend on subagent dispatch state an in-session fallback inline — on hosts without subagents, substitute `skills/superpowers/executing-plans/SKILL.md` for subagent-driven execution.
+
 ## Stack Roles
 
 | Stack | Bundled path | Use for | Avoid when |
@@ -45,7 +47,7 @@ Prefer bundled files over assuming the host environment already has the same ski
 1. Use `skills/superpowers/brainstorming/SKILL.md` when requirements need shaping.
 2. If the project has an `openspec/` workspace, the user asks for durable specs, or the change is cross-session, use `skills/openspec/SKILL.md`.
 3. If OpenSpec is not used, use `skills/agent-skills/spec-driven-development/SKILL.md`, then `skills/agent-skills/planning-and-task-breakdown/SKILL.md`.
-4. Use `skills/superpowers/test-driven-development/SKILL.md` or `skills/agent-skills/test-driven-development/SKILL.md` for implementation discipline.
+4. Use `skills/agent-skills/test-driven-development/SKILL.md` for implementation discipline.
 5. Use `skills/agent-skills/incremental-implementation/SKILL.md` to deliver small verified slices.
 6. Add domain skills only when needed:
    - API: `skills/agent-skills/api-and-interface-design/SKILL.md`
@@ -60,19 +62,18 @@ Prefer bundled files over assuming the host environment already has the same ski
 
 ### Bug or Failing Test
 
-1. Use `skills/superpowers/systematic-debugging/SKILL.md`.
-2. Pair with `skills/agent-skills/debugging-and-error-recovery/SKILL.md`.
-3. Write or identify a failing regression test before fixing behavior.
-4. Fix minimally, run the focused test, then run the relevant broader suite.
-5. Finish with `skills/superpowers/verification-before-completion/SKILL.md`.
+1. Use `skills/superpowers/systematic-debugging/SKILL.md` (triage decision trees in `skills/superpowers/systematic-debugging/error-triage.md`).
+2. Write or identify a failing regression test before fixing behavior.
+3. Fix minimally, run the focused test, then run the relevant broader suite.
+4. Finish with `skills/superpowers/verification-before-completion/SKILL.md`.
 
 ### Review, Refactor, or Quality Pass
 
-1. Use `skills/agent-skills/code-review-and-quality/SKILL.md`.
+1. Use `skills/agent-skills/code-review-and-quality/SKILL.md` — this is the review standard (what to check, when to approve).
 2. Add `skills/agent-skills/code-simplification/SKILL.md`, `skills/agent-skills/security-and-hardening/SKILL.md`, or `skills/agent-skills/performance-optimization/SKILL.md` only when the request touches those concerns.
-3. For review response workflows, use:
-   - `skills/superpowers/requesting-code-review/SKILL.md`
-   - `skills/superpowers/receiving-code-review/SKILL.md`
+3. Workflow wrappers, only when the situation calls for them:
+   - Requesting a review with crafted context: `skills/superpowers/requesting-code-review/SKILL.md`
+   - Responding to review feedback you received: `skills/superpowers/receiving-code-review/SKILL.md`
 4. Do not refactor unrelated areas unless the user approves the scope.
 
 ### UI, Frontend, or Browser QA
@@ -92,7 +93,7 @@ Prefer bundled files over assuming the host environment already has the same ski
 
 ## Parallel and Multi-Agent Work
 
-Use these only when the task is large enough to benefit from coordination:
+Use these only when the task is large enough to benefit from coordination, and only on hosts with subagent support (each states its in-session fallback):
 
 - `skills/superpowers/subagent-driven-development/SKILL.md`
 - `skills/superpowers/dispatching-parallel-agents/SKILL.md`
@@ -106,13 +107,3 @@ Use these only when the task is large enough to benefit from coordination:
 - Treating external review tools as mandatory. They are optional; bundled review workflows are enough for routine work.
 - Skipping tests because a spec exists. Specs define intent; tests prove behavior.
 - Calling work complete without evidence from tests, builds, runtime checks, or review.
-
-## Quick Recipes
-
-| User asks | Use |
-| --- | --- |
-| "Build this feature" | Brainstorming if needed, OpenSpec or spec-driven development, planning, TDD, incremental implementation, review |
-| "Fix this bug" | Systematic debugging, debugging recovery, regression test, minimal fix, verification |
-| "Review this PR/code" | Code review and quality, optional requesting/receiving code review workflows |
-| "Improve this UI" | Frontend design, frontend UI engineering, browser testing when useful |
-| "Ship this" | Git workflow, CI/CD, shipping and launch, verification, OpenSpec archive if used |

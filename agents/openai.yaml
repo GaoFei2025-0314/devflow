@@ -1,4 +1,0 @@
-interface:
-  display_name: "Devflow"
-  short_description: "Orchestrates AI development workflows"
-  default_prompt: "Use $devflow to plan and implement this change with the right development workflow."

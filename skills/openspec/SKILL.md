@@ -1,5 +1,5 @@
 ---
-name: openspec-workflow
+name: openspec
 description: Portable OpenSpec-style workflow for durable software change proposals, specs, task plans, validation, and archiving.
 ---
 

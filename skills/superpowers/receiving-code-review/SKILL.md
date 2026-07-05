@@ -11,6 +11,8 @@ Code review requires technical evaluation, not emotional performance.
 
 **Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
 
+**Boundary:** This skill covers *responding to* review feedback. To run a review, use the standard in `../../agent-skills/code-review-and-quality/SKILL.md`; to request one, use `../requesting-code-review/SKILL.md`.
+
 ## The Response Pattern
 
 ```

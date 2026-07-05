@@ -1,6 +1,6 @@
 ---
 name: code-review-and-quality
-description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
+description: Conducts multi-axis code review (correctness, readability, architecture, security, performance). Use when asked to review code, when evaluating code produced by another agent or a human, or as the pre-merge quality gate for a completed change. Not for requesting a review or responding to feedback you received — those are the superpowers review workflow skills.
 ---
 
 # Code Review and Quality
@@ -8,6 +8,8 @@ description: Conducts multi-axis code review. Use before merging any change. Use
 ## Overview
 
 Multi-dimensional code review with quality gates. Every change gets reviewed before merge — no exceptions. Review covers five axes: correctness, readability, architecture, security, and performance.
+
+**Boundary:** This skill defines the review *standard* — what to check and when to approve. For the *workflow* of dispatching a reviewer with the right context, see `../../superpowers/requesting-code-review/SKILL.md`; for responding to feedback you receive, see `../../superpowers/receiving-code-review/SKILL.md`.
 
 **The approval standard:** Approve a change when it definitely improves overall code health, even if it isn't perfect. Perfect code doesn't exist — the goal is continuous improvement. Don't block a change because it isn't exactly how you would have written it. If it improves the codebase and follows the project's conventions, approve it.
 
@@ -114,28 +116,13 @@ Small, focused changes are easier to review, faster to merge, and safer to deplo
 
 **What counts as "one change":** A single self-contained modification that addresses one thing, includes related tests, and keeps the system functional after submission. One part of a feature — not the whole feature.
 
-**Splitting strategies when a change is too large:**
-
-| Strategy | How | When |
-|----------|-----|------|
-| **Stack** | Submit a small change, start the next one based on it | Sequential dependencies |
-| **By file group** | Separate changes for groups needing different reviewers | Cross-cutting concerns |
-| **Horizontal** | Create shared code/stubs first, then consumers | Layered architecture |
-| **Vertical** | Break into smaller full-stack slices of the feature | Feature work |
-
-**When large changes are acceptable:** Complete file deletions and automated refactoring where the reviewer only needs to verify intent, not every line.
+**Splitting strategies when a change is too large:** stack sequential changes, split by file group or architectural layer, or slice the feature vertically — see `references/review-playbook.md` for the full table and when large changes are acceptable.
 
 **Separate refactoring from feature work.** A change that refactors existing code and adds new behavior is two changes — submit them separately. Small cleanups (variable renaming) can be included at reviewer discretion.
 
 ## Change Descriptions
 
-Every change needs a description that stands alone in version control history.
-
-**First line:** Short, imperative, standalone. "Delete the FizzBuzz RPC" not "Deleting the FizzBuzz RPC." Must be informative enough that someone searching history can understand the change without reading the diff.
-
-**Body:** What is changing and why. Include context, decisions, and reasoning not visible in the code itself. Link to bug numbers, benchmark results, or design docs where relevant. Acknowledge approach shortcomings when they exist.
-
-**Anti-patterns:** "Fix bug," "Fix build," "Add patch," "Moving code from A to B," "Phase 1," "Add convenience functions."
+Every change needs a description that stands alone in version control history: a short imperative first line someone can understand without reading the diff, and a body covering what changed and why (context, decisions, links). Anti-patterns: "Fix bug," "Fix build," "Phase 1," "Moving code from A to B."
 
 ## Review Process
 
@@ -204,29 +191,7 @@ Check the author's verification story:
 
 ## Multi-Model Review Pattern
 
-Use different models for different review perspectives:
-
-```
-Model A writes the code
-    │
-    ▼
-Model B reviews for correctness and architecture
-    │
-    ▼
-Model A addresses the feedback
-    │
-    ▼
-Human makes the final call
-```
-
-This catches issues that a single model might miss — different models have different blind spots.
-
-**Example prompt for a review agent:**
-```
-Review this code change for correctness, security, and adherence to
-our project conventions. The spec says [X]. The change should [Y].
-Flag any issues as Critical, Required, Optional, or Nit.
-```
+When multiple models are available, have one model write and a different one review — different models have different blind spots, and a human makes the final call. Flow diagram and example reviewer prompt: `references/review-playbook.md`.
 
 ## Dead Code Hygiene
 
@@ -236,24 +201,11 @@ After any refactoring or implementation change, check for orphaned code:
 2. List it explicitly
 3. **Ask before deleting:** "Should I remove these now-unused elements: [list]?"
 
-Don't leave dead code lying around — it confuses future readers and agents. But don't silently delete things you're not sure about. When in doubt, ask.
-
-```
-DEAD CODE IDENTIFIED:
-- formatLegacyDate() in src/utils/date.ts — replaced by formatDate()
-- OldTaskCard component in src/components/ — replaced by TaskCard
-- LEGACY_API_URL constant in src/config.ts — no remaining references
-→ Safe to remove these?
-```
+Don't leave dead code lying around — it confuses future readers and agents. But don't silently delete things you're not sure about. When in doubt, ask (report format in `references/review-playbook.md`).
 
 ## Review Speed
 
-Slow reviews block entire teams. The cost of context-switching to review is less than the waiting cost imposed on others.
-
-- **Respond within one business day** — this is the maximum, not the target
-- **Ideal cadence:** Respond shortly after a review request arrives, unless deep in focused coding. A typical change should complete multiple review rounds in a single day
-- **Prioritize fast individual responses** over quick final approval. Quick feedback reduces frustration even if multiple rounds are needed
-- **Large changes:** Ask the author to split them rather than reviewing one massive changeset
+Slow reviews block entire teams — respond within one business day at the outside, ideally shortly after the request arrives. Prioritize fast individual responses over quick final approval; ask authors to split large changes rather than reviewing one massive changeset.
 
 ## Handling Disagreements
 
@@ -278,68 +230,16 @@ When reviewing code — whether written by you, another agent, or a human:
 
 ## Dependency Discipline
 
-Part of code review is dependency review:
-
-**Before adding any dependency:**
-1. Does the existing stack solve this? (Often it does.)
-2. How large is the dependency? (Check bundle impact.)
-3. Is it actively maintained? (Check last commit, open issues.)
-4. Does it have known vulnerabilities? (`npm audit`)
-5. What's the license? (Must be compatible with the project.)
-
-**Rule:** Prefer standard library and existing utilities over new dependencies. Every dependency is a liability.
+Every new dependency in a change gets reviewed too: does the existing stack already solve this, how large is it, is it maintained, does it have known vulnerabilities, and is the license compatible? Prefer standard library and existing utilities — every dependency is a liability.
 
 ## The Review Checklist
 
-```markdown
-## Review: [PR/Change title]
+Work through context, the five axes, and the verification story for every review; end with an explicit verdict (Approve / Request changes). The full copy-paste checklist template is in `references/review-playbook.md`.
 
-### Context
-- [ ] I understand what this change does and why
-
-### Correctness
-- [ ] Change matches spec/task requirements
-- [ ] Edge cases handled
-- [ ] Error paths handled
-- [ ] Tests cover the change adequately
-
-### Readability
-- [ ] Names are clear and consistent
-- [ ] Logic is straightforward
-- [ ] No unnecessary complexity
-
-### Architecture
-- [ ] Follows existing patterns
-- [ ] No unnecessary coupling or dependencies
-- [ ] Appropriate abstraction level
-- [ ] Refactors reduce complexity rather than relocate it
-- [ ] No feature logic in shared modules; file stays within a healthy size
-
-### Security
-- [ ] No secrets in code
-- [ ] Input validated at boundaries
-- [ ] No injection vulnerabilities
-- [ ] Auth checks in place
-- [ ] External data sources treated as untrusted
-
-### Performance
-- [ ] No N+1 patterns
-- [ ] No unbounded operations
-- [ ] Pagination on list endpoints
-
-### Verification
-- [ ] Tests pass
-- [ ] Build succeeds
-- [ ] Manual verification done (if applicable)
-
-### Verdict
-- [ ] **Approve** — Ready to merge
-- [ ] **Request changes** — Issues must be addressed
-```
 ## See Also
 
-- For detailed security review guidance, see `references/security-checklist.md`
-- For performance review checks, see `references/performance-checklist.md`
+- Detailed security review guidance: `../security-and-hardening/SKILL.md`
+- Performance review checks: `../performance-optimization/SKILL.md`
 
 ## Common Rationalizations
 

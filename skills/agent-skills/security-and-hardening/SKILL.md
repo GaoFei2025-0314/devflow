@@ -1,6 +1,6 @@
 ---
 name: security-and-hardening
-description: Hardens code against vulnerabilities. Use when handling user input, authentication, data storage, or external integrations. Use when building any feature that accepts untrusted data, manages user sessions, or interacts with third-party services.
+description: Hardens code against vulnerabilities. Use when a change touches untrusted input, authentication or sessions, secrets, data storage, or third-party integrations, and when running a security pass over a completed change. Not for general code quality review with no security surface.
 ---
 
 # Security and Hardening
@@ -8,6 +8,8 @@ description: Hardens code against vulnerabilities. Use when handling user input,
 ## Overview
 
 Security-first development practices for web applications. Treat every external input as hostile, every secret as sacred, and every authorization check as mandatory. Security isn't a phase — it's a constraint on every line of code that touches user data, authentication, or external systems.
+
+Worked code examples for every pattern in this skill are in `references/examples.md`.
 
 ## When to Use
 
@@ -72,258 +74,47 @@ If you can't name the trust boundaries for a feature, you're not ready to secure
 - **Never store sessions in client-accessible storage** (localStorage for auth tokens)
 - **Never expose stack traces** or internal error details to users
 
-## OWASP Top 10 Prevention Patterns
+## Prevention Patterns (OWASP Top 10)
 
-These are prevention patterns, not a ranking. For the 2021 ordering, see the quick-reference table in `references/security-checklist.md`.
+Each rule below has a worked example in `references/examples.md`.
 
-### Injection (SQL, NoSQL, OS Command)
+- **Injection:** Parameterize every query (or use an ORM). Never build SQL, shell commands, or query filters by string concatenation with external input.
+- **Broken authentication:** Hash passwords with bcrypt/scrypt/argon2 (salt rounds ≥ 12); store session secrets in the environment; issue httpOnly + secure + sameSite cookies with an expiry.
+- **XSS:** Rely on framework auto-escaping; never assign untrusted data to `innerHTML`. If you must render HTML, sanitize with DOMPurify first.
+- **Broken access control:** Authentication is not authorization. Every protected endpoint verifies the authenticated user may act on *this specific resource* (ownership or role check), returning 403 otherwise.
+- **Security misconfiguration:** Apply security headers via helmet (or equivalent), define a CSP, and restrict CORS to an explicit origin list — never wildcard with credentials.
+- **Sensitive data exposure:** Strip secret fields (password hashes, reset tokens) before returning records; load secrets from the environment and fail fast when missing.
+- **SSRF:** Any server-side fetch of a user-influenced URL must allowlist scheme + host, resolve DNS and reject private/reserved IPs, and forbid redirects. High-risk surfaces need DNS pinning (the check-then-fetch gap is exploitable via short-TTL rebinding).
+- **Input validation:** Validate at the boundary with a schema library (zod or similar) so handlers only ever see typed, validated data; return 422 with structured details on failure.
+- **File uploads:** Enforce an allowlist of MIME types and a size cap; don't trust extensions — check magic bytes when it matters.
+- **Rate limiting:** Rate-limit the API in general and auth endpoints strictly (an order of magnitude tighter).
 
-```typescript
-// BAD: SQL injection via string concatenation
-const query = `SELECT * FROM users WHERE id = '${userId}'`;
+## Triaging Dependency Audit Results
 
-// GOOD: Parameterized query
-const user = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
-
-// GOOD: ORM with parameterized input
-const user = await prisma.user.findUnique({ where: { id: userId } });
-```
-
-### Broken Authentication
-
-```typescript
-// Password hashing
-import { hash, compare } from 'bcrypt';
-
-const SALT_ROUNDS = 12;
-const hashedPassword = await hash(plaintext, SALT_ROUNDS);
-const isValid = await compare(plaintext, hashedPassword);
-
-// Session management
-app.use(session({
-  secret: process.env.SESSION_SECRET,  // From environment, not code
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,     // Not accessible via JavaScript
-    secure: true,       // HTTPS only
-    sameSite: 'lax',    // CSRF protection
-    maxAge: 24 * 60 * 60 * 1000,  // 24 hours
-  },
-}));
-```
-
-### Cross-Site Scripting (XSS)
-
-```typescript
-// BAD: Rendering user input as HTML
-element.innerHTML = userInput;
-
-// GOOD: Use framework auto-escaping (React does this by default)
-return <div>{userInput}</div>;
-
-// If you MUST render HTML, sanitize first
-import DOMPurify from 'dompurify';
-const clean = DOMPurify.sanitize(userInput);
-```
-
-### Broken Access Control
-
-```typescript
-// Always check authorization, not just authentication
-app.patch('/api/tasks/:id', authenticate, async (req, res) => {
-  const task = await taskService.findById(req.params.id);
-
-  // Check that the authenticated user owns this resource
-  if (task.ownerId !== req.user.id) {
-    return res.status(403).json({
-      error: { code: 'FORBIDDEN', message: 'Not authorized to modify this task' }
-    });
-  }
-
-  // Proceed with update
-  const updated = await taskService.update(req.params.id, req.body);
-  return res.json(updated);
-});
-```
-
-### Security Misconfiguration
-
-```typescript
-// Security headers (use helmet for Express)
-import helmet from 'helmet';
-app.use(helmet());
-
-// Content Security Policy
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'"],  // Tighten if possible
-    imgSrc: ["'self'", 'data:', 'https:'],
-    connectSrc: ["'self'"],
-  },
-}));
-
-// CORS — restrict to known origins
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
-  credentials: true,
-}));
-```
-
-### Sensitive Data Exposure
-
-```typescript
-// Never return sensitive fields in API responses
-function sanitizeUser(user: UserRecord): PublicUser {
-  const { passwordHash, resetToken, ...publicFields } = user;
-  return publicFields;
-}
-
-// Use environment variables for secrets
-const API_KEY = process.env.STRIPE_API_KEY;
-if (!API_KEY) throw new Error('STRIPE_API_KEY not configured');
-```
-
-### Server-Side Request Forgery (SSRF)
-
-Any time the server fetches a URL the user influenced — webhooks, "import from URL", image proxies, link previews — an attacker can aim it at internal services (cloud metadata, `localhost`, private IPs).
-
-```typescript
-// BAD: fetch whatever the user gives you
-await fetch(req.body.webhookUrl);
-
-// GOOD: allowlist scheme + host, reject if ANY resolved IP is private, forbid redirects
-import { lookup } from 'node:dns/promises';
-import ipaddr from 'ipaddr.js';
-
-const ALLOWED_HOSTS = new Set(['hooks.example.com']);
-
-async function assertSafeUrl(raw: string): Promise<URL> {
-  const url = new URL(raw);
-  if (url.protocol !== 'https:') throw new Error('https only');
-  if (!ALLOWED_HOSTS.has(url.hostname)) throw new Error('host not allowed');
-  // Resolve ALL records; a single private/reserved address fails the check.
-  const addrs = await lookup(url.hostname, { all: true });
-  if (addrs.some((a) => ipaddr.parse(a.address).range() !== 'unicast')) {
-    throw new Error('private/reserved IP');
-  }
-  return url;
-}
-
-await fetch(await assertSafeUrl(req.body.webhookUrl), { redirect: 'error' });
-```
-
-The `range() !== 'unicast'` check covers loopback, link-local `169.254.169.254` (cloud metadata, the #1 SSRF target), private, and unique-local ranges across IPv4 and IPv6.
-
-**Caveat — this still has a TOCTOU gap.** `fetch` resolves DNS again after the check, so an attacker using a short-TTL record can rebind to an internal IP between validation and connection. For high-risk surfaces, resolve once and connect to the pinned IP, or put a filtering agent in front (`request-filtering-agent` / `ssrf-req-filter`).
-
-## Input Validation Patterns
-
-### Schema Validation at Boundaries
-
-```typescript
-import { z } from 'zod';
-
-const CreateTaskSchema = z.object({
-  title: z.string().min(1).max(200).trim(),
-  description: z.string().max(2000).optional(),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  dueDate: z.string().datetime().optional(),
-});
-
-// Validate at the route handler
-app.post('/api/tasks', async (req, res) => {
-  const result = CreateTaskSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(422).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid input',
-        details: result.error.flatten(),
-      },
-    });
-  }
-  // result.data is now typed and validated
-  const task = await taskService.create(result.data);
-  return res.status(201).json(task);
-});
-```
-
-### File Upload Safety
-
-```typescript
-// Restrict file types and sizes
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-
-function validateUpload(file: UploadedFile) {
-  if (!ALLOWED_TYPES.includes(file.mimetype)) {
-    throw new ValidationError('File type not allowed');
-  }
-  if (file.size > MAX_SIZE) {
-    throw new ValidationError('File too large (max 5MB)');
-  }
-  // Don't trust the file extension — check magic bytes if critical
-}
-```
-
-## Triaging npm audit Results
-
-Not all audit findings require immediate action. Use this decision tree:
+Not all audit findings require immediate action:
 
 ```
-npm audit reports a vulnerability
+Audit reports a vulnerability
 ├── Severity: critical or high
-│   ├── Is the vulnerable code reachable in your app?
-│   │   ├── YES --> Fix immediately (update, patch, or replace the dependency)
-│   │   └── NO (dev-only dep, unused code path) --> Fix soon, but not a blocker
-│   └── Is a fix available?
-│       ├── YES --> Update to the patched version
-│       └── NO --> Check for workarounds, consider replacing the dependency, or add to allowlist with a review date
+│   ├── Reachable in your app? → Fix immediately (update, patch, or replace)
+│   ├── Dev-only or unused path? → Fix soon, not a blocker
+│   └── No fix available? → Workaround, replace, or allowlist with a review date
 ├── Severity: moderate
-│   ├── Reachable in production? --> Fix in the next release cycle
-│   └── Dev-only? --> Fix when convenient, track in backlog
-└── Severity: low
-    └── Track and fix during regular dependency updates
+│   ├── Reachable in production? → Fix in the next release cycle
+│   └── Dev-only? → Backlog
+└── Severity: low → Fix during regular dependency updates
 ```
 
-**Key questions:**
-- Is the vulnerable function actually called in your code path?
-- Is the dependency a runtime dependency or dev-only?
-- Is the vulnerability exploitable given your deployment context (e.g., a server-side vulnerability in a client-only app)?
-
-When you defer a fix, document the reason and set a review date.
+**Key questions:** Is the vulnerable function actually called? Runtime or dev-only dependency? Exploitable in your deployment context? When you defer a fix, document the reason and set a review date.
 
 ### Supply-Chain Hygiene
 
 `npm audit` catches known CVEs; it won't catch a malicious or typosquatted package. Also:
 
 - **Commit the lockfile** and install with `npm ci` (not `npm install`) in CI — reproducible builds, no silent version drift.
-- **Review new dependencies before adding them** — maintenance, download counts, and whether they truly earn their place. Every dependency is attack surface (OWASP **A06: Vulnerable Components**, **LLM03: Supply Chain**).
+- **Review new dependencies before adding them** — maintenance, download counts, and whether they truly earn their place. Every dependency is attack surface.
 - **Be wary of `postinstall` scripts** in unfamiliar packages — they run arbitrary code at install time.
 - **Watch for typosquats** — `cross-env` vs `crossenv`, `react-dom` vs `reactdom`.
-
-## Rate Limiting
-
-```typescript
-import rateLimit from 'express-rate-limit';
-
-// General API rate limit
-app.use('/api/', rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,                   // 100 requests per window
-  standardHeaders: true,
-  legacyHeaders: false,
-}));
-
-// Stricter limit for auth endpoints
-app.use('/api/auth/', rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,  // 10 attempts per 15 minutes
-}));
-```
 
 ## Secrets Management
 
@@ -333,19 +124,10 @@ app.use('/api/auth/', rateLimit({
   ├── .env          → NOT committed (contains real secrets)
   └── .env.local    → NOT committed (local overrides)
 
-.gitignore must include:
-  .env
-  .env.local
-  .env.*.local
-  *.pem
-  *.key
+.gitignore must include: .env, .env.local, .env.*.local, *.pem, *.key
 ```
 
-**Always check before committing:**
-```bash
-# Check for accidentally staged secrets
-git diff --cached | grep -i "password\|secret\|api_key\|token"
-```
+**Always check before committing:** `git diff --cached | grep -i "password\|secret\|api_key\|token"`
 
 **If a secret is ever committed, rotate it.** Deleting the line or rewriting history is not enough — assume it's compromised the moment it reaches a remote. Revoke and reissue the key first, then purge it from history.
 
@@ -353,29 +135,12 @@ git diff --cached | grep -i "password\|secret\|api_key\|token"
 
 If your app calls an LLM — chatbots, summarizers, agents, RAG — it inherits a new attack surface. Map it to the [OWASP Top 10 for LLM Applications (2025)](https://genai.owasp.org/llm-top-10/):
 
-- **Treat all model output as untrusted input (LLM05: Improper Output Handling).** Never pass LLM output straight into `eval`, SQL, a shell, `innerHTML`, or a file path. Validate and encode it exactly as you would raw user input.
+- **Treat all model output as untrusted input (LLM05).** Never pass LLM output straight into `eval`, SQL, a shell, `innerHTML`, or a file path. Validate and encode it exactly as you would raw user input.
 - **Assume prompts can be hijacked (LLM01: Prompt Injection).** Untrusted text in the context window — a user message, a fetched web page, a PDF — can carry instructions. The system prompt is not a security boundary; enforce permissions in code, not in the prompt.
-- **Keep secrets and other users' data out of prompts (LLM02 / LLM07).** Anything in the context can be echoed back. Don't put API keys, cross-tenant data, or the full system prompt where the model can repeat it.
-- **Constrain tool and agent permissions (LLM06: Excessive Agency).** Scope tools to the minimum, require confirmation for destructive or irreversible actions, and validate every tool argument.
-- **Bound consumption (LLM10: Unbounded Consumption).** Cap tokens, request rate, and loop/recursion depth so a crafted input can't run up cost or hang the system.
-- **Isolate retrieval data (LLM08: Vector and Embedding Weaknesses).** In RAG, treat the vector store as a trust boundary: partition embeddings per tenant so one user can't retrieve another's data, and validate documents before indexing so poisoned content can't steer answers.
-
-```typescript
-// BAD: trusting model output as a command or as markup
-const sql = await llm.generate(`Write SQL for: ${userQuestion}`);
-await db.query(sql);                                   // arbitrary query execution
-container.innerHTML = await llm.reply(userMessage);   // stored XSS, via the model
-
-// GOOD: model output is data — parse defensively, then validate, then encode
-let intent;
-try {
-  intent = CommandSchema.parse(JSON.parse(await llm.replyJson(userMessage)));
-} catch {
-  throw new ValidationError('unexpected model output'); // JSON.parse or schema failed
-}
-await runAllowlistedAction(intent.action, intent.params);
-container.textContent = await llm.reply(userMessage);
-```
+- **Keep secrets and other users' data out of prompts (LLM02 / LLM07).** Anything in the context can be echoed back.
+- **Constrain tool and agent permissions (LLM06: Excessive Agency).** Scope tools to the minimum, require confirmation for destructive actions, validate every tool argument.
+- **Bound consumption (LLM10).** Cap tokens, request rate, and loop depth so a crafted input can't run up cost or hang the system.
+- **Isolate retrieval data (LLM08).** In RAG, treat the vector store as a trust boundary: partition embeddings per tenant, validate documents before indexing.
 
 ## Security Review Checklist
 
@@ -383,8 +148,7 @@ container.textContent = await llm.reply(userMessage);
 ### Authentication
 - [ ] Passwords hashed with bcrypt/scrypt/argon2 (salt rounds ≥ 12)
 - [ ] Session tokens are httpOnly, secure, sameSite
-- [ ] Login has rate limiting
-- [ ] Password reset tokens expire
+- [ ] Login has rate limiting; reset tokens expire
 
 ### Authorization
 - [ ] Every endpoint checks user permissions
@@ -405,21 +169,14 @@ container.textContent = await llm.reply(userMessage);
 ### Infrastructure
 - [ ] Security headers configured (CSP, HSTS, etc.)
 - [ ] CORS restricted to known origins
-- [ ] Dependencies audited for vulnerabilities
+- [ ] Dependencies audited; lockfile committed; CI installs with `npm ci`
 - [ ] Error messages don't expose internals
-
-### Supply Chain
-- [ ] Lockfile committed; CI installs with `npm ci`
-- [ ] New dependencies reviewed (maintenance, downloads, postinstall scripts)
 
 ### AI / LLM (if used)
 - [ ] Model output treated as untrusted (no eval/SQL/innerHTML/shell)
 - [ ] Secrets and other users' data kept out of prompts
 - [ ] Tool/agent permissions scoped; destructive actions require confirmation
 ```
-## See Also
-
-For detailed security checklists and pre-commit verification steps, see `references/security-checklist.md`.
 
 ## Common Rationalizations
 

@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: Turns half-formed ideas into validated designs through collaborative dialogue. Use when requirements are not yet shaped — the request is vague, has multiple viable directions, or intent needs exploring before specs and implementation. Not for requests that already state exactly what to build.
 ---
 
 # Brainstorming Ideas Into Designs
@@ -161,4 +161,4 @@ A browser-based companion for showing mockups, diagrams, and visual options duri
 A question about a UI topic is not automatically a visual question. "What does personality mean in this context?" is a conceptual question — use the terminal. "Which wizard layout works better?" is a visual question — use the browser.
 
 If they agree to the companion, read the detailed guide before proceeding:
-`skills/brainstorming/visual-companion.md`
+`./visual-companion.md`

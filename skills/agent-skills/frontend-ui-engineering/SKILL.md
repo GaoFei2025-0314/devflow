@@ -1,6 +1,6 @@
 ---
 name: frontend-ui-engineering
-description: Builds production-quality UIs. Use when building or modifying user-facing interfaces. Use when creating components, implementing layouts, managing state, or when the output needs to look and feel production-quality rather than AI-generated.
+description: Builds production-quality UI code — components, layouts, state management, accessibility. Use when implementing or modifying user-facing interfaces where engineering quality matters. Not for choosing visual direction or aesthetics; pair with the frontend-design skill for that.
 ---
 
 # Frontend UI Engineering
@@ -294,7 +294,7 @@ function useToggleTask() {
 
 ## See Also
 
-For detailed accessibility requirements and testing tools, see `references/accessibility-checklist.md`.
+For accessibility, verify keyboard navigation, focus management, ARIA labeling, and color contrast with an automated audit (axe or Lighthouse) plus a manual keyboard-only pass. For visual direction and aesthetics, pair with `../frontend-design/SKILL.md`.
 
 ## Common Rationalizations
 
