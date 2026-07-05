@@ -15,6 +15,12 @@ If you were dispatched as a subagent to execute a specific task, skip this skill
 
 Balance this against the router's Core Rule: load the **smallest useful subset** for the phase you are in. "Check before acting" governs *when* you look for a skill; "smallest useful subset" governs *how many* you load. Checking is cheap (descriptions only); loading full skills is the cost to ration.
 
+Three specific moments where the check is most often skipped:
+
+- **Before asking clarifying questions or exploring the codebase.** The skill check comes first — brainstorming and spec skills define their own question-asking process, and ad hoc questions commit you to an unguided path.
+- **Before entering plan mode.** If requirements are not yet shaped, run the brainstorming skill first; don't write a plan from an unclarified request.
+- **When a skill you're following has a checklist,** track each item as a todo so nothing gets silently skipped in a long session.
+
 ## Instruction Priority
 
 Devflow skills override default system prompt behavior, but **user instructions always take precedence**:
@@ -27,7 +33,7 @@ If the user's project instructions say "don't use TDD" and a skill says "always 
 
 ## How to Access Skills
 
-**In Claude Code:** Use the `Skill` tool (installed as a plugin, skills appear as `devflow:<name>`). When you invoke a skill, its content is loaded and presented to you — follow it directly.
+**In Claude Code:** Installed as a plugin, skills appear as `devflow:<name>` — invoke them with the `Skill` tool and follow the loaded content directly. Installed as a skill folder instead, only the bundle entrypoint is registered; open the referenced `SKILL.md` files with the Read tool and follow them as instructions.
 
 **In Codex:** Skills load natively from `.codex/skills/`, or via the repository's `AGENTS.md`; follow the loaded instructions directly.
 

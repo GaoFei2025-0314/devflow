@@ -23,7 +23,7 @@ The router (`skills/devflow/SKILL.md`) selects the smallest useful subset of ski
 - Debugging and root-cause analysis → systematic-debugging
 - Review and refactoring → code-review-and-quality, code-simplification
 - Frontend, API, security, performance, observability → domain skills
-- CI, release, and shipping → ci-cd-and-automation, shipping-and-launch, git-workflow-and-versioning
+- CI, release, and shipping → git-workflow-and-versioning, ci-cd-and-automation, shipping-and-launch
 
 Skills that depend on host capabilities (subagent dispatch, browser MCP) reference a shared fallback contract in `skills/using-devflow/SKILL.md`, so the bundle degrades gracefully on hosts without those features.
 
@@ -71,4 +71,5 @@ The router picks the relevant skills. For example:
 
 ## Maintenance
 
-Run `scripts/check-refs.sh` before committing skill changes — it validates frontmatter, cross-references, and file sizes. CI runs it on every push.
+- Run `scripts/check-refs.sh` before committing skill changes — it validates frontmatter, cross-references, and file sizes. CI runs it on every push.
+- **Bump `version` in `.claude-plugin/plugin.json` in any PR that changes skill content.** Installed plugins only receive updates when the version string changes — content changes without a version bump never reach `/plugin update` users.

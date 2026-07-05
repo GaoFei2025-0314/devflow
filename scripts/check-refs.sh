@@ -19,8 +19,10 @@ while IFS= read -r f; do
 done < <(find "$ROOT" -name SKILL.md -not -path "*/.git/*")
 
 echo "== 2. No third-party namespaces or references to removed files =="
-if grep -rn "superpowers:[a-z]\|agent-skills/\|superpowers/\|openspec/SKILL\|writing-skills\|MANIFEST.md\|openai.yaml\|mcp-builder" \
-    "$ROOT" --include="*.md" --exclude-dir=.git | grep -v "legacy \`openspec/\`"; then
+# Path-like fragments only, so prose mentions (e.g. "legacy openspec/ folders"
+# or upstream-credit URLs) stay legal without hand-maintained exclusions.
+if grep -rn "superpowers:[a-z]\|skills/agent-skills\|skills/superpowers\|skills/openspec\|\.\./agent-skills/\|\.\./superpowers/\|openspec/SKILL\|writing-skills\|MANIFEST\.md\|openai\.yaml\|mcp-builder" \
+    "$ROOT" --include="*.md" --exclude-dir=.git; then
   FAIL=1
 else
   echo OK
@@ -30,11 +32,11 @@ echo "== 3. Backtick file references resolve =="
 python3 - "$ROOT" <<'EOF'
 import os, re, sys
 ROOT = sys.argv[1]
-pat = re.compile(r'`([^`\s]+\.(?:md|sh|ts|txt|yaml|json|cjs))`')
-# Template placeholders and artifacts the skills instruct users to CREATE.
+pat = re.compile(r'`([^`\s]+\.(?:md|sh|ts|txt|yaml|json|cjs|html))`')
+# Generic doc-type mentions and artifacts the skills instruct users to CREATE.
 placeholders = {
     "proposal.md","design.md","tasks.md","project.md","start-server.sh",
-    "code-reviewer.md","code-quality-reviewer-prompt.md","SKILL.md",
+    "code-reviewer.md","SKILL.md",
     "GEMINI.md","AGENTS.md","CLAUDE.md","CLAUDE.local.md","settings.json",
     "package.json",".mcp.json","bundlesize.config.json","plugin.json",
     "package-lock.json",".vscode/settings.json",
@@ -51,9 +53,19 @@ for dirpath, dirs, files in os.walk(ROOT):
             if "{" in ref or "<" in ref or ref.startswith("http") or "YYYY" in ref:
                 continue
             total += 1
-            if ref in placeholders or "/path/to/" in ref or ref.startswith("docs/"):
+            if ref in placeholders or "/path/to/" in ref:
                 continue
-            if not (os.path.exists(os.path.join(dirpath, ref)) or os.path.exists(os.path.join(ROOT, ref))):
+            # Bare .html names are runtime-generated mockup artifacts
+            # (visual companion); path-qualified .html refs are still checked.
+            if ref.endswith(".html") and "/" not in ref:
+                continue
+            # Resolve relative to the containing file; allow the bundle root
+            # as fallback only for path-qualified refs (bare filenames must
+            # resolve locally or be listed as placeholders).
+            candidates = [os.path.join(dirpath, ref)]
+            if "/" in ref:
+                candidates.append(os.path.join(ROOT, ref))
+            if not any(os.path.exists(c) for c in candidates):
                 broken.append((os.path.relpath(fp, ROOT), ref))
 print(f"checked {total} references")
 for f, r in broken:

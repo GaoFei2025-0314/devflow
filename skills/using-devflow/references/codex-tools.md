@@ -81,11 +81,8 @@ GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 BRANCH=$(git branch --show-current)
 ```
 
-- `GIT_DIR != GIT_COMMON` → already in a linked worktree (skip creation)
-- `BRANCH` empty → detached HEAD (cannot branch/push/PR from sandbox)
-
-See `using-git-worktrees` Step 0 and `finishing-a-development-branch`
-Step 1 for how each skill uses these signals.
+- `GIT_DIR != GIT_COMMON` → already in a linked worktree — skip worktree creation in `../../using-git-worktrees/SKILL.md`
+- `BRANCH` empty → detached HEAD — branch/push/PR steps in `../../finishing-a-development-branch/SKILL.md` cannot run from the sandbox (see Codex App Finishing below)
 
 ## Codex App Finishing
 

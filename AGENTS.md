@@ -10,7 +10,7 @@ Pick the phase of work, then load only the skill files needed for that phase. Do
 
 Read `skills/devflow/SKILL.md` for the full routing tables. In brief:
 
-- **New feature or significant change** → `skills/brainstorming/` if requirements need shaping, then `skills/spec-workspace/` (durable specs) or `skills/spec-driven-development/` + `skills/planning-and-task-breakdown/`, then `skills/test-driven-development/` and `skills/incremental-implementation/`.
+- **New feature or significant change** → `skills/brainstorming/` if requirements need shaping, then `skills/spec-workspace/` (durable specs) or `skills/spec-driven-development/` + `skills/planning-and-task-breakdown/`, then `skills/test-driven-development/` and `skills/incremental-implementation/`; finish with `skills/code-review-and-quality/` and `skills/verification-before-completion/`.
 - **Bug or failing test** → `skills/systematic-debugging/`, regression test before fix, finish with `skills/verification-before-completion/`.
 - **Review, refactor, or quality pass** → `skills/code-review-and-quality/`, adding simplification/security/performance skills only when the request touches them.
 - **UI or browser work** → `skills/frontend-ui-engineering/`, `skills/frontend-design/`, `skills/browser-testing-with-devtools/`.

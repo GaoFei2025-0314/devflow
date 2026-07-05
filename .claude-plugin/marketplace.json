@@ -1,5 +1,6 @@
 {
   "name": "devflow",
+  "description": "Marketplace for the Devflow plugin: an AI development workflow skill set covering the full engineering lifecycle.",
   "owner": {
     "name": "GaoFei2025-0314"
   },

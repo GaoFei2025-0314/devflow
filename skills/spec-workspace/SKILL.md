@@ -106,7 +106,7 @@ Create `tasks.md` as an executable checklist:
 
 ## Specs
 
-Create or update `specs/<capability>.md` with concrete behavior:
+Create or update capability specs **inside the active change folder** — `specs/changes/<change-id>/specs/<capability>.md`, never at the workspace root — with concrete behavior:
 
 ```markdown
 # <Capability>

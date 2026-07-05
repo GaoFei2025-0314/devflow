@@ -88,6 +88,30 @@ Runtime error:
     └── Add logging at key points, verify data at each step
 ```
 
+## Multi-Layer Instrumentation Example
+
+Instrument each component boundary, run once, and read where the data stops flowing:
+
+```bash
+# Layer 1: Workflow
+echo "=== Secrets available in workflow: ==="
+echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
+
+# Layer 2: Build script
+echo "=== Env vars in build script: ==="
+env | grep IDENTITY || echo "IDENTITY not in environment"
+
+# Layer 3: Signing script
+echo "=== Keychain state: ==="
+security list-keychains
+security find-identity -v
+
+# Layer 4: Actual signing
+codesign --sign "$IDENTITY" --verbose=4 "$APP"
+```
+
+**This reveals:** which layer fails (secrets → workflow ✓, workflow → build ✗).
+
 ## Instrumentation Guidelines
 
 Add logging only when it helps localize; remove it when done.
