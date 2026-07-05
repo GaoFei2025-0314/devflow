@@ -1,0 +1,13 @@
+{
+  "name": "devflow",
+  "owner": {
+    "name": "GaoFei2025-0314"
+  },
+  "plugins": [
+    {
+      "name": "devflow",
+      "source": "./",
+      "description": "Devflow: a complete AI development workflow — routing, specs, planning, TDD, debugging, review, frontend, security, performance, CI/CD, and shipping skills."
+    }
+  ]
+}
