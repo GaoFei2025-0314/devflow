@@ -11,7 +11,7 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
-**Note:** Tell your human partner that Superpowers works much better with access to subagents. The quality of its work will be significantly higher if run on a platform with subagent support (such as Claude Code or Codex). If subagents are available, use superpowers:subagent-driven-development instead of this skill.
+**Note:** This is the fallback execution mode for hosts without subagent support. If your host can dispatch subagents, use `../subagent-driven-development/SKILL.md` instead — fresh context per task and automatic review checkpoints produce noticeably higher quality.
 
 ## The Process
 
@@ -33,7 +33,7 @@ For each task:
 
 After all tasks complete and verified:
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
+- **REQUIRED SUB-SKILL:** Use `../finishing-a-development-branch/SKILL.md`
 - Follow that skill to verify tests, present options, execute choice
 
 ## When to Stop and Ask for Help
@@ -65,6 +65,6 @@ After all tasks complete and verified:
 ## Integration
 
 **Required workflow skills:**
-- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
-- **superpowers:writing-plans** - Creates the plan this skill executes
-- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+- **using-git-worktrees** (`../using-git-worktrees/SKILL.md`) - REQUIRED: Set up isolated workspace before starting
+- **writing-plans** (`../writing-plans/SKILL.md`) - Creates the plan this skill executes
+- **finishing-a-development-branch** (`../finishing-a-development-branch/SKILL.md`) - Complete development after all tasks

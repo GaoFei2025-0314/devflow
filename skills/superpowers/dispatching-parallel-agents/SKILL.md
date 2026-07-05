@@ -13,6 +13,8 @@ When you have multiple unrelated failures (different test files, different subsy
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
 
+**Host compatibility:** Requires a host that can dispatch subagents (tool names vary by platform — see `../using-superpowers/references/` for mappings). If your host cannot, work the same problem domains sequentially in-session, keeping each investigation scoped exactly as this skill describes.
+
 ## When to Use
 
 ```dot
@@ -65,12 +67,12 @@ Each agent gets:
 
 ### 3. Dispatch in Parallel
 
-```typescript
-// In Claude Code / AI environment
-Task("Fix agent-tool-abort.test.ts failures")
-Task("Fix batch-completion-behavior.test.ts failures")
-Task("Fix tool-approval-race-conditions.test.ts failures")
-// All three run concurrently
+```text
+# Using your host's subagent dispatch tool
+dispatch("Fix agent-tool-abort.test.ts failures")
+dispatch("Fix batch-completion-behavior.test.ts failures")
+dispatch("Fix tool-approval-race-conditions.test.ts failures")
+# All three run concurrently
 ```
 
 ### 4. Review and Integrate
