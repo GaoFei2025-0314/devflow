@@ -135,20 +135,9 @@ If you find issues, fix them inline. No need to re-review — just fix and move 
 
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+After saving the plan, decide the execution mode yourself and announce it — do not ask the user to choose:
 
-**"Plan complete and saved to `docs/devflow/plans/<filename>.md`. Two execution options:**
+- Plan tasks are mostly independent AND the host supports subagents → **REQUIRED SUB-SKILL:** `../subagent-driven-development/SKILL.md` (fresh subagent per task + two-stage review between tasks).
+- Otherwise → **REQUIRED SUB-SKILL:** `../executing-plans/SKILL.md` (in-session execution with checkpoints), or in-session TDD + incremental implementation for shorter plans.
 
-**1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
-
-**2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
-
-**Which approach?"**
-
-**If Subagent-Driven chosen:**
-- **REQUIRED SUB-SKILL:** Use `../subagent-driven-development/SKILL.md` (requires subagent support)
-- Fresh subagent per task + two-stage review
-
-**If Inline Execution chosen:**
-- **REQUIRED SUB-SKILL:** Use `../executing-plans/SKILL.md`
-- Batch execution with checkpoints for review
+Announce before starting, e.g.: **"Plan complete and saved to `docs/devflow/plans/<filename>.md`. Tasks are mostly independent and this host supports subagents — executing with subagent-driven-development."** The user can override the choice at any point; if the host lacks subagents, say so and fall back (contract in `../using-devflow/SKILL.md`).

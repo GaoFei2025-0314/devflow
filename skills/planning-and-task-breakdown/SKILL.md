@@ -234,7 +234,7 @@ A finished plan is not the end of this skill — hand off to an execution mode e
 
 **3. Separate Session** — hand the plan to a later session via `../executing-plans/SKILL.md`.
 
-State the choice before starting (e.g. "Executing this plan with subagent-driven-development"). If the host lacks subagents, say so and fall back to mode 2 — see the fallback contract in `../using-devflow/SKILL.md`.
+**Decide the mode yourself by the criteria above and announce it before starting** (e.g. "Executing this plan with subagent-driven-development") — do not ask the user to choose; the user can override at any point. If the host lacks subagents, say so and fall back to mode 2 — see the fallback contract in `../using-devflow/SKILL.md`.
 
 ## See Also
 
