@@ -50,23 +50,26 @@ Check this route first. A change qualifies when ALL three hold: **(a) small** �
 
 Announce it: `Using devflow: fast path.`
 
-**Escalate to the full route** the moment any condition stops holding: the fix spreads to a second subsystem, the root cause turns out unclear (→ Bug route), or the change grows a contract or security surface (→ New Feature route, steps 6-7). The fast path is a smaller stack, not a lower standard — the test and verification steps are not optional.
+**Escalate to the full route** the moment any condition stops holding: the fix spreads to a second subsystem, the root cause turns out unclear (→ Bug route), or the change grows a contract or security surface (→ New Feature route, steps 7-8). The fast path is a smaller stack, not a lower standard — the test and verification steps are not optional.
 
 ### New Feature or Significant Change
 
 1. Use `../brainstorming/SKILL.md` when requirements need shaping. Its design doc feeds the next step — do not re-derive requirements that the approved design already answers.
 2. If the project has a change workspace (`specs/` or legacy `openspec/`), the user asks for durable specs, or the change is cross-session, use `../spec-workspace/SKILL.md`.
 3. If no change workspace is used and no approved design doc exists, use `../spec-driven-development/SKILL.md`; then `../planning-and-task-breakdown/SKILL.md`.
-4. Use `../test-driven-development/SKILL.md` for implementation discipline.
-5. Use `../incremental-implementation/SKILL.md` to deliver small verified slices.
-6. Add domain skills only when needed:
+4. **Choose the execution mode** once the plan exists — this step is not optional:
+   - Plan tasks are mostly independent AND the host supports subagents → execute with `../subagent-driven-development/SKILL.md` (fresh subagent per task, two-stage review between tasks; it replaces steps 5-6 below and brings its own review checkpoints).
+   - Otherwise → execute in-session with steps 5-6.
+5. Use `../test-driven-development/SKILL.md` for implementation discipline.
+6. Use `../incremental-implementation/SKILL.md` to deliver small verified slices.
+7. Add domain skills only when needed:
    - API: `../api-and-interface-design/SKILL.md`
    - Frontend UI: `../frontend-ui-engineering/SKILL.md`
    - Frontend visual design: `../frontend-design/SKILL.md`
    - Security: `../security-and-hardening/SKILL.md`
    - Performance: `../performance-optimization/SKILL.md`
    - Observability: `../observability-and-instrumentation/SKILL.md`
-7. Finish with review and verification:
+8. Finish with review and verification:
    - `../code-review-and-quality/SKILL.md`
    - `../verification-before-completion/SKILL.md`
 
@@ -103,11 +106,11 @@ Announce it: `Using devflow: fast path.`
 
 ## Parallel and Multi-Agent Work
 
-Use these only when the task is large enough to benefit from coordination, and only on hosts with subagent support (fallback contract in `../using-devflow/SKILL.md`):
+Requires a host with subagent support (fallback contract in `../using-devflow/SKILL.md`):
 
-- `../subagent-driven-development/SKILL.md`
-- `../dispatching-parallel-agents/SKILL.md`
-- `../using-git-worktrees/SKILL.md`
+- `../subagent-driven-development/SKILL.md` — the default execution mode for plans with mostly independent tasks (see step 4 of the New Feature route); dispatches one implementer subagent per task, sequentially, with reviews between
+- `../dispatching-parallel-agents/SKILL.md` — parallel dispatch, for 2+ *independent investigations* only (unrelated failures/subsystems), never for implementation tasks that could touch the same files
+- `../using-git-worktrees/SKILL.md` — isolated workspaces when parallel streams need separate checkouts
 
 ## Common Mistakes
 

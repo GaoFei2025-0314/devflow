@@ -9,6 +9,8 @@ description: Breaks work into ordered tasks. Use when you have a spec or clear r
 
 Decompose work into small, verifiable tasks with explicit acceptance criteria. Good task breakdown is the difference between an agent that completes work reliably and one that produces a tangled mess. Every task should be small enough to implement, test, and verify in a single focused session.
 
+**Boundary:** This skill produces a task list with acceptance criteria from a spec. For a fully self-contained implementation plan (bite-sized steps with exact code, written for a zero-context executor), use `../writing-plans/SKILL.md` instead. Whichever produced the plan, finish with the Execution Handoff below.
+
 ## When to Use
 
 - You have a spec and need to break it into implementable units
@@ -221,6 +223,18 @@ Before starting implementation, confirm:
 - [ ] No task touches more than ~5 files
 - [ ] Checkpoints exist between major phases
 - [ ] The human has reviewed and approved the plan
+
+## Execution Handoff
+
+A finished plan is not the end of this skill — hand off to an execution mode explicitly:
+
+**1. Subagent-Driven** (requires host subagent support; tasks mostly independent) — execute with `../subagent-driven-development/SKILL.md`: a fresh subagent per task, sequentially, with two-stage review between tasks. Prefer this when available; fresh context per task and enforced review checkpoints produce noticeably higher quality.
+
+**2. In-Session** — execute the tasks yourself, one at a time, following `../test-driven-development/SKILL.md` and `../incremental-implementation/SKILL.md`.
+
+**3. Separate Session** — hand the plan to a later session via `../executing-plans/SKILL.md`.
+
+State the choice before starting (e.g. "Executing this plan with subagent-driven-development"). If the host lacks subagents, say so and fall back to mode 2 — see the fallback contract in `../using-devflow/SKILL.md`.
 
 ## See Also
 
