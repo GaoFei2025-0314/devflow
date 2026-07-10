@@ -66,12 +66,20 @@ Use devflow to plan and implement this feature.
 
 The router picks the relevant skills. For example:
 
+- Small, low-risk change: fast path — focused test, minimal fix, verification checklist only
 - New feature: brainstorming, spec, planning, TDD, incremental implementation, review
 - Bug: systematic debugging, regression test, minimal fix, verification
 - UI work: frontend design and UI engineering, browser testing when useful
 - Shipping: git workflow, CI/CD, launch checklist, verification
 
+## Adapting to Your Project
+
+Devflow's skill examples are TypeScript/web-flavored, but the rules are stack-agnostic — adapt via project instructions instead of editing the bundle. Copy `templates/project-overrides.md` into your project's `CLAUDE.md` (Claude Code) or `AGENTS.md` (Codex) and fill in your stack's commands, the skills that don't apply, and any project-specific exceptions. Project instructions always take precedence over skill defaults.
+
 ## Maintenance
 
 - Run `scripts/check-refs.sh` before committing skill changes — it validates frontmatter, cross-references, and file sizes. CI runs it on every push.
 - **Bump `version` in `.claude-plugin/plugin.json` in any PR that changes skill content.** Installed plugins only receive updates when the version string changes — content changes without a version bump never reach `/plugin update` users.
+- **Keep `README.md` and `README.zh-CN.md` in sync** — any edit to one must be mirrored in the other.
+- **Prune by usage.** After a few weeks of real use, archive or delete skills that never trigger — dead weight in the trigger index costs every session.
+- **Measure skill edits.** When you change a skill, write one line in the PR about the behavior change you expect; check a week later whether it happened. Process without observed effect is process theater — cut it.
