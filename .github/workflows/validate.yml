@@ -19,3 +19,26 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check references, frontmatter, and size budgets
         run: bash scripts/check-refs.sh
+
+  version-bump:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require plugin version bump when skill content changes
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch -q origin "${{ github.base_ref }}"
+          if git diff --quiet "$BASE"...HEAD -- skills/ SKILL.md AGENTS.md templates/; then
+            echo "No skill content changes — version bump not required."
+            exit 0
+          fi
+          OLD=$(git show "$BASE:.claude-plugin/plugin.json" | python3 -c "import json,sys; print(json.load(sys.stdin)['version'])")
+          NEW=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          if [ "$OLD" = "$NEW" ]; then
+            echo "::error file=.claude-plugin/plugin.json::Skill content changed but plugin version is still $OLD — bump it so installed plugins receive the update."
+            exit 1
+          fi
+          echo "Skill content changed and version bumped ($OLD -> $NEW) — OK."

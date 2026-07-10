@@ -228,7 +228,7 @@ Before starting implementation, confirm:
 
 A finished plan is not the end of this skill — hand off to an execution mode explicitly:
 
-**1. Subagent-Driven** (requires host subagent support; tasks mostly independent) — execute with `../subagent-driven-development/SKILL.md`: a fresh subagent per task, sequentially, with two-stage review between tasks. Prefer this when available; fresh context per task and enforced review checkpoints produce noticeably higher quality.
+**1. Subagent-Driven** (requires host subagent support; tasks mostly independent) — execute with `../subagent-driven-development/SKILL.md`: a fresh subagent per task, sequentially, with two-stage review between tasks. Prefer this when available; fresh context per task and enforced review checkpoints produce noticeably higher quality. **Context warning:** a task list is lighter than what a zero-context subagent needs — before dispatching each task, include the relevant spec excerpts and file context in the dispatch prompt. If that context can't be assembled per task, upgrade the plan with `../writing-plans/SKILL.md` (self-contained steps) before dispatching.
 
 **2. In-Session** — execute the tasks yourself, one at a time, following `../test-driven-development/SKILL.md` and `../incremental-implementation/SKILL.md`.
 
