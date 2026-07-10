@@ -17,6 +17,8 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 
 Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
 
+**Fast-path exit:** The gate protects *unclear* work, not *trivial* work. If clarification reveals the change meets ALL THREE of the router's fast-path conditions — small (one file or a few adjacent lines), low-risk (no auth/payment/migration/public-API/security surface), and the cause and fix are already understood — announce the switch ("This qualifies for the fast path") and hand off to the Fast Path in `../devflow/SKILL.md` instead of continuing the design process. Any doubt about any condition → stay in brainstorming.
+
 ## Checklist
 
 You MUST create a task for each of these items and complete them in order:

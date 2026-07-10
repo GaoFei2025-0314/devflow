@@ -7,6 +7,9 @@ Delete any section that doesn't apply. Keep the result short: every line here is
 ```markdown
 ## Devflow overrides for this project
 
+### Routing
+- Development tasks (features, bugs, refactors, reviews, releases) go through the Devflow router FIRST — `devflow:devflow` in Claude Code plugin installs, `skills/devflow/SKILL.md` otherwise. Load individual skills only as the router directs; do not jump straight to an implementation skill on description match alone.
+
 ### Stack
 - Language/runtime: <e.g. Python 3.12 + FastAPI — Devflow skill examples are TypeScript-flavored; translate the pattern, not the syntax>
 - Run tests: <e.g. `pytest -q`> · Focused test: <e.g. `pytest path/to/test.py::test_name -q`>
