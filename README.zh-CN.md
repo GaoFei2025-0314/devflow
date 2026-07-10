@@ -66,12 +66,20 @@ ln -s /path/to/devflow/skills/test-driven-development ~/.codex/skills/test-drive
 
 路由器会自动挑选相关技能。例如：
 
+- 小型低风险改动：快速通道——只走聚焦测试、最小修复、验证清单
 - 新功能：brainstorming、规格、计划、TDD、增量实现、评审
 - 修 Bug：系统化调试、回归测试、最小修复、验证
 - UI 工作：前端设计与 UI 工程，必要时加浏览器测试
 - 发布：git 工作流、CI/CD、上线清单、验证
 
+## 适配你的项目
+
+Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关——通过项目指令来适配，不要直接改 bundle。把 `templates/project-overrides.md` 复制进你项目的 `CLAUDE.md`（Claude Code）或 `AGENTS.md`（Codex），填上你的技术栈命令、不适用的技能清单和项目专属例外。项目指令永远优先于技能默认值。
+
 ## 维护
 
 - 提交技能改动前运行 `scripts/check-refs.sh`——它校验 frontmatter、交叉引用和文件体积。CI 会在每次 push 时运行它。
 - **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`。** 已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
+- **保持 `README.md` 与 `README.zh-CN.md` 同步**——改任何一份都要镜像到另一份。
+- **按使用率修剪。** 真实使用几周后，把从未被触发的技能归档或删除——触发索引里的死重会消耗每一次会话。
+- **度量技能改动。** 每次改技能时，在 PR 里写一句预期的行为变化；一周后回头看是否发生。没有可观察效果的流程就是流程剧场——砍掉它。

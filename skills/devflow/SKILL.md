@@ -39,6 +39,19 @@ If the host has a native skill loader, these directories load as individual skil
 
 ## Routing
 
+### Fast Path (small, low-risk changes)
+
+Check this route first. A change qualifies when ALL three hold: **(a) small** — one file or a few adjacent lines; **(b) low-risk** — no auth, payment, migration, public-API, or security surface; **(c) clear** — the cause and the fix are already understood. Then skip the full routes:
+
+1. If behavior changes, write or update the focused test first (reproduction test for bugs).
+2. Make the minimal change.
+3. Run the focused test, then the relevant broader suite and build.
+4. Close with the Verification checklist in `../test-driven-development/SKILL.md`.
+
+Announce it: `Using devflow: fast path.`
+
+**Escalate to the full route** the moment any condition stops holding: the fix spreads to a second subsystem, the root cause turns out unclear (→ Bug route), or the change grows a contract or security surface (→ New Feature route, steps 6-7). The fast path is a smaller stack, not a lower standard — the test and verification steps are not optional.
+
 ### New Feature or Significant Change
 
 1. Use `../brainstorming/SKILL.md` when requirements need shaping. Its design doc feeds the next step — do not re-derive requirements that the approved design already answers.
@@ -99,6 +112,8 @@ Use these only when the task is large enough to benefit from coordination, and o
 ## Common Mistakes
 
 - Loading the entire bundle for every task. Pick the smallest useful subset.
+- Running a full route for a typo-class change — that's what the Fast Path is for.
+- Stretching the Fast Path over changes with auth, data, API, or multi-file surface — those take the full route.
 - Treating the spec workspace as mandatory. Use it for durable, cross-session changes.
 - Running spec-driven-development after brainstorming already produced an approved design — that re-derives the same content twice.
 - Skipping tests because a spec exists. Specs define intent; tests prove behavior.

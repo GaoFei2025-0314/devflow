@@ -31,6 +31,8 @@ Devflow skills override default system prompt behavior, but **user instructions 
 
 If the user's project instructions say "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
 
+A ready-made override template (stack commands, skills to ignore, fast-path threshold, project-specific exceptions) lives at `../../templates/project-overrides.md` — copy it into the project's CLAUDE.md or AGENTS.md and fill it in.
+
 ## How to Access Skills
 
 **In Claude Code:** Installed as a plugin, skills appear as `devflow:<name>` — invoke them with the `Skill` tool and follow the loaded content directly. Installed as a skill folder instead, only the bundle entrypoint is registered; open the referenced `SKILL.md` files with the Read tool and follow them as instructions.
