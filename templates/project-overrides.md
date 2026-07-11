@@ -20,6 +20,10 @@ Delete any section that doesn't apply. Keep the result short: every line here is
 - Fast path threshold: <default is "single-file, low-risk, cause understood" — tighten or loosen for this repo>
 - Change workspace: <`specs/` | not used — prefer spec-driven-development for one-off specs>
 
+### Human-in-the-loop adjustments
+- Additional operations requiring my approval in this project: <e.g. "any change under src/billing/**", "schema changes even in dev">
+- Operations pre-approved for this project (removed from the Always-ask list at my own risk): <e.g. "direct pushes to main — solo repo, no protection">
+
 ### Project rules that override skill defaults
 - <e.g. "Incident hotfixes: fix first; the regression test lands in the same PR, not before the fix">
 - <e.g. "Generated code under src/gen/** is exempt from TDD">

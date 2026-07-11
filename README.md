@@ -29,6 +29,8 @@ The router (`skills/devflow/SKILL.md`) selects the smallest useful subset of ski
 
 Skills that depend on host capabilities (subagent dispatch, browser MCP) reference a shared fallback contract in `skills/using-devflow/SKILL.md`, so the bundle degrades gracefully on hosts without those features.
 
+High-risk actions are gated by a **Human-in-the-Loop Contract** (also in `skills/using-devflow/SKILL.md`): production deploys, data migrations and deletion, git history rewrites and force-pushes, releases, auth/payment changes, and new external integrations always require explicit user approval before execution — on every route, including the fast path, and for dispatched subagents.
+
 ## Install
 
 ### Claude Code (plugin — recommended)

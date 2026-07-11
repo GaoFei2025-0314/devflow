@@ -56,6 +56,8 @@ If you can't name the trust boundaries for a feature, you're not ready to secure
 
 ### Ask First (Requires Human Approval)
 
+This tier is part of the bundle-wide Human-in-the-Loop Contract (`../using-devflow/SKILL.md`):
+
 - Adding new authentication flows or changing auth logic
 - Storing new categories of sensitive data (PII, payment info)
 - Adding new external service integrations

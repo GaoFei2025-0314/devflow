@@ -116,6 +116,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 2. If the task requires more reasoning, re-dispatch with a more capable model
 3. If the task is too large, break it into smaller pieces
 4. If the plan itself is wrong, escalate to the human
+5. If the task requires an action on the Human-in-the-Loop Always-ask list (`../using-devflow/SKILL.md`), surface it to the user — subagents never perform those actions themselves, and the controller never approves them on the user's behalf
 
 **Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
 
