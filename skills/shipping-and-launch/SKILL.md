@@ -17,6 +17,10 @@ Ship with confidence. The goal is not just to deploy — it's to deploy safely, 
 - Opening a beta or early access program
 - Any deployment that carries risk (all of them)
 
+## Approval Gate (Human-in-the-Loop)
+
+**Executing a production deploy, a rollback, an infrastructure change, or a production database migration always requires explicit user approval first** — preparing them (checklists, plans, staged artifacts) does not. State what will run, the expected effect, and the rollback path, then wait. Full gate list: the Human-in-the-Loop Contract in `../using-devflow/SKILL.md`.
+
 ## The Pre-Launch Checklist
 
 ### Code Quality

@@ -29,6 +29,8 @@ If the host has a native skill loader, these directories load as individual skil
 
 **Platform adaptation:** Skills reference Claude Code tool names in places. Tool mappings for Codex, Copilot CLI, and Gemini CLI — and the shared no-subagent fallback contract — live in `../using-devflow/SKILL.md`.
 
+**Human-in-the-loop:** Irreversible, outward-facing, or security-sensitive actions require explicit user approval before execution, on every route including the fast path — the canonical gate list is the Human-in-the-Loop Contract in `../using-devflow/SKILL.md`.
+
 ## Skill Categories
 
 | Category | Skills | Use for | Avoid when |

@@ -57,6 +57,35 @@ Some skills dispatch subagents (subagent-driven-development, dispatching-paralle
 
 Skills reference this contract rather than restating it.
 
+## Human-in-the-Loop Contract
+
+Some actions require **explicit user approval BEFORE execution**, no matter which skill you are following or how confident you are. Approval means the user said yes to *this specific action* in *this conversation* — a general "go ahead" from an earlier, different context does not carry over.
+
+### Always ask (irreversible, outward-facing, or security-sensitive)
+
+- Production deploys, rollbacks, and infrastructure changes
+- Database migrations on shared or production data; any data deletion or bulk mutation
+- Git history rewrites, force-pushes, branch deletion, and direct pushes to the default branch
+- Publishing or releasing artifacts: packages, tags, public releases
+- Changing authentication/authorization flows, payment logic, or storing new categories of sensitive data (this is security-and-hardening's Ask First tier)
+- Adding external service integrations, or sending code/data to services the project doesn't already use
+- Deleting or overwriting work you did not create in this session
+
+### Ask when you cannot decide (judgment gates)
+
+- The decision changes direction or scope and cannot be derived from the spec, the plan, the code, or project instructions
+- Two legitimate readings of a requirement lead to different implementations
+- A fix requires an architecture change (systematic-debugging's 3-failed-fixes rule)
+- The blast radius or cost of an action is unclear to you
+
+### Proceed without asking (then report)
+
+Reversible, in-scope work the approved plan or design already covers: file edits, local commits on a work branch, running tests and builds, creating files the plan calls for. Do not ask permission for work the user already asked for — over-asking erodes the value of real gates.
+
+**Rules:** batch pending decisions into one message where possible; each request states *what* you want to do, *why*, and the *blast radius*. If the user is unavailable and the action is on the Always-ask list, stop and leave the work in a safe, resumable state — never proceed on the theory that they would have said yes.
+
+**Subagents inherit this contract.** A dispatched subagent must not perform an Always-ask action; it reports the need as BLOCKED to the controller, and the controller surfaces it to the user.
+
 ## Skill Priority
 
 When multiple skills could apply, use this order:

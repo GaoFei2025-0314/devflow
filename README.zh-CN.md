@@ -29,6 +29,8 @@ devflow/
 
 依赖宿主能力的技能（子代理派发、浏览器 MCP）统一引用 `skills/using-devflow/SKILL.md` 中的共享降级契约，因此在不具备这些能力的宿主上也能平稳降级。
 
+高风险操作由 **Human-in-the-Loop 契约**（同在 `skills/using-devflow/SKILL.md`）把关：生产部署、数据迁移与删除、git 历史重写与强推、发布、认证/支付改动、新增外部集成，执行前一律需要用户明确批准——所有路由（含快速通道）和被派发的子代理都受此约束。
+
 ## 安装
 
 ### Claude Code（插件方式——推荐）

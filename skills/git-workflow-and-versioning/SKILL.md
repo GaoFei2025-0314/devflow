@@ -15,6 +15,10 @@ Always. Every code change flows through git.
 
 ## Core Principles
 
+### Approval Gates (Human-in-the-Loop)
+
+These git operations always require explicit user approval before running — no exceptions, regardless of confidence: **history rewrites** (rebase of pushed commits, filter-repo), **force-pushes**, **branch deletion**, and **direct pushes to the default branch**. They are irreversible or affect shared state. Full gate list: the Human-in-the-Loop Contract in `../using-devflow/SKILL.md`.
+
 ### Trunk-Based Development (Recommended)
 
 Keep `main` always deployable. Work in short-lived feature branches that merge back within 1-3 days. Long-lived development branches are hidden costs — they diverge, create merge conflicts, and delay integration. DORA research consistently shows trunk-based development correlates with high-performing engineering teams.

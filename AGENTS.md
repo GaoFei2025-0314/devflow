@@ -17,6 +17,10 @@ Read `skills/devflow/SKILL.md` for the full routing tables. In brief:
 - **UI or browser work** → `skills/frontend-ui-engineering/`, `skills/frontend-design/`, `skills/browser-testing-with-devtools/`.
 - **Shipping or release** → `skills/git-workflow-and-versioning/`, `skills/ci-cd-and-automation/`, `skills/shipping-and-launch/`.
 
+## Human-in-the-loop
+
+Irreversible, outward-facing, or security-sensitive actions (production deploys, data migrations/deletion, force-pushes, history rewrites, releases, auth/payment changes, new external integrations) require explicit user approval before execution — see the Human-in-the-Loop Contract in `skills/using-devflow/SKILL.md`. Subagents inherit the contract.
+
 ## Platform notes
 
 Skills reference Claude Code tool names in places. Tool mappings for Codex, Copilot CLI, and Gemini CLI — and the shared no-subagent fallback contract — are in `skills/using-devflow/SKILL.md`. On hosts without subagent support, use `skills/executing-plans/` instead of `skills/subagent-driven-development/`.
