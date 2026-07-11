@@ -83,5 +83,6 @@ Devflow's skill examples are TypeScript/web-flavored, but the rules are stack-ag
 - Run `scripts/check-refs.sh` before committing skill changes — it validates frontmatter, cross-references, and file sizes. CI runs it on every push.
 - **Bump `version` in `.claude-plugin/plugin.json` in any PR that changes skill content** (CI enforces this on pull requests). Installed plugins only receive updates when the version string changes — content changes without a version bump never reach `/plugin update` users.
 - **Keep `README.md` and `README.zh-CN.md` in sync** — any edit to one must be mirrored in the other.
+- **Routing edits propagate.** Any change to routes, fast-path conditions, or gates in `skills/devflow/SKILL.md` must be mirrored in `AGENTS.md` and both READMEs' route summaries — the router is the source of truth, the other three are condensed copies.
 - **Prune by usage.** After a few weeks of real use, archive or delete skills that never trigger — dead weight in the trigger index costs every session.
 - **Measure skill edits.** When you change a skill, write one line in the PR about the behavior change you expect; check a week later whether it happened. Process without observed effect is process theater — cut it.
