@@ -81,7 +81,7 @@ Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关
 ## 维护
 
 - 提交技能改动前运行 `scripts/check-refs.sh`——它校验 frontmatter、交叉引用和文件体积。CI 会在每次 push 时运行它。
-- **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查）。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
+- **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查），并在 `CHANGELOG.md` 中为新版本补一条记录。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
 - **保持 `README.md` 与 `README.zh-CN.md` 同步**——改任何一份都要镜像到另一份。
 - **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。
 - **按使用率修剪。** 真实使用几周后，把从未被触发的技能归档或删除——触发索引里的死重会消耗每一次会话。
