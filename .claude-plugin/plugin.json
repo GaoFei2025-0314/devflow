@@ -1,7 +1,7 @@
 {
   "name": "devflow",
   "description": "Devflow: a complete AI development workflow — routing, specs, planning, TDD, debugging, review, frontend, security, performance, CI/CD, and shipping skills.",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": {
     "name": "GaoFei2025-0314"
   }

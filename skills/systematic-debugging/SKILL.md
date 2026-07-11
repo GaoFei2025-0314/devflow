@@ -230,7 +230,6 @@ If you catch yourself thinking:
 | "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
 | "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
 | "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
-| "One more fix attempt" (after 2+ failures) | 3+ failures = architectural problem. Question pattern, don't fix again. |
 | "The failing test is probably wrong" | Verify that assumption. If the test is wrong, fix the test — don't skip it. |
 | "It's a flaky test, ignore it" | Flaky tests mask real bugs. Find why it's intermittent. |
 
