@@ -15,6 +15,8 @@ Use Devflow when the user asks for feature work, bug fixing, refactoring, code r
 
 Before selecting a route or acting, **read and apply** the canonical phase contract at `../using-devflow/references/phase-contract.md`, unless its still-valid text is already available in the current context. It defines the requested deliverable, legal phase endpoints, treatment of new messages, and completion reconciliation for every route. This one shared contract does not require loading unrelated skills.
 
+Before any state-changing operation, **read and apply** the canonical authorization contract at `../using-devflow/references/authorization-contract.md`, unless its still-valid text is already available. Execute only when a grant from an applicable source has actually taken effect for that action, target, environment, scope, and conditions. Draft, example, or described future approval text does not grant authority; if a grant requires a later authorized user event, that event must actually arrive through the applicable host source. Reuse existing grants whose stated conditions are satisfied, and keep independent authorized preparation moving when only a dependent operation is waiting.
+
 Pick the phase, then load only the skill files needed for that phase. Do not load every skill by default.
 
 Before work starts, state the selected stack in one short line:
