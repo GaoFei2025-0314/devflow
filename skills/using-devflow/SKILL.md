@@ -4,7 +4,7 @@ description: Explains how to find, invoke, and prioritize the Devflow skills, in
 ---
 
 <SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, skip this skill.
+If you were dispatched as a subagent to execute a specific task, do not reroute the assignment or load unrelated skills. You must still read and apply the shared Phase and Delivery Contract below and the Human-in-the-Loop Contract in this file; their scope, authorization, and completion boundaries apply to the assigned task.
 </SUBAGENT-STOP>
 
 # Using Devflow

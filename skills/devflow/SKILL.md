@@ -13,6 +13,8 @@ Use Devflow when the user asks for feature work, bug fixing, refactoring, code r
 
 ## Core Rule
 
+Before selecting a route or acting, **read and apply** the canonical phase contract at `../using-devflow/references/phase-contract.md`, unless its still-valid text is already available in the current context. It defines the requested deliverable, legal phase endpoints, treatment of new messages, and completion reconciliation for every route. This one shared contract does not require loading unrelated skills.
+
 Pick the phase, then load only the skill files needed for that phase. Do not load every skill by default.
 
 Before work starts, state the selected stack in one short line:
