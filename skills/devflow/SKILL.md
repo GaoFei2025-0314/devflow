@@ -23,6 +23,8 @@ Before selecting a route or acting, **read and apply** the canonical phase contr
 
 Before any state-changing operation, **read and apply** the canonical authorization contract at `../using-devflow/references/authorization-contract.md`, unless its still-valid text is already available. Use the authorization gate above at the operation boundary; contract loading and workflow progress do not replace that check.
 
+Before selecting checks, recording or reusing results, or making an evidence-dependent status claim, **read and apply** the canonical evidence contract at `../using-devflow/references/evidence-contract.md`, unless its still-valid text is already available. Keep status reports concise, but identify the checked object and scope and cite the evidence source; reuse still-valid evidence when its relevant state has not changed.
+
 Pick the phase, then load only the skill files needed for that phase. Do not load every skill by default.
 
 Before work starts, state the selected stack in one short line:
