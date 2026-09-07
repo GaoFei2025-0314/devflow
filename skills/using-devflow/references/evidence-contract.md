@@ -27,6 +27,8 @@ An evidence record must make these fields recoverable from the record itself or 
 | **Result and status** | The observed exit/result, counts or relevant output, and one truthful status from the table below. |
 | **Source** | A durable log, report, tool result, screenshot, reviewer/human record, or other locator that supports the result. |
 
+When communicating a status or completion claim, bind the reported result to the concrete object it covers. For a check whose result depends on file bytes, identify the applicable source, test, or documentation paths, or cite a stable evidence record that identifies those paths. For a service, dataset, UI flow, or other non-file object, use the appropriate concrete identifier. Carry the operation and result, material coverage limits, and the source of supplied or reused evidence. A concise report need not repeat every evidence-record field, but a generic check title or unnamed set of files does not identify the verified scope.
+
 Git `HEAD` alone is not a state identity: working-tree edits, participating untracked files, lockfiles, configuration, data, runtime, and external state may differ while `HEAD` remains unchanged. A subagent report, skill example, historical summary, or assertion that something looks correct is not by itself proof that the current object passed. Apply the source and attribution rules in the [Authorization and Trust Contract](authorization-contract.md).
 
 ## Use explicit statuses
