@@ -1,204 +1,91 @@
 ---
 name: spec-driven-development
-description: Creates specs before coding. Use when starting a new project, feature, or significant change and no specification exists yet, or when requirements only exist as a vague idea. Not for projects with a specs/ change workspace (use the spec-workspace skill) or small changes where a spec adds ceremony.
+description: Creates a standalone, reviewable specification when requirements need a written source of truth and no durable change workspace is requested. Use for one-document Specs; skip when valid requirements already suffice for the requested phase.
 ---
 
 # Spec-Driven Development
 
-## Overview
+Create the Spec the user requested, at a depth proportionate to the change. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md) to determine the requested endpoint and the [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before any state change. A Spec defines intent and acceptance; it does not itself authorize planning, implementation, Git actions, or external delivery.
 
-Write a structured specification before writing any code. The spec is the shared source of truth between you and the human engineer — it defines what we're building, why, and how we'll know it's done. Code without a spec is guessing.
+## When To Use
 
-## When to Use
+Use this skill when the requested result is a standalone Spec, a new project or significant change needs one written source of truth, or materially incomplete requirements must be made reviewable before later work. Use [brainstorming](../brainstorming/SKILL.md) first only when consequential product choices still need shaping.
 
-- Starting a new project or feature
-- Requirements are ambiguous or incomplete
-- The change touches multiple files or modules
-- You're about to make an architectural decision
-- The task would take more than 30 minutes to implement
+If the user explicitly requests durable cross-session artifacts or the repository already has an applicable change workspace, use [spec-workspace](../spec-workspace/SKILL.md). Do not add a Spec ceremony to a tiny, unambiguous change when its acceptance conditions are already clear, and do not rewrite a still-valid approved Spec merely because a later phase begins.
 
-**When NOT to use:** Single-line fixes, typo corrections, or changes where requirements are unambiguous and self-contained.
+## Start From Existing Decisions
 
-## The Gated Workflow
+Read the smallest relevant project context, existing design or Spec, plan, conventions, and user answers. Reuse decisions that remain valid and preserve their provenance when it matters to review. Investigate project facts before asking the user.
 
-Spec-driven development has four phases. Do not advance to the next phase until the current one is validated.
+Clarify only a missing or conflicting choice that could materially change scope, architecture, user-visible behavior, data handling, risk, cost, or acceptance. State what is unknown and how the answers change the Spec. Combine related choices when useful and continue independent work that does not depend on the answer. Resolve ordinary choices from established conventions.
 
-```
-SPECIFY ──→ PLAN ──→ TASKS ──→ IMPLEMENT
-   │          │        │          │
-   ▼          ▼        ▼          ▼
- Human      Human    Human      Human
- reviews    reviews  reviews    reviews
-```
+## Write One Complete Spec
 
-### Phase 1: Specify
-
-Start with a high-level vision. Ask the human clarifying questions until requirements are concrete.
-
-**Surface assumptions immediately.** Before writing any spec content, list what you're assuming:
-
-```
-ASSUMPTIONS I'M MAKING:
-1. This is a web application (not native mobile)
-2. Authentication uses session-based cookies (not JWT)
-3. The database is PostgreSQL (based on existing Prisma schema)
-4. We're targeting modern browsers only (no IE11)
-→ Correct me now or I'll proceed with these.
-```
-
-Don't silently fill in ambiguous requirements. The spec's entire purpose is to surface misunderstandings *before* code gets written — assumptions are the most dangerous form of misunderstanding.
-
-**Write a spec document covering these six core areas:**
-
-1. **Objective** — What are we building and why? Who is the user? What does success look like?
-
-2. **Commands** — Full executable commands with flags, not just tool names.
-   ```
-   Build: npm run build
-   Test: npm test -- --coverage
-   Lint: npm run lint --fix
-   Dev: npm run dev
-   ```
-
-3. **Project Structure** — Where source code lives, where tests go, where docs belong.
-   ```
-   src/           → Application source code
-   src/components → React components
-   src/lib        → Shared utilities
-   tests/         → Unit and integration tests
-   e2e/           → End-to-end tests
-   docs/          → Documentation
-   ```
-
-4. **Code Style** — One real code snippet showing your style beats three paragraphs describing it. Include naming conventions, formatting rules, and examples of good output.
-
-5. **Testing Strategy** — What framework, where tests live, coverage expectations, which test levels for which concerns.
-
-6. **Boundaries** — Three-tier system:
-   - **Always do:** Run tests before commits, follow naming conventions, validate inputs
-   - **Ask first:** Database schema changes, adding dependencies, changing CI config
-   - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
-
-**Spec template:**
+A single document is a complete and legal deliverable. Adapt its sections to the subject; do not require mirrored documents or empty template sections. The Spec should contain enough of the following to make the request reviewable:
 
 ```markdown
-# Spec: [Project/Feature Name]
+# Spec: <Project or Feature>
 
-## Objective
-[What we're building and why. User stories or acceptance criteria.]
+Status: Draft | Reviewed
+Implementation: Not started
 
-## Tech Stack
-[Framework, language, key dependencies with versions]
+## Problem and Objective
+What problem is being solved, for whom, and what success means.
 
-## Commands
-[Build, test, lint, dev — full commands]
+## Scope
+Included behavior, affected users or systems, and explicit non-goals.
 
-## Project Structure
-[Directory layout with descriptions]
+## Requirements
+Observable requirements, constraints, and relevant interfaces or data behavior.
 
-## Code Style
-[Example snippet + key conventions]
+## Acceptance Scenarios
+- GIVEN <initial state>
+- WHEN <action>
+- THEN <observable result>
 
-## Testing Strategy
-[Framework, test locations, coverage requirements, test levels]
-
-## Boundaries
-- Always: [...]
-- Ask first: [...]
-- Never: [...]
-
-## Success Criteria
-[How we'll know this is done — specific, testable conditions]
-
-## Open Questions
-[Anything unresolved that needs human input]
-```
-
-**Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete conditions:
-
-```
-REQUIREMENT: "Make the dashboard faster"
-
-REFRAMED SUCCESS CRITERIA:
-- Dashboard LCP < 2.5s on 4G connection
-- Initial data load completes in < 500ms
-- No layout shift during load (CLS < 0.1)
-→ Are these the right targets?
-```
-
-This lets you loop, retry, and problem-solve toward a clear goal rather than guessing what "faster" means.
-
-### Phase 2: Plan
-
-With the validated spec, generate a technical implementation plan:
-
-1. Identify the major components and their dependencies
-2. Determine the implementation order (what must be built first)
-3. Note risks and mitigation strategies
-4. Identify what can be built in parallel vs. what must be sequential
-5. Define verification checkpoints between phases
-
-> Follow `planning-and-task-breakdown` for the dependency-graph mapping and vertical-slicing mechanics behind these steps; it is the canonical source. The bullets above are a lightweight summary; if they ever diverge, `planning-and-task-breakdown` takes precedence.
-
-The plan should be reviewable: the human should be able to read it and say "yes, that's the right approach" or "no, change X."
-
-### Phase 3: Tasks
-
-Break the plan into discrete, implementable tasks:
-
-- Each task should be completable in a single focused session
-- Each task has explicit acceptance criteria
-- Each task includes a verification step (test, build, manual check)
-- Tasks are ordered by dependency, not by perceived importance
-- No task should require changing more than ~5 files
-
-> Follow `planning-and-task-breakdown` for the full task-sizing and dependency-ordering mechanics; it is the canonical source. The template below is a lightweight inline form; if they ever diverge, `planning-and-task-breakdown` takes precedence.
-
-**Task template:**
-```markdown
-- [ ] Task: [Description]
-  - Acceptance: [What must be true when done]
-  - Verify: [How to confirm — test command, build, manual check]
-  - Files: [Which files will be touched]
-```
-
-### Phase 4: Implement
-
-Execute tasks one at a time following `../incremental-implementation/SKILL.md` and `../test-driven-development/SKILL.md`. Load only the spec sections and source files relevant to the current task rather than flooding the context with the entire spec.
-
-## Keeping the Spec Alive
-
-The spec is a living document, not a one-time artifact:
-
-- **Update when decisions change** — If you discover the data model needs to change, update the spec first, then implement.
-- **Update when scope changes** — Features added or cut should be reflected in the spec.
-- **Commit the spec** — The spec belongs in version control alongside the code.
-- **Reference the spec in PRs** — Link back to the spec section that each PR implements.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "This is simple, I don't need a spec" | Simple tasks don't need *long* specs, but they still need acceptance criteria. A two-line spec is fine. |
-| "I'll write the spec after I code it" | That's documentation, not specification. The spec's value is in forcing clarity *before* code. |
-| "The spec will slow us down" | A 15-minute spec prevents hours of rework. Waterfall in 15 minutes beats debugging in 15 hours. |
-| "Requirements will change anyway" | That's why the spec is a living document. An outdated spec is still better than no spec. |
-| "The user knows what they want" | Even clear requests have implicit assumptions. The spec surfaces those assumptions. |
-
-## Red Flags
-
-- Starting to write code without any written requirements
-- Asking "should I just start building?" before clarifying what "done" means
-- Implementing features not mentioned in any spec or task list
-- Making architectural decisions without documenting them
-- Skipping the spec because "it's obvious what to build"
+## Design Decisions
+Chosen approach, rationale, material alternatives, and decision sources.
 
 ## Verification
+How each important requirement will be checked; include relevant project commands when known.
 
-Before proceeding to implementation, confirm:
+## Risks and Limitations
+Material failure modes, mitigations, assumptions, and current limits.
 
-- [ ] The spec covers all six core areas
-- [ ] The human has reviewed and approved the spec
-- [ ] Success criteria are specific and testable
-- [ ] Boundaries (Always/Ask First/Never) are defined
-- [ ] The spec is saved to a file in the repository
+## Open Questions
+Only unresolved issues with a material effect, or "None".
+```
+
+For a small Spec, combine sections while retaining the problem, objective, scope, non-goals, observable requirements, testable acceptance, risks, decision evidence, status, and implementation state. Add technical stack, commands, project structure, code style, testing levels, rollout, migration, or operational boundaries only when they affect the requested change or help a later executor. Use full executable commands when commands are part of the contract, and follow the project's actual package manager and conventions.
+
+Translate subjective goals into observable acceptance. If a numeric target or product threshold cannot be derived and would materially change success, present it as a focused decision rather than inventing it. Distinguish constraints that always apply, actions requiring authorization, and prohibited actions by referring to applicable project policy and the shared authorization contract instead of copying a new global control list into every Spec.
+
+## Review The Spec
+
+Before marking the document ready:
+
+1. Scan for `TBD`, `TODO`, placeholders, vague requirements, and unsupported status claims.
+2. Check that objective, requirements, decisions, and acceptance scenarios agree.
+3. Confirm scope and non-goals keep the work bounded.
+4. Confirm each material requirement is observable and has an appropriate verification path.
+5. Record unresolved consequential questions with their impact; do not conceal them as assumptions.
+6. Confirm the artifact says whether it is draft or reviewed and that implementation has not begun when the request is document-only.
+
+Fix issues that existing evidence resolves. Ask only for a human judgment that remains necessary.
+
+## Endpoint And Later Phases
+
+When the requested Spec is reviewable, report **document ready** and stop if the request was Spec-only. An explanation may remain in the conversation if no file was requested. Do not create a worktree or branch, commit the Spec, push, open a pull request, create an implementation plan, or write code merely because the Spec is ready or approved. Record unrelated implementation or installation defects in the Spec when relevant; do not fix them outside scope.
+
+If the current request separately includes planning or implementation and provides applicable authorization, route that phase through the Devflow router. Reuse this Spec rather than re-deriving it. Use [writing-plans](../writing-plans/SKILL.md) or [planning-and-task-breakdown](../planning-and-task-breakdown/SKILL.md) only when planning is part of the requested deliverable, and use the selected implementation and verification skills only when implementation is actually authorized.
+
+Keep the Spec current when later authorized work changes a decision or accepted scope. Version-control, pull-request, archive, and delivery actions follow project policy and the shared [Delivery Contract](../using-devflow/references/delivery-contract.md); they are not automatic consequences of maintaining the document.
+
+## Common Errors
+
+- Repeating discovery or approval for still-valid requirements and decisions.
+- Surfacing every ordinary implementation choice as a user question.
+- Forcing fixed tech-stack, command, structure, or style sections when they do not affect the requested Spec.
+- Calling a short Spec complete after omitting non-goals, testable acceptance, risks, or decision evidence.
+- Treating Spec review as authorization for planning, implementation, commits, or delivery.
+- Requiring a durable multi-file workspace when the user asked for one Spec.
