@@ -13,6 +13,8 @@ If you were dispatched as a subagent to execute a specific task, skip this skill
 
 **Check for a matching skill BEFORE responding or acting.** If a skill plausibly applies to the task, read it and follow it — knowing the concept is not the same as following the skill, and skills evolve, so read the current version rather than working from memory.
 
+Before choosing a route or changing phases, apply the shared [Phase and Delivery Contract](references/phase-contract.md). It defines each phase's inputs and legal terminal states, how new user messages affect active work, and the evidence required for completion claims. Phases organize work but never grant action permission: a saved or accepted plan does not automatically authorize implementation or delivery.
+
 Balance this against the router's Core Rule: load the **smallest useful subset** for the phase you are in. "Check before acting" governs *when* you look for a skill; "smallest useful subset" governs *how many* you load. Checking is cheap (descriptions only); loading full skills is the cost to ration.
 
 Three specific moments where the check is most often skipped:
