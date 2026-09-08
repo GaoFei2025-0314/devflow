@@ -1,244 +1,126 @@
 ---
 name: shipping-and-launch
-description: Prepares production launches. Use when preparing to deploy to production. Use when you need a pre-launch checklist, when setting up monitoring, when planning a staged rollout, or when you need a rollback strategy.
+description: Prepares production launches. Use when preparing to deploy to production, defining rollout and recovery, or verifying a release after an authorized launch.
 ---
 
 # Shipping and Launch
 
 ## Overview
 
-Ship with confidence. The goal is not just to deploy — it's to deploy safely, with monitoring in place, a rollback plan ready, and a clear understanding of what success looks like. Every launch should be reversible, observable, and incremental.
+Prepare a release so its artifact, target, risks, verification, rollout, and recovery are reviewable before any protected action. A launch should be observable and recoverable, with scope and decision criteria suited to the project. Preparation can finish independently; deploying, releasing, rolling back, changing infrastructure, migrating production data, notifying people, and cleanup are separate actions.
+
+Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md).
 
 ## When to Use
 
-- Deploying a feature to production for the first time
-- Releasing a significant change to users
-- Migrating data or infrastructure
-- Opening a beta or early access program
-- Any deployment that carries risk (all of them)
+- Preparing or executing a production deployment or public release
+- Planning a staged rollout, beta, or early-access program
+- Defining health checks, monitoring, rollback, or recovery
+- Coordinating an operational change involving data or infrastructure
 
-## Approval Gate (Human-in-the-Loop)
+Use the migration skill for migration design and compatibility. Add security, performance, accessibility, or other domain guidance only when the release touches that risk surface.
 
-**Executing a production deploy, a rollback, an infrastructure change, or a production database migration always requires explicit user approval first** — preparing them (checklists, plans, staged artifacts) does not. State what will run, the expected effect, and the rollback path, then wait. Full gate list: the Human-in-the-Loop Contract in `../using-devflow/SKILL.md`.
+## Separate Preparation From Execution
 
-## The Pre-Launch Checklist
+Launch preparation should resolve:
 
-### Code Quality
+- the exact artifact or revision, target environment, affected users or systems, and rollout scope;
+- the project's delivery policy and the evidence required at this boundary;
+- prerequisites, owners, decision points, expected effects, and stop conditions;
+- health checks, observability, recovery options, and residual risks; and
+- each protected or outward-facing action that still needs authorization.
 
-- [ ] All tests pass (unit, integration, e2e)
-- [ ] Build succeeds with no warnings
-- [ ] Lint and type checking pass
-- [ ] Code reviewed and approved
-- [ ] No TODO comments that should be resolved before launch
-- [ ] No `console.log` debugging statements in production code
-- [ ] Error handling covers expected failure modes
+Completing this preparation does not execute or authorize a deployment. Immediately before each state-changing action, establish the authorization record required by the Authorization and Trust Contract. Reuse an effective grant when its action, target, environment, scope, source, conditions, and current validity still match. A changed environment, artifact, scope, or unavailable approval source requires a new decision only for the affected action.
 
-### Security
+Merge approval is not deployment or public-release approval. A deployment grant does not cover rollback, production-data cleanup, a different environment, notifications, or later branch and worktree removal unless its terms explicitly include them.
 
-- [ ] No secrets in code or version control
-- [ ] `npm audit` shows no critical or high vulnerabilities
-- [ ] Input validation on all user-facing endpoints
-- [ ] Authentication and authorization checks in place
-- [ ] Security headers configured (CSP, HSTS, etc.)
-- [ ] Rate limiting on authentication endpoints
-- [ ] CORS configured to specific origins (not wildcard)
+## Release Readiness
 
-### Performance
+Select checklist items from the release's behavior, dependencies, risk, and mandatory project gates. Mark irrelevant items not applicable with a reason instead of treating this list as universal.
 
-- [ ] Core Web Vitals within "Good" thresholds
-- [ ] No N+1 queries in critical paths
-- [ ] Images optimized (compression, responsive sizes, lazy loading)
-- [ ] Bundle size within budget
-- [ ] Database queries have appropriate indexes
-- [ ] Caching configured for static assets and repeated queries
+### Artifact and Delivery State
 
-### Accessibility
+- [ ] Exact artifact, revision, environment, and scope identified
+- [ ] The agreed work package is complete under project policy; partial increments are still reported as progress
+- [ ] Required implementation review is resolved or an accepted deferral is recorded
+- [ ] Push, pull request, merge, deploy, release, install, and cleanup states are reported separately
 
-- [ ] Keyboard navigation works for all interactive elements
-- [ ] Screen reader can convey page content and structure
-- [ ] Color contrast meets WCAG 2.1 AA (4.5:1 for text)
-- [ ] Focus management correct for modals and dynamic content
-- [ ] Error messages are descriptive and associated with form fields
-- [ ] No accessibility warnings in axe-core or Lighthouse
+### Verification and Evidence
 
-### Infrastructure
+- [ ] Actual project commands and required checks identified from project policy and files
+- [ ] Checks cover the affected behavior and dependency boundaries
+- [ ] Required checks pass for the relevant state; failures, investigations, and justified retries remain recorded
+- [ ] Existing warnings are distinguished from warnings introduced or exposed by the release
+- [ ] Required runtime, browser, API, manual, or stakeholder observations are complete or truthfully pending/deferred
 
-- [ ] Environment variables set in production
-- [ ] Database migrations applied (or ready to apply)
-- [ ] DNS and SSL configured
-- [ ] CDN configured for static assets
-- [ ] Logging and error reporting configured
-- [ ] Health check endpoint exists and responds
+### Security and Data
 
-### Documentation
+- [ ] No secrets are embedded in code, workflow files, logs, or release artifacts
+- [ ] Authentication, authorization, privacy, input validation, dependency, and configuration checks are complete where affected
+- [ ] Telemetry uses an existing authorized destination and approved data handling
+- [ ] Schema, shared-data, cleanup, and destructive recovery steps have their own impact and authorization boundaries
 
-- [ ] README updated with any new setup requirements
-- [ ] API documentation current
-- [ ] ADRs written for any architectural decisions
-- [ ] Changelog updated
-- [ ] User-facing documentation updated (if applicable)
+### Operations and Documentation
 
-## Feature Flag Strategy
+- [ ] Production configuration, health endpoints, logging, alerting, capacity, DNS, certificates, and dependencies are checked where applicable
+- [ ] Success, hold, rollback, and escalation criteria use project baselines and service objectives
+- [ ] Runbooks, API or user documentation, changelog, and operator notes are current where affected
+- [ ] A written recovery plan identifies exact targets, commands or procedures to verify, expected effects, and post-action checks
 
-Ship behind feature flags to decouple deployment from release (code example in `references/examples.md`).
+## Feature Flags and Staged Rollout
 
-**Feature flag lifecycle:**
+Feature flags can separate deployment from user exposure when the system already supports them and both states can be verified. They do not make unfinished work complete, bypass the project's push/PR readiness policy, or authorize an early merge or deployment.
 
-```
-1. DEPLOY with flag OFF     → Code is in production but inactive
-2. ENABLE for team/beta     → Internal testing in production environment
-3. GRADUAL ROLLOUT          → 5% → 25% → 50% → 100% of users
-4. MONITOR at each stage    → Watch error rates, performance, user feedback
-5. CLEAN UP                 → Remove flag and dead code path after full rollout
-```
+For each applicable flag, record an owner, intended lifetime, removal condition, state-specific tests, and recovery behavior. Flag cleanup is a later code change and delivery action under project policy; a target date is planning, not permission to remove it.
 
-**Rules:**
-- Every feature flag has an owner and an expiration date
-- Clean up flags within 2 weeks of full rollout
-- Don't nest feature flags (creates exponential combinations)
-- Test both flag states (on and off) in CI
+A possible staged rollout is:
 
-## Staged Rollout
+1. Verify the candidate in the appropriate pre-production environment.
+2. Deploy the identified production artifact under applicable authorization, with exposure disabled when supported.
+3. Confirm deployment health and telemetry.
+4. Enable a bounded cohort, compare it with an applicable baseline, and hold for the observation window justified by traffic and risk.
+5. Increase exposure only when the project's success criteria pass; otherwise hold or prepare the appropriate recovery action.
+6. Verify full exposure and schedule any separately authorized cleanup.
 
-### The Rollout Sequence
+Percentages, observation windows, and thresholds such as a percentage change in errors or latency are examples to calibrate from service objectives, traffic volume, business risk, and baseline variance. They are not universal gates or grants to advance or roll back.
 
-```
-1. DEPLOY to staging
-   └── Full test suite in staging environment
-   └── Manual smoke test of critical flows
+## Monitoring and Post-Launch Verification
 
-2. DEPLOY to production (feature flag OFF)
-   └── Verify deployment succeeded (health check)
-   └── Check error monitoring (no new errors)
+Observe only signals relevant to the release, such as:
 
-3. ENABLE for team (flag ON for internal users)
-   └── Team uses the feature in production
-   └── 24-hour monitoring window
+- application errors, latency, volume, saturation, queues, and dependency health;
+- client errors and user-facing performance for affected interfaces;
+- data integrity, reconciliation, and migration progress where applicable; and
+- business or safety indicators that define the release's expected result.
 
-4. CANARY rollout (flag ON for 5% of users)
-   └── Monitor error rates, latency, user behavior
-   └── Compare metrics: canary vs. baseline
-   └── 24-48 hour monitoring window
-   └── Advance only if all thresholds pass (see table below)
+After each authorized rollout step, verify the deployed artifact and target, health checks, critical flows, logs or telemetry, and applicable data invariants. Record the operation, time, environment, result, source, and limits. Static checks do not prove production behavior, and a passing unrelated check cannot override a required failure.
 
-5. GRADUAL increase (25% -> 50% -> 100%)
-   └── Same monitoring at each step
-   └── Ability to roll back to previous percentage at any point
+Telemetry examples in [references/examples.md](references/examples.md) assume an existing authorized integration. Introducing a service or sending identifiers is a separate integration, privacy, and configuration decision.
 
-6. FULL rollout (flag ON for all users)
-   └── Monitor for 1 week
-   └── Clean up feature flag
-```
+## Rollback and Recovery
 
-### Rollout Decision Thresholds
+Prepare recovery before launch. The plan should cover:
 
-Use these thresholds to decide whether to advance, hold, or roll back at each stage:
+- trigger conditions and who evaluates them;
+- exact affected artifact, environment, data, and consumers;
+- available methods such as disabling exposure, redeploying a known artifact, restoring compatibility, forward-fixing, or applying a verified data recovery procedure;
+- ordering, prerequisites, expected duration, data loss or consistency risk, and the point of no simple return; and
+- health, behavior, and data observations after recovery.
 
-| Metric | Advance (green) | Hold and investigate (yellow) | Roll back (red) |
-|--------|-----------------|-------------------------------|-----------------|
-| Error rate | Within 10% of baseline | 10-100% above baseline | >2x baseline |
-| P95 latency | Within 20% of baseline | 20-50% above baseline | >50% above baseline |
-| Client JS errors | No new error types | New errors at <0.1% of sessions | New errors at >0.1% of sessions |
-| Business metrics | Neutral or positive | Decline <5% (may be noise) | Decline >5% |
+Recovery may require several actions. Do not assume it is a single command, that a database change is reversible, or that immediate rollback is safer than holding or forward repair. A written command is a candidate until it is verified against the project and target. Planning recovery does not authorize a rollback, push, history change, data deletion, overwrite, or consumer notification.
 
-### When to Roll Back
+A copyable preparation template is in [references/examples.md](references/examples.md).
 
-Roll back immediately if:
-- Error rate increases by more than 2x baseline
-- P95 latency increases by more than 50%
-- User-reported issues spike
-- Data integrity issues detected
-- Security vulnerability discovered
+## Delivery State
 
-## Monitoring and Observability
+Before launch, report the completed preparation, exact evidence, failures or deferred observations, and the concrete pending action. After an authorized launch step, report what actually ran and the resulting observations. Keep required failures blocking until diagnosed and reverified; preserve earlier failures and retry reasons even after a later pass.
 
-### What to Monitor
-
-```
-Application metrics:
-├── Error rate (total and by endpoint)
-├── Response time (p50, p95, p99)
-├── Request volume
-├── Active users
-└── Key business metrics (conversion, engagement)
-
-Infrastructure metrics:
-├── CPU and memory utilization
-├── Database connection pool usage
-├── Disk space
-├── Network latency
-└── Queue depth (if applicable)
-
-Client metrics:
-├── Core Web Vitals (LCP, INP, CLS)
-├── JavaScript errors
-├── API error rates from client perspective
-└── Page load time
-```
-
-### Error Reporting
-
-Client side: an error boundary that reports the error with component stack, user, and page, then renders a retry fallback. Server side: a final error middleware that reports with request context and returns a generic message — never internals — to the user. Worked code in `references/examples.md`.
-
-### Post-Launch Verification
-
-In the first hour after launch:
-
-```
-1. Check health endpoint returns 200
-2. Check error monitoring dashboard (no new error types)
-3. Check latency dashboard (no regression)
-4. Test the critical user flow manually
-5. Verify logs are flowing and readable
-6. Confirm rollback mechanism works (dry run if possible)
-```
-
-## Rollback Strategy
-
-Every deployment needs a written rollback plan before it happens, covering: trigger conditions (error rate, latency, user reports), rollback steps (flag off, or revert + redeploy), database considerations (migration rollback, data cleanup), and expected time-to-rollback per method. Copy-paste template in `references/examples.md`.
+Do not imply that launch preparation, a green CI run, human acceptance, merge approval, or a recovery plan performed or authorized another delivery step.
 
 ## See Also
 
-- For the project-wide Definition of Done that every change must clear before this checklist, see `../incremental-implementation/references/definition-of-done.md`
-- For security pre-launch checks, see `../security-and-hardening/SKILL.md` (Security Review Checklist)
-- For performance pre-launch verification, see `../performance-optimization/SKILL.md` (Performance Budget and Verification)
-- For accessibility verification before launch, see `../frontend-ui-engineering/SKILL.md`
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "It works in staging, it'll work in production" | Production has different data, traffic patterns, and edge cases. Monitor after deploy. |
-| "We don't need feature flags for this" | Every feature benefits from a kill switch. Even "simple" changes can break things. |
-| "Monitoring is overhead" | Not having monitoring means you discover problems from user complaints instead of dashboards. |
-| "We'll add monitoring later" | Add it before launch. You can't debug what you can't see. |
-| "Rolling back is admitting failure" | Rolling back is responsible engineering. Shipping a broken feature is the failure. |
-
-## Red Flags
-
-- Deploying without a rollback plan
-- No monitoring or error reporting in production
-- Big-bang releases (everything at once, no staging)
-- Feature flags with no expiration or owner
-- No one monitoring the deploy for the first hour
-- Production environment configuration done by memory, not code
-- "It's Friday afternoon, let's ship it"
-
-## Verification
-
-Before deploying:
-
-- [ ] Pre-launch checklist completed (all sections green)
-- [ ] Feature flag configured (if applicable)
-- [ ] Rollback plan documented
-- [ ] Monitoring dashboards set up
-- [ ] Team notified of deployment
-
-After deploying:
-
-- [ ] Health check returns 200
-- [ ] Error rate is normal
-- [ ] Latency is normal
-- [ ] Critical user flow works
-- [ ] Logs are flowing
-- [ ] Rollback tested or verified ready
+- Project-wide completion baseline: [Definition of Done](../incremental-implementation/references/definition-of-done.md)
+- Migration and compatibility: [Deprecation and Migration](../deprecation-and-migration/SKILL.md)
+- Security review: [Security and Hardening](../security-and-hardening/SKILL.md)
+- Performance verification: [Performance Optimization](../performance-optimization/SKILL.md)
+- UI and accessibility verification: [Frontend UI Engineering](../frontend-ui-engineering/SKILL.md)

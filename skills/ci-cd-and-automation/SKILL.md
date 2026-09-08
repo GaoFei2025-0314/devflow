@@ -1,184 +1,113 @@
 ---
 name: ci-cd-and-automation
-description: Automates CI/CD pipeline setup. Use when setting up or modifying build and deployment pipelines. Use when you need to automate quality gates, configure test runners in CI, or establish deployment strategies.
+description: Designs and maintains CI/CD pipelines. Use when selecting automated gates, configuring CI diagnostics or deployment mechanisms, or investigating pipeline failures.
 ---
 
 # CI/CD and Automation
 
 ## Overview
 
-Automate quality gates so that no change reaches production without passing tests, lint, type checking, and build. CI/CD is the enforcement mechanism for every other skill — it catches what humans and agents miss, and it does so consistently on every single change.
+CI should enforce the checks the project actually requires and preserve enough evidence to diagnose failures. The useful pipeline is the smallest reliable set of gates that covers the affected behavior, dependencies, risk, and project policy. CI configuration, pull-request readiness, merge, preview deployment, production deployment, rollback, recurring automation, notification, and cleanup remain distinct decisions.
 
-**Shift Left:** Catch problems as early in the pipeline as possible. A bug caught in linting costs minutes; the same bug caught in production costs hours. Move checks upstream — static analysis before tests, tests before staging, staging before production.
+Apply [Project Command Selection](../using-devflow/references/project-commands.md), the shared [Evidence Contract](../using-devflow/references/evidence-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md).
 
-**Faster is Safer:** Smaller batches and more frequent releases reduce risk, not increase it. A deployment with 3 changes is easier to debug than one with 30. Frequent releases build confidence in the release process itself.
-
-Worked pipeline configurations for everything below are in `references/examples.md`.
+Worked mechanisms in [references/examples.md](references/examples.md) are provider-specific examples, not universal commands, required gates, or authorization to configure an external service.
 
 ## When to Use
 
-- Setting up a new project's CI pipeline
-- Adding or modifying automated checks
-- Configuring deployment pipelines
-- When a change should trigger automated verification
-- Debugging CI failures
+- Creating or changing a project's CI pipeline
+- Adding, removing, or tuning automated quality gates
+- Configuring diagnostic artifacts, test services, or deployment workflows
+- Investigating a failed or unreliable CI check
+- Designing preview, staged deployment, rollback, or recurring maintenance automation
 
-## The Quality Gate Pipeline
+## Select Real Project Commands
 
-Every change goes through these gates before merge:
+Before writing a workflow, inspect the applicable project instructions, manifests, lockfiles, workspace configuration, and actual scripts. Use the established package manager or non-JavaScript task runner consistently. Do not copy `npm ci`, `npm test`, a type checker, an audit tool, or any other example unless project evidence selects it.
+
+If command signals conflict, resolve the conflict using the project-command contract before execution. Do not install tooling, create another lockfile, or change authentication merely to make an example run.
+
+## Design the Gate Set From Risk
+
+A project may order inexpensive checks before slower checks, but the specific gates depend on the change and project policy:
 
 ```
-Pull Request Opened
+Change proposed
     │
-    ▼
-┌─────────────────┐
-│   LINT CHECK     │  eslint, prettier
-│   ↓ pass         │
-│   TYPE CHECK     │  tsc --noEmit
-│   ↓ pass         │
-│   UNIT TESTS     │  jest/vitest
-│   ↓ pass         │
-│   BUILD          │  npm run build
-│   ↓ pass         │
-│   INTEGRATION    │  API/DB tests
-│   ↓ pass         │
-│   E2E (optional) │  Playwright/Cypress
-│   ↓ pass         │
-│   SECURITY AUDIT │  npm audit
-│   ↓ pass         │
-│   BUNDLE SIZE    │  bundlesize check
-└─────────────────┘
-    │
-    ▼
-  Ready for review
+    ├── required formatting, lint, or static checks
+    ├── focused behavior or regression checks
+    ├── type, build, integration, or end-to-end checks where affected
+    ├── security, dependency, bundle, schema, or release checks where affected
+    └── mandatory project and branch-protection gates
+          │
+          ▼
+Evidence ready for the next project-defined delivery decision
 ```
 
-**No gate can be skipped.** If lint fails, fix lint — don't disable the rule. If a test fails, fix the code — don't skip the test.
+For every major check, identify the failure it can catch and the object it covers. Documentation may need content and reference checks; logic changes need regression coverage; UI changes may need build, type, browser, interaction, accessibility, and visual evidence; APIs, dependencies, build configuration, security surfaces, and release candidates usually require broader coverage.
 
-Reference configurations: basic pipeline, database integration tests, and E2E jobs are in `references/examples.md`. Key rules regardless of provider:
+Do not omit a mandatory gate because a focused check passed. Do not impose the same lint, types, tests, build, audit, integration, E2E, or bundle stack on every change when the project does not require or support it. Mark a check not applicable with a reason instead of pretending it passed.
 
-- Install with `npm ci` (lockfile-exact), never `npm install`, in CI.
-- Credentials — even for CI-only test databases — live in the secrets manager, never hardcoded in workflow files.
-- Upload failure artifacts (test reports, screenshots) so failures are diagnosable without re-running.
+## Preserve Failure Evidence
 
-## Feeding CI Failures Back to Agents
+A required failed check blocks the completion, merge, deployment, or release conclusion that depends on it. Keep the failed command, object, environment, output source, and consequence. Diagnose from the available evidence before retrying.
 
-The power of CI with AI agents is the feedback loop. When CI fails, feed the specific failure output to the agent and have it fix and verify locally before pushing again.
+A justified retry records:
 
-```
-Lint failure → Agent runs the lint autofix and commits
-Type error  → Agent reads the error location and fixes the type
-Test failure → Agent follows systematic-debugging skill
-Build error → Agent checks config and dependencies
-```
+1. the earlier failure;
+2. the investigation and reason to retry;
+3. any relevant code, configuration, dependency, data, or environment change, or why unchanged-state repetition is informative; and
+4. the new operation and result.
 
-## Deployment Strategies
+Do not repeatedly run a suspected flaky test until it passes or claim an environmental cause without locating it. A later pass may satisfy the gate for its covered state, but it does not erase the failure history. Separate existing warnings from new or newly exposed warnings and apply the project's actual warning policy.
 
-### Preview Deployments
+Upload bounded failure artifacts such as test reports, logs, or screenshots when the project's approved CI system supports it. Avoid secrets and sensitive data, define retention appropriately, and do not add an external artifact destination without applicable authorization.
 
-Every PR gets a preview deployment for manual testing (config in `references/examples.md`).
+## Pull Requests, Merge, and Delivery
 
-### Feature Flags
+CI evidence does not decide whether a work package is complete or authorize a delivery action. Apply the project's PR timing and merge policy:
 
-Feature flags decouple deployment from release. Deploy incomplete or risky features behind flags so you can:
+- A partial internal increment remains progress. A feature flag does not make it a complete or review-ready work package.
+- Push and PR creation wait for the required implementation, review, checks, and evidence unless project policy or an explicit request provides a scoped exception.
+- Green CI does not authorize a risky merge. Human review, manual acceptance, automated checks, and merge authorization are separate records.
+- For a risky change, finish the reviewable PR material and required evidence first, then request approval for the concrete merge only when that action is ready.
+- A failed required check still blocks its dependent action after human acceptance or approval. Preserve the acceptance, diagnose and reverify, then reuse the action grant only if its complete conditions still match.
+- Accepted manual deferrals remain visible with their source and scope; automation must not relabel them as passed.
 
-- **Ship code without enabling it.** Merge to main early, enable when ready.
-- **Roll back without redeploying.** Disable the flag instead of reverting code.
-- **Canary new features.** Enable for 1% of users, then 10%, then 100%.
-- **Run A/B tests.** Compare behavior with and without the feature.
+## Deployment and Rollback Mechanisms
 
-**Flag lifecycle:** Create → Enable for testing → Canary → Full rollout → Remove the flag and dead code. Flags that live forever become technical debt — set a cleanup date when you create them.
+Preview deployments, staging deployments, production deployments, feature exposure, and rollback workflows can be useful mechanisms. Configure or execute them only when the project uses the provider and the action, target, environment, secrets, cost, and data handling are authorized.
 
-### Staged Rollouts
+Automatic deployment is a project policy, not a CI default. A workflow trigger is capable of causing an external action and must reflect that policy. A deployment or rollback grant for one environment does not cover another environment, data deletion, communication, or cleanup.
 
-```
-PR merged to main
-    │
-    ▼
-  Staging deployment (auto)
-    │ Manual verification
-    ▼
-  Production deployment (manual trigger or auto after staging)
-    │
-    ▼
-  Monitor for errors (15-minute window)
-    │
-    ├── Errors detected → Rollback
-    └── Clean → Done
-```
+Feature flags can support bounded exposure and recovery when already available. They do not authorize incomplete merges or replace verification of both relevant states. Record ownership and a cleanup condition; flag removal follows normal implementation and delivery policy.
 
-### Rollback Plan
+A recovery mechanism may require multiple ordered steps, compatibility restoration, or a forward fix. Verify candidate commands against the actual platform and artifact. Do not assume rollback is one action or that a database operation is safely reversible.
 
-Every deployment must be reversible with a single action — a manual rollback workflow that redeploys a named previous version (example in `references/examples.md`). If rolling back requires a code change and a full pipeline run, you don't have a rollback plan.
+## Secrets and Test Environments
 
-## Environment Management
+- Keep credentials in the project's approved secret store, never in code or workflow text.
+- Use test-specific credentials and least privilege; do not expose production secrets to CI unless a reviewed project requirement explicitly needs them.
+- Treat test databases, migrations, fixtures, and teardown as data operations with bounded targets and recoverability.
+- Prevent commands and uploaded artifacts from leaking tokens, identifiers, customer data, or internal details.
 
-```
-.env.example       → Committed (template for developers)
-.env                → NOT committed (local development)
-.env.test           → Committed (test environment, no real secrets)
-CI secrets          → Stored in GitHub Secrets / vault
-Production secrets  → Stored in deployment platform / vault
-```
+## Recurring Automation
 
-CI should never have production secrets. Use separate secrets for CI testing.
+Dependency-update schedules, build-cop rotations, notifications, monitors, and automated cleanup are optional operational choices. Establish ownership, trigger, scope, cost, rate limits, failure handling, and authorization before enabling them. An example schedule does not create an ongoing task or approve a new integration.
 
-## Automation Beyond CI
+## Pipeline Performance
 
-- **Dependency updates:** Automate with Dependabot or Renovate on a weekly schedule with a bounded number of open PRs (config in `references/examples.md`).
-- **Build Cop role:** Designate someone responsible for keeping CI green. When the build breaks, the Build Cop fixes or reverts — not the person whose change caused the break. This prevents broken builds from accumulating while everyone assumes someone else will fix it.
-- **PR checks:** Required reviews (≥1 approval), required status checks before merge, branch protection (no force-pushes to main), auto-merge when green and approved.
-
-## CI Optimization
-
-When the pipeline exceeds 10 minutes, apply these strategies in order of impact:
-
-```
-Slow CI pipeline?
-├── Cache dependencies
-│   └── Use actions/cache or setup-node cache option for node_modules
-├── Run jobs in parallel
-│   └── Split lint, typecheck, test, build into separate parallel jobs
-├── Only run what changed
-│   └── Use path filters to skip unrelated jobs (e.g., skip e2e for docs-only PRs)
-├── Use matrix builds
-│   └── Shard test suites across multiple runners
-├── Optimize the test suite
-│   └── Remove slow tests from the critical path, run them on a schedule instead
-└── Use larger runners
-    └── GitHub-hosted larger runners or self-hosted for CPU-heavy builds
-```
-
-A caching + parallel-jobs example is in `references/examples.md`.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "CI is too slow" | Optimize the pipeline (see CI Optimization above), don't skip it. A 5-minute pipeline prevents hours of debugging. |
-| "This change is trivial, skip CI" | Trivial changes break builds. CI is fast for trivial changes anyway. |
-| "The test is flaky, just re-run" | Flaky tests mask real bugs and waste everyone's time. Fix the flakiness. |
-| "We'll add CI later" | Projects without CI accumulate broken states. Set it up on day one. |
-| "Manual testing is enough" | Manual testing doesn't scale and isn't repeatable. Automate what you can. |
-
-## Red Flags
-
-- No CI pipeline in the project
-- CI failures ignored or silenced
-- Tests disabled in CI to make the pipeline pass
-- Production deploys without staging verification
-- No rollback mechanism
-- Secrets stored in code or CI config files (not secrets manager)
-- Long CI times with no optimization effort
+Optimize when measured duration, cost, or feedback delay misses the project's objective. Depending on evidence, useful techniques include dependency caches, safe parallel jobs, path-aware selection, test sharding, removing redundant work, and right-sizing runners. Preserve mandatory coverage and diagnostics while optimizing. A numeric runtime target in an example is illustrative unless project policy adopts it.
 
 ## Verification
 
-After setting up or modifying CI:
+After changing CI/CD guidance or configuration:
 
-- [ ] All quality gates are present (lint, types, tests, build, audit)
-- [ ] Pipeline runs on every PR and push to main
-- [ ] Failures block merge (branch protection configured)
-- [ ] CI results feed back into the development loop
-- [ ] Secrets are stored in the secrets manager, not in code
-- [ ] Deployment has a rollback mechanism
-- [ ] Pipeline runs in under 10 minutes for the test suite
+- [ ] Commands match project policy, lockfiles, manifests, and actual scripts
+- [ ] Each required gate has a stated risk and affected scope
+- [ ] Required failures block their dependent conclusions and retain diagnostic evidence
+- [ ] Retries, baseline warnings, and accepted manual deferrals remain visible
+- [ ] Work-package, PR, merge, deploy, rollback, notification, and cleanup states are separate
+- [ ] Secrets, sensitive data, provider access, and external integrations follow applicable policy
+- [ ] Any preview, deployment, rollback, or recurring trigger has the intended authorization boundary
+- [ ] Runtime and cost goals come from project evidence rather than a universal threshold
