@@ -16,6 +16,8 @@ Check the capabilities relevant to the task:
 - **Collaboration:** dispatch, messaging, waiting, result retrieval, cancellation, concurrency, context transfer, and write isolation.
 - **Git/PR:** repository inspection, diff, branch, commit, push, pull-request, review, and merge capabilities. Treat each state-changing delivery operation as a separate authorization boundary.
 
+Resolve paths for each operation from the base used by its chosen interface. A shell working directory does not rebase a separate file or patch interface; those interfaces may use a different task working directory or path base. Before mutation, derive the actual destination from that operation's current base and target, then verify that it is within the authorized root. Use an absolute path when the interface supports it and doing so removes ambiguity, but do not impose absolute-path syntax on an interface that accepts only relative paths. If the base or destination cannot be established, resolve it with read-only inspection before mutating anything.
+
 Availability alone is insufficient. Confirm that the current permission mode permits the operation and that any cost, concurrency, persistence, or external-service limit in the user or project instructions is satisfied.
 
 ## Choose a safe execution mode
