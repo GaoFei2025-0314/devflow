@@ -83,6 +83,8 @@ Bug report arrives
 
 Start with the focused RED/GREEN check, then trace the changed behavior across its dependency boundaries. Add related unit, integration, end-to-end, build, type, or other checks only where they address a real regression risk or a mandatory project gate. Public APIs, dependencies, build/runtime configuration, security-sensitive work, and release candidates usually require broader coverage. Do not run the full suite unconditionally after every edit or repeat a clean command without a new reason.
 
+At a bug-fix status or completion handoff, follow the Evidence Contract's [proof-reporting rule](../using-devflow/references/evidence-contract.md#report-proof-in-status-and-completion-handoffs). Preserve the applicable before/after evidence and operation so the handoff makes the original symptom coverage and its limits clear.
+
 Existing passing evidence may be reused when it covers the current claim and its relevant code, uncommitted inputs, dependencies, configuration, data, environment, and external state remain valid. If one input changes, invalidate only the evidence it can affect and restore that coverage. Record failures and their investigation; a justified retry supplements the failed attempt rather than replacing it.
 
 ## The Test Pyramid

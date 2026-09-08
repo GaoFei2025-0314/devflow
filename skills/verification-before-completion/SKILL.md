@@ -30,6 +30,8 @@ Before claiming any status:
 5. **READ AND RECORD** the actual output, exit/result, coverage, environment, time, and source. Use `planned`, `running`, `pass`, `fail`, `unknown`, `not run`, `blocked`, or `not applicable` truthfully.
 6. **THEN CLAIM** only what the valid evidence proves. A failed mandatory check blocks the dependent completion or delivery conclusion.
 
+The status or completion response itself must follow the Evidence Contract's [proof-reporting rule](../using-devflow/references/evidence-contract.md#report-proof-in-status-and-completion-handoffs). Carry the concrete object, operation, result, provenance, and coverage limit in that handoff or cite a stable record that identifies them; do not rely on collapsed commentary or unnamed tool output.
+
 ## What Each Claim Requires
 
 | Claim | Requires | Not sufficient |
