@@ -1,13 +1,13 @@
 ---
 name: systematic-debugging
-description: Four-phase root-cause debugging - investigate, analyze patterns, hypothesize, then fix. Use when a bug, test failure, or unexpected behavior appears and you are about to propose a fix, especially under time pressure or after a previous fix failed. Not for designing new behavior.
+description: Four-phase root-cause debugging - investigate, analyze patterns, hypothesize, then fix when authorized. Use for diagnosing or repairing a bug, test failure, or unexpected behavior, especially under time pressure or after a previous fix failed. Not for designing new behavior.
 ---
 
 # Systematic Debugging
 
 ## Overview
 
-Random fixes waste time and create new bugs. Quick patches mask underlying issues.
+Random fixes waste time and create new bugs. Quick patches mask underlying issues. This skill governs investigation and repair technique; evidence selection, validity, failures, retries, and warnings follow the shared [Evidence Contract](../using-devflow/references/evidence-contract.md).
 
 **Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
 
@@ -23,7 +23,7 @@ If you haven't completed Phase 1, you cannot propose fixes.
 
 ## The Stop-the-Line Rule
 
-When anything unexpected happens: STOP adding features, PRESERVE evidence (error output, logs, repro steps), then debug. **Never push past a failing test or broken build to work on the next feature** — errors compound, and a bug left in step 3 makes steps 4-6 wrong.
+When anything unexpected happens in the affected path: stop changing that path, preserve evidence (error output, logs, repro steps), then debug. A failed mandatory check blocks the conclusion or delivery action that depends on it. Continue only work proven independent under project policy; do not use unrelated progress to bypass the failure.
 
 ## When to Use
 
@@ -49,7 +49,7 @@ Use for ANY technical issue:
 
 ## The Four Phases
 
-You MUST complete each phase before proceeding to the next.
+Complete each phase before proceeding to the next. First establish the requested deliverable: if the user asked only for diagnosis, stop after delivering the supported root cause, evidence, confidence, and material unknowns. Proceed to Phase 4 only when repair is requested or already authorized.
 
 ### Phase 1: Root Cause Investigation
 
@@ -67,6 +67,7 @@ You MUST complete each phase before proceeding to the next.
    - What are the exact steps?
    - Does it happen every time?
    - If not reproducible → gather more data, don't guess (see the non-reproducible decision tree in `error-triage.md`)
+   - Distinguish an assertion or wrong outcome caused by product behavior from a test-harness, dependency, configuration, permission, resource, or service failure. Environment failure can be the issue under investigation, but it is not RED evidence for a claimed behavioral bug.
 
 3. **Check Recent Changes**
    - What changed that could cause this?
@@ -157,11 +158,15 @@ You MUST complete each phase before proceeding to the next.
 
 **Fix the root cause, not the symptom:**
 
-1. **Create Failing Test Case**
-   - Simplest possible reproduction
+Enter this phase only for an authorized repair. A diagnosis-only request legally ends after Phase 3 with the supported cause; do not implement a repair merely to demonstrate that the diagnosis is actionable.
+
+1. **Establish Regression Evidence**
+   - Simplest behavioral reproduction
    - Automated test if possible
    - One-off test script if no framework
-   - MUST have before fixing
+   - Reuse an existing accurate test or still-valid reproduction when it already demonstrates the defect; do not duplicate it just to create a new test
+   - Confirm failure is caused by the target behavior rather than an environment or setup error
+   - Static documentation or content-only repairs use proportionate artifact, structure, link, or rendering inspection when behavioral automation is not applicable
    - Use the test-driven-development skill (`../test-driven-development/SKILL.md`) for writing proper failing tests
 
 2. **Implement Single Fix**
@@ -171,9 +176,11 @@ You MUST complete each phase before proceeding to the next.
    - No bundled refactoring
 
 3. **Verify Fix**
-   - Test passes now?
-   - No other tests broken?
+   - Does the same focused reproduction pass now?
+   - Which surrounding behavior, dependency boundaries, and mandatory project gates can the change affect?
+   - Run the smallest related check set that covers those risks; broaden only for a concrete impact or project requirement
    - Issue actually resolved?
+   - Preserve earlier failures and record why any retry was warranted. Distinguish known baseline warnings from new relevant warnings.
 
 4. **If Fix Doesn't Work**
    - STOP
@@ -233,16 +240,16 @@ If you catch yourself thinking:
 | "The failing test is probably wrong" | Verify that assumption. If the test is wrong, fix the test — don't skip it. |
 | "It's a flaky test, ignore it" | Flaky tests mask real bugs. Find why it's intermittent. |
 
-## When Process Reveals "No Root Cause"
+## When Investigation Finds an Environmental or External Cause
 
-If systematic investigation reveals issue is truly environmental, timing-dependent, or external:
+If systematic investigation reveals the issue is environmental, timing-dependent, or external:
 
 1. You've completed the process
 2. Document what you investigated
-3. Implement appropriate handling (retry, timeout, error message)
-4. Add monitoring/logging for future investigation
+3. If repair is authorized, implement the smallest appropriate handling (retry, timeout, error message)
+4. Add monitoring or logging only when it is within the requested repair and needed for future evidence
 
-**But:** 95% of "no root cause" cases are incomplete investigation.
+Do not label an unlocated intermittent failure as a fixed flake or resolved environment issue. State what remains unknown and which conclusion it blocks.
 
 ## Supporting Techniques
 
@@ -259,13 +266,13 @@ These techniques are part of systematic debugging and available in this director
 
 ## Verification
 
-Before declaring the bug fixed:
+Before declaring an authorized repair fixed:
 
 - [ ] Root cause is identified and documented (not just "it works now")
 - [ ] Fix addresses the root cause, not just symptoms
-- [ ] A regression test exists that fails without the fix
-- [ ] All existing tests pass
-- [ ] Build succeeds
-- [ ] The original bug scenario is verified end-to-end
+- [ ] An accurate regression test or applicable reproduction fails without the fix for the expected behavioral reason and passes with it
+- [ ] The focused regression, affected surrounding checks, and mandatory project gates have current results
+- [ ] Build or end-to-end verification ran when the change's impact or project policy required it
+- [ ] Failures, justified retries, suspected flakes, baseline warnings, and new warnings remain visible with their consequences
 
-Can't check every box? The debugging isn't done — return to the phase that's incomplete.
+For diagnosis-only work, deliver the supported cause and its evidence without claiming a fix. For repair work, an unmet applicable item keeps the repair incomplete; return to the phase that resolves it or report the concrete blocker.
