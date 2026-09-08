@@ -1,99 +1,122 @@
 # Review Playbook
 
-Templates and expanded patterns for `../SKILL.md`.
+Templates and expanded patterns for [the review standard](../SKILL.md). Adapt them to the actual artifact and stage; do not invent a Git range, merge gate, or check solely to fill a template.
 
-## The Review Checklist Template
+## Review Record Template
 
 ```markdown
-## Review: [PR/Change title]
+## Review: [artifact or change]
 
-### Context
-- [ ] I understand what this change does and why
+### Review identity
+- Nature: [specification | quality | combined]
+- Provenance: [human | independent agent | self-review | automated source | other]
+- Stage: [document | local implementation | integrated package | pre-merge | other]
+- Target and scope: [exact artifacts and included behavior]
+- Exclusions: [explicitly unreviewed areas]
+- Before: [actual baseline commit, working-tree base, prior artifact, or prior state]
+- After: [actual target commit, current files, artifact, or current state]
 
-### Correctness
-- [ ] Change matches spec/task requirements
-- [ ] Edge cases handled
-- [ ] Error paths handled
-- [ ] Tests cover the change adequately
+### Requirements and context
+- [task/specification/acceptance criteria]
+- [project conventions and relevant interfaces]
+- [known risks or unknowns]
 
-### Readability
-- [ ] Names are clear and consistent
-- [ ] Logic is straightforward
-- [ ] No unnecessary complexity
+### Applicable checks
+- Requirements and correctness
+- Readability and simplicity
+- Architecture and maintainability
+- Security risks introduced or affected
+- Performance and reliability risks introduced or affected
 
-### Architecture
-- [ ] Follows existing patterns
-- [ ] No unnecessary coupling or dependencies
-- [ ] Appropriate abstraction level
-- [ ] Refactors reduce complexity rather than relocate it
-- [ ] No feature logic in shared modules; file stays within a healthy size
+### Evidence
+- [check or observation; verified object and relevant state; operation; result; provenance; limits]
+- [reused evidence and why it remains valid, or affected evidence that is stale/unknown]
 
-### Security
-- [ ] No secrets in code
-- [ ] Input validated at boundaries
-- [ ] No injection vulnerabilities
-- [ ] Auth checks in place
-- [ ] External data sources treated as untrusted
+### Findings
+#### Critical
+- [ID; location; issue; conditions and impact; evidence; correction]
 
-### Performance
-- [ ] No N+1 patterns
-- [ ] No unbounded operations
-- [ ] Pagination on list endpoints
+#### Required
+- [ID; location; issue; conditions and impact; evidence; correction]
 
-### Verification
-- [ ] Tests pass
-- [ ] Build succeeds
-- [ ] Manual verification done (if applicable)
+#### Optional / Nit
+- [ID; location; preference or improvement; expected benefit]
 
-### Verdict
-- [ ] **Approve** — Ready to merge
-- [ ] **Request changes** — Issues must be addressed
+#### FYI
+- [context with no requested action]
+
+### Verdicts
+- Specification: [meets | does not meet | unknown | not applicable]
+- Quality for stated gate: [acceptable | changes required | unknown]
+- Pending dependencies: [what remains and only the conclusions/actions it blocks]
 ```
 
-## Splitting Strategies for Oversized Changes
+Omit empty finding groups. An empty findings list still names the reviewed target, baseline, evidence, and material limits.
+
+## Selecting Review Depth
+
+Choose depth from behavior and risk:
+
+| Change characteristic | Review emphasis |
+| --- | --- |
+| Documentation or configuration text | Requirements, consistency, references, examples, and claims |
+| Logic fix | Original symptom, regression coverage, error paths, and affected callers |
+| UI behavior | Interaction states, accessibility, responsive behavior, build/runtime evidence, and visuals when applicable |
+| Public API or stored state | Compatibility, validation, migration, consumers, and rollback |
+| Authentication, authorization, or sensitive data | Threat boundaries, negative paths, tenant isolation, logging, and required security review |
+| Dependency or build/runtime configuration | Provenance, compatibility, lock/config state, build, and affected environments |
+| Refactor or simplification | Behavior preservation, ownership boundaries, tests, and whether complexity actually decreased |
+
+Diff or file size may prompt a split when it prevents reliable review or rollback, but no fixed line count determines acceptance. Generated changes, deletions, and mechanical transformations may be large yet reviewable through intent plus appropriate tooling.
+
+## Splitting Strategies
 
 | Strategy | How | When |
-|----------|-----|------|
-| **Stack** | Submit a small change, start the next one based on it | Sequential dependencies |
-| **By file group** | Separate changes for groups needing different reviewers | Cross-cutting concerns |
-| **Horizontal** | Create shared code/stubs first, then consumers | Layered architecture |
-| **Vertical** | Break into smaller full-stack slices of the feature | Feature work |
+| --- | --- | --- |
+| **Stack** | Review sequential changes with explicit dependent baselines | Sequential dependencies |
+| **By file group** | Separate areas that need different domain reviewers | Distinct ownership or risk boundaries |
+| **Horizontal** | Review a shared interface before its consumers | Layered architecture with a stable seam |
+| **Vertical** | Review complete behavior slices | A feature can remain functional in increments |
 
-**When large changes are acceptable:** Complete file deletions and automated refactoring where the reviewer only needs to verify intent, not every line.
+Do not split a cohesive correction when the split hides behavior, breaks the comparison, or makes verification less representative.
 
-## Multi-Model Review Pattern
+## Independent Review Pattern
 
-Use different models for different review perspectives:
-
-```
-Model A writes the code
-    │
-    ▼
-Model B reviews for correctness and architecture
-    │
-    ▼
-Model A addresses the feedback
-    │
-    ▼
-Human makes the final call
+```text
+Author produces the artifact
+        |
+        v
+Independent reviewer inspects the stated target and baseline
+        |
+        v
+Controller verifies and reconciles findings
+        |
+        v
+Applicable human acceptance or delivery gate remains separate
 ```
 
-This catches issues that a single model might miss — different models have different blind spots.
+Different models can provide independent perspectives only when the actual reviewer is different from the author/controller and the review uses the supplied artifact, scope, baseline, and evidence. If that capability is unavailable, label the performed pass `self-review` and leave any project-required independent gate pending.
 
-**Example prompt for a review agent:**
+Example request:
 
-```
-Review this code change for correctness, security, and adherence to
-our project conventions. The spec says [X]. The change should [Y].
-Flag any issues as Critical, Required, Optional, or Nit.
+```text
+Perform an independent quality review of [target] against [baseline].
+Scope is [files/behavior]; exclude [areas]. Apply [requirements] and the
+code-review-and-quality standard. Existing evidence is [source, object,
+result, limits]. Return located Critical, Required, Optional/Nit, and FYI
+findings with impact and correction, plus the actual checks inspected or run.
+Do not edit or perform delivery actions.
 ```
 
-## Dead Code Report Format
+## Dead Code Report
 
+```text
+Dead code candidate [ID]
+Location: [file:symbol or lines]
+Reason: [reachability/reference evidence]
+Behavior and compatibility risk: [known effect or uncertainty]
+Recommended action: [remove within authorized scope | investigate | report only]
+Dependent check: [focused verification needed if removal is authorized]
 ```
-DEAD CODE IDENTIFIED:
-- formatLegacyDate() in src/utils/date.ts — replaced by formatDate()
-- OldTaskCard component in src/components/ — replaced by TaskCard
-- LEGACY_API_URL constant in src/config.ts — no remaining references
-→ Safe to remove these?
-```
+
+In a review-only task, report the candidate. In an approved implementation or simplification task, remove it only when the authorization covers that scope and behavior preservation is established.

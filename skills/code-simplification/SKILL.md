@@ -1,202 +1,129 @@
 ---
 name: code-simplification
-description: Simplifies working code for clarity without changing behavior. Use when code works but is harder to read, maintain, or extend than it should be, or after a feature lands and accumulated complexity needs a cleanup pass. Not for bug hunting (use code-review-and-quality) or performance tuning (use performance-optimization).
+description: Simplifies working code for clarity while preserving behavior. Use when code works but is harder to read, maintain, or extend than it should be, or after a feature lands and accumulated complexity needs a bounded cleanup pass. Not for bug hunting (use code-review-and-quality) or performance tuning (use performance-optimization).
 ---
 
 # Code Simplification
 
-> Inspired by the [Claude Code Simplifier plugin](https://github.com/anthropics/claude-plugins-official/blob/main/plugins/code-simplifier/agents/code-simplifier.md). Adapted here as a model-agnostic, process-driven skill for any AI coding agent.
+## Purpose and Action Boundary
 
-## Overview
+Simplification reduces cognitive load without changing observable behavior. Fewer lines are not the objective; clearer responsibilities, control flow, names, and boundaries are.
 
-Simplify code by reducing complexity while preserving exact behavior. The goal is not fewer lines — it's code that is easier to read, understand, modify, and debug. Every simplification must pass a simple test: "Would a new team member understand this faster than the original?"
+First identify the requested deliverable and authority. A request to review or suggest simplifications is read-only: report candidates and evidence without editing. Modify code only when simplification is requested or otherwise covered by an effective local-edit grant, and stay within its files and behavior. Review feedback, an `Approve` verdict, or completion of a prior phase does not grant mutation or delivery authority.
 
-## When to Use
+Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Use [code-review-and-quality](../code-review-and-quality/SKILL.md) for the quality standard.
 
-- After a feature is working and tests pass, but the implementation feels heavier than it needs to be
-- During code review when readability or complexity issues are flagged
-- When you encounter deeply nested logic, long functions, or unclear names
-- When refactoring code written under time pressure
-- When consolidating related logic scattered across files
-- After merging changes that introduced duplication or inconsistency
+## Core Principles
 
-**When NOT to use:**
+### Preserve Behavior
 
-- Code is already clean and readable — don't simplify for the sake of it
-- You don't understand what the code does yet — comprehend before you simplify
-- The code is performance-critical and the "simpler" version would be measurably slower
-- You're about to rewrite the module entirely — simplifying throwaway code wastes effort
+Maintain the same inputs, outputs, side effects, ordering, errors, compatibility, and edge-case behavior. A behavior change is a separate implementation decision, even if it appears cleaner. If equivalence cannot be established, leave the code unchanged and report the uncertainty.
 
-## The Five Principles
+Before each change, ask:
 
-### 1. Preserve Behavior Exactly
+- What behavior and invariants does this code express?
+- What calls it, what does it call, and which boundaries can observe it?
+- Which errors, timing, ordering, and side effects must remain?
+- What tests, specifications, history, or neighboring patterns explain its shape?
 
-Don't change what the code does — only how it expresses it. All inputs, outputs, side effects, error behavior, and edge cases must remain identical. If you're not sure a simplification preserves behavior, don't make it.
+### Follow Project Conventions
 
-```
-ASK BEFORE EVERY CHANGE:
-→ Does this produce the same output for every input?
-→ Does this maintain the same error behavior?
-→ Does this preserve the same side effects and ordering?
-→ Do all existing tests still pass without modification?
-```
+Read the applicable project instructions and inspect neighboring code that solves the same kind of problem. Match its module, naming, typing, error-handling, import, and testing conventions. Do not create churn by imposing a personal style.
 
-### 2. Follow Project Conventions
+### Prefer Clarity Over Cleverness
 
-Simplification means making code more consistent with the codebase, not imposing external preferences. Before simplifying:
+Prefer explicit control flow and named concepts when compact expressions require a mental pause. A small helper is useful when it names a real concept; inlining is useful when a wrapper adds only indirection. Worked examples are in [references/examples.md](references/examples.md).
 
-```
-1. Read CLAUDE.md / project conventions
-2. Study how neighboring code handles similar patterns
-3. Match the project's style for:
-   - Import ordering and module system
-   - Function declaration style
-   - Naming conventions
-   - Error handling patterns
-   - Type annotation depth
-```
+### Remove Complexity Rather Than Relocate It
 
-Simplification that breaks project consistency is not simplification — it's churn.
+A refactor is simpler when readers must hold fewer concepts or paths in mind. Avoid moving the same branching into a new abstraction, merging unrelated responsibilities, or replacing one clear flow with a framework built for hypothetical reuse.
 
-### 3. Prefer Clarity Over Cleverness
+### Keep Scope Bounded
 
-Explicit code is better than compact code when the compact version requires a mental pause to parse: prefer a named mapping function over a dense ternary chain, and a named intermediate step over chained reduces with inline logic (before/after examples in `references/examples.md`).
+Default to the requested files or recently changed behavior. Include an adjacent change only when it is required to preserve behavior, remove a dependency made obsolete by the simplification, or satisfy an applicable project gate. Report useful out-of-scope candidates separately instead of editing them.
 
-### 4. Maintain Balance
+## Understand Before Changing
 
-Simplification has a failure mode: over-simplification. Watch for these traps:
+Use read-only inspection to answer the questions that affect behavior:
 
-- **Inlining too aggressively** — removing a helper that gave a concept a name makes the call site harder to read
-- **Combining unrelated logic** — two simple functions merged into one complex function is not simpler
-- **Removing "unnecessary" abstraction** — some abstractions exist for extensibility or testability, not complexity
-- **Optimizing for line count** — fewer lines is not the goal; easier comprehension is
+1. What is the code responsible for, and which callers or consumers rely on it?
+2. What are its normal, boundary, and error paths?
+3. Which tests or other evidence define current behavior?
+4. Do comments, history, platform constraints, performance measurements, or compatibility requirements explain the design?
+5. What exact scope and end condition did the request authorize?
 
-### 5. Scope to What Changed
+History is one possible source, not a mandatory ritual. Use it when current code and requirements do not explain a consequential choice. Ask only when a high-impact ambiguity cannot be resolved through authorized read-only investigation.
 
-Default to simplifying recently modified code. Avoid drive-by refactors of unrelated code unless explicitly asked to broaden scope. Unscoped simplification creates noise in diffs and risks unintended regressions.
+## Identify Opportunities
 
-## The Simplification Process
+Treat these as prompts for investigation, not automatic rewrite rules:
 
-### Step 1: Understand Before Touching (Chesterton's Fence)
+| Signal | Possible direction | Behavior risk to check |
+| --- | --- | --- |
+| Deep nesting or repeated guards | Guard clauses, named predicates, or an explicit state model | Ordering and error behavior |
+| Long multi-purpose function | Separate responsibilities at a stable boundary | Shared state and call sequence |
+| Nested ternaries or dense transforms | Explicit branches or named intermediate values | Precedence, evaluation, and fallback semantics |
+| Boolean flag combinations | Options object or distinct operations | API compatibility and invalid combinations |
+| Duplicate logic | Reuse an existing canonical helper or extract an owned concept | Subtle differences between call sites |
+| Generic or misleading names | Rename to express domain meaning and side effects | Public/exported references and generated interfaces |
+| Comments that restate code | Remove or make the code self-explanatory | Intent or constraints hidden in the comment |
+| Dead or unreachable code | Remove within authorized scope | Dynamic references, compatibility, and side effects |
+| Pass-through wrapper | Inline or delete the wrapper | API stability, testing seams, and instrumentation |
+| Speculative abstraction | Replace with the current direct flow | Extension points promised to consumers |
+| Redundant type assertion | Let inference carry the type | Boundary validation and narrowing |
 
-Before changing or removing anything, understand why it exists. This is Chesterton's Fence: if you see a fence across a road and don't understand why it's there, don't tear it down. First understand the reason, then decide if the reason still applies.
+Size alone does not determine whether code must be split or whether automation is required. Choose a manual, scripted, or structural approach from semantic repetition, risk, reviewability, tool support, and project rules. Large mechanical transformations need tooling and evidence appropriate to their reach; small cohesive changes need not be fragmented solely to satisfy a line-count target.
 
-```
-BEFORE SIMPLIFYING, ANSWER:
-- What is this code's responsibility?
-- What calls it? What does it call?
-- What are the edge cases and error paths?
-- Are there tests that define the expected behavior?
-- Why might it have been written this way? (Performance? Platform constraint? Historical reason?)
-- Check git blame: what was the original context for this code?
-```
+## Apply Approved Simplifications
 
-If you can't answer these, you're not ready to simplify. Read more context first.
+1. Define the behavior-preservation claim and the bounded files or symbols.
+2. Make the smallest coherent change that reduces complexity.
+3. Inspect the diff for accidental behavior, interface, error, or scope changes.
+4. Select checks based on the affected behavior, dependencies, risk, and mandatory project gates.
+5. Reassess clarity and project consistency across the resulting code.
 
-### Step 2: Identify Simplification Opportunities
+Use incremental checkpoints when they improve fault isolation or reviewability. Do not require a commit or full-suite rerun after each edit. Existing evidence may be reused when it covers the resulting artifact and its relevant state remains valid; changed code invalidates only evidence that depends on it. Preserve actual failures, diagnose before retrying, and never modify tests merely to make changed behavior appear preserved.
 
-Scan for these patterns — each one is a concrete signal, not a vague smell:
+Assessing equivalence and running authorized checks are internal implementation work, not a reason to ask for fresh approval. Seek a new decision only when the proposed change would alter behavior, expand scope, cross an uncovered action boundary, or leave a consequential ambiguity unresolved.
 
-**Structural complexity:**
+Refactoring and feature changes should remain distinguishable in scope, evidence, and history. Whether they require separate commits or pull requests is determined by the project's actual delivery policy and the cohesion and risk of the package, not by this skill.
 
-| Pattern | Signal | Simplification |
-|---------|--------|----------------|
-| Deep nesting (3+ levels) | Hard to follow control flow | Extract conditions into guard clauses or helper functions |
-| Long functions (50+ lines) | Multiple responsibilities | Split into focused functions with descriptive names |
-| Nested ternaries | Requires mental stack to parse | Replace with if/else chains, switch, or lookup objects |
-| Boolean parameter flags | `doThing(true, false, true)` | Replace with options objects or separate functions |
-| Repeated conditionals | Same `if` check in multiple places | Extract to a well-named predicate function |
+## Verify Behavior and Improvement
 
-**Naming and readability:**
+For each major check, state the risk it addresses. Examples include focused behavior tests for changed control flow, type or build checks for boundary changes, linter/formatter checks when syntax or style tooling is affected, and broader regression checks for cross-cutting changes. A passing check proves only its recorded object and scope.
 
-| Pattern | Signal | Simplification |
-|---------|--------|----------------|
-| Generic names | `data`, `result`, `temp`, `val`, `item` | Rename to describe the content: `userProfile`, `validationErrors` |
-| Abbreviated names | `usr`, `cfg`, `btn`, `evt` | Use full words unless the abbreviation is universal (`id`, `url`, `api`) |
-| Misleading names | Function named `get` that also mutates state | Rename to reflect actual behavior |
-| Comments explaining "what" | `// increment counter` above `count++` | Delete the comment — the code is clear enough |
-| Comments explaining "why" | `// Retry because the API is flaky under load` | Keep these — they carry intent the code can't express |
+Before concluding, confirm:
 
-**Redundancy:**
+- observable behavior, errors, side effects, and ordering remain covered by current evidence;
+- no interface or compatibility change was smuggled into the refactor;
+- the result follows project conventions and is easier to understand;
+- no unused imports, unreachable branches, or obsolete wrappers remain within the edited scope;
+- the diff contains no unrelated edits;
+- review provenance, target, baseline, checks, results, and limitations are reported truthfully.
 
-| Pattern | Signal | Simplification |
-|---------|--------|----------------|
-| Duplicated logic | Same 5+ lines in multiple places | Extract to a shared function |
-| Dead code | Unreachable branches, unused variables, commented-out blocks | Remove (after confirming it's truly dead) |
-| Unnecessary abstractions | Wrapper that adds no value | Inline the wrapper, call the underlying function directly |
-| Over-engineered patterns | Factory-for-a-factory, strategy-with-one-strategy | Replace with the simple direct approach |
-| Redundant type assertions | Casting to a type that's already inferred | Remove the assertion |
+If project policy requires independent review, retain that gate. When no suitable independent reviewer is available, a clearly labeled self-review can provide interim evidence but does not satisfy the independent requirement.
 
-### Step 3: Apply Changes Incrementally
+## Handoff
 
-Make one simplification at a time. Run tests after each change. **Submit refactoring changes separately from feature or bug fix changes.** A PR that refactors and adds a feature is two PRs — split them.
+For a read-only simplification review, return located candidates with the current complexity, expected improvement, behavior risks, and recommended bounded change. Do not mutate the artifact.
 
-```
-FOR EACH SIMPLIFICATION:
-1. Make the change
-2. Run the test suite
-3. If tests pass → commit (or continue to next simplification)
-4. If tests fail → revert and reconsider
-```
+For an approved simplification, report:
 
-Avoid batching multiple simplifications into a single untested change. If something breaks, you need to know which simplification caused it.
+- exact files and behavior scope changed;
+- before and after comparison states;
+- why the result is simpler without changing behavior;
+- checks run or valid evidence reused, with provenance, object, result, and limits;
+- self-review or independent-review status and any required gate still pending;
+- unresolved or out-of-scope candidates separately from completed changes.
 
-**The Rule of 500:** If a refactoring would touch more than 500 lines, invest in automation (codemods, sed scripts, AST transforms) rather than making the changes by hand. Manual edits at that scale are error-prone and exhausting to review.
+## Common Failures
 
-### Step 4: Verify the Result
-
-After all simplifications, step back and evaluate the whole:
-
-```
-COMPARE BEFORE AND AFTER:
-- Is the simplified version genuinely easier to understand?
-- Did you introduce any new patterns inconsistent with the codebase?
-- Is the diff clean and reviewable?
-- Would a teammate approve this change?
-```
-
-If the "simplified" version is harder to understand or review, revert. Not every simplification attempt succeeds.
-
-## Language-Specific Guidance
-
-Common per-language simplifications, with worked before/after code in `references/examples.md`:
-
-- **TypeScript/JavaScript:** drop unnecessary `async` wrappers; replace verbose conditional assignment with `||`/`??`; replace manual array-building loops with `filter`/`map`; return boolean expressions directly instead of `if (…) return true; return false`.
-- **Python:** use comprehensions for simple dict/list building; flatten nested conditionals with early-return guard clauses.
-- **React/JSX:** collapse duplicated conditional renders into computed props; treat prop-drilling as a judgment call — flag it, don't auto-refactor.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "It's working, no need to touch it" | Working code that's hard to read will be hard to fix when it breaks. Simplifying now saves time on every future change. |
-| "Fewer lines is always simpler" | A 1-line nested ternary is not simpler than a 5-line if/else. Simplicity is about comprehension speed, not line count. |
-| "I'll just quickly simplify this unrelated code too" | Unscoped simplification creates noisy diffs and risks regressions in code you didn't intend to change. Stay focused. |
-| "The types make it self-documenting" | Types document structure, not intent. A well-named function explains *why* better than a type signature explains *what*. |
-| "This abstraction might be useful later" | Don't preserve speculative abstractions. If it's not used now, it's complexity without value. Remove it and re-add when needed. |
-| "The original author must have had a reason" | Maybe. Check git blame — apply Chesterton's Fence. But accumulated complexity often has no reason; it's just the residue of iteration under pressure. |
-| "I'll refactor while adding this feature" | Separate refactoring from feature work. Mixed changes are harder to review, revert, and understand in history. |
-
-## Red Flags
-
-- Simplification that requires modifying tests to pass (you likely changed behavior)
-- "Simplified" code that is longer and harder to follow than the original
-- Renaming things to match your preferences rather than project conventions
-- Removing error handling because "it makes the code cleaner"
-- Simplifying code you don't fully understand
-- Batching many simplifications into one large, hard-to-review commit
-- Refactoring code outside the scope of the current task without being asked
-
-## Verification
-
-After completing a simplification pass:
-
-- [ ] All existing tests pass without modification
-- [ ] Build succeeds with no new warnings
-- [ ] Linter/formatter passes (no style regressions)
-- [ ] Each simplification is a reviewable, incremental change
-- [ ] The diff is clean — no unrelated changes mixed in
-- [ ] Simplified code follows project conventions (checked against CLAUDE.md or equivalent)
-- [ ] No error handling was removed or weakened
-- [ ] No dead code was left behind (unused imports, unreachable branches)
-- [ ] A teammate or review agent would approve the change as a net improvement
+- Editing in response to a review-only request
+- Simplifying code before understanding its responsibility and consumers
+- Optimizing for line count or applying fixed size thresholds as acceptance rules
+- Changing error handling, evaluation order, side effects, or compatibility for aesthetics
+- Renaming to personal taste instead of project conventions
+- Moving complexity into a new abstraction without reducing concepts
+- Refactoring unrelated areas without authorization
+- Mandating a commit, pull request split, or full rerun independently of project policy and impact
+- Calling a self-review independent or treating a review verdict as edit or delivery authorization
