@@ -40,6 +40,8 @@ A status or completion handoff must carry the essential evidence for its claim i
 
 For a bug fix, preserve the applicable before/after proof and the operation used, identifying how it covers the original symptom. If required evidence is missing, partial, still running, or no longer valid, say so and limit the status claim rather than inventing a result. When a stable evidence record supplies the details, cite it and summarize the result and limit instead of copying every internal field. This handoff is part of the ordinary status or completion response; it does not require a second report.
 
+For review and feedback-processing results, identify the reviewed target and applicable comparison baseline; carry item dispositions that distinguish supported findings from optional suggestions; distinguish findings supplied by a human or agent from review actually performed for the current result; and state whether that performed review was self-review or independent, including any material limit. Preserve supporting verification and unresolved dependencies. These facts may be stated compactly or supplied through a stable cited review record; they do not require another mandatory report, an invented commit baseline, a fresh check ritual, an extra review tier, or new authorization. When the baseline or review origin cannot be verified, state that limit instead of inventing it.
+
 ## Use explicit statuses
 
 | Status | Meaning |
