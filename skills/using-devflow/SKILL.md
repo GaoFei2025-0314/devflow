@@ -11,7 +11,7 @@ If you were dispatched as a subagent to execute a specific task, do not reroute 
 
 ## The Rule
 
-**Check for a matching skill BEFORE responding or acting.** If a skill plausibly applies to the task, read it and follow it — knowing the concept is not the same as following the skill, and skills evolve, so read the current version rather than working from memory.
+**Check for a matching skill BEFORE responding or acting.** If a skill plausibly applies, select its canonical source and ensure the rules needed for the current decision are available. Read missing or invalidated content; reuse content that remains present, applicable, and source-identifiable. Familiarity with a concept is not a substitute for either.
 
 Before choosing a route or changing phases, apply the shared [Phase and Delivery Contract](references/phase-contract.md). It defines each phase's inputs and legal terminal states, how new user messages affect active work, and the evidence required for completion claims. Phases organize work but never grant action permission: a saved or accepted plan does not automatically authorize implementation or delivery.
 
@@ -20,6 +20,8 @@ Before a state-changing or protected action, apply the shared [Authorization and
 Before declaring a work package ready, taking a Git or external delivery step, or writing a delivery summary, apply the shared [Delivery Contract](references/delivery-contract.md). It separates local edits, commits, work-package completion, push/PR, merge, deploy/release, installation, and cleanup; gives each its own policy, evidence, and authorization gate; and defines the required summary of exact scope, valid evidence, incomplete or deferred work, manual status, and the concrete pending action. Project-specific delivery rules are adaptations read from the applicable policy, not universal Devflow defaults. A document approval never expands by itself into implementation or outward delivery.
 
 Balance this against the router's Core Rule: load the **smallest useful subset** for the phase you are in. "Check before acting" governs *when* you look for a skill; "smallest useful subset" governs *how many* you load. Checking is cheap (descriptions only); loading full skills is the cost to ration.
+
+Apply [Skill Loading and Context Recovery](references/loading-recovery.md) when same-named sources coexist, a read is partial or asynchronous, retained context may be reusable, or compaction/handoff requires recovery. It defines canonical skill identity, truthful discovered/partial/full/reused coverage, selective rereads, and recovery state. It does not add a per-turn hash or loading log, and a recovery summary does not grant authorization.
 
 Three specific moments where the check is most often skipped:
 
@@ -85,7 +87,7 @@ The skill itself tells you which.
 |---------|---------|
 | "This is just a simple question" | Questions are tasks. Check for skills. |
 | "The skill is overkill" | Simple things become complex. If it matches, use it. |
-| "I remember this skill" | Skills evolve. Read the current version. |
+| "I remember this skill" | Memory without retained content and source identity is insufficient. Reuse valid context; otherwise read the required current sections. |
 | "I'll just do this one thing first" | Check BEFORE doing anything. |
 | "This doesn't need a formal skill" | If a matching skill exists, use it. |
 
