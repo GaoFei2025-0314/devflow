@@ -9,7 +9,9 @@ description: Breaks work into ordered tasks. Use when you have a spec or clear r
 
 Decompose work into small, verifiable tasks with explicit acceptance criteria. Good task breakdown is the difference between an agent that completes work reliably and one that produces a tangled mess. Every task should be small enough to implement, test, and verify in a single focused session.
 
-**Boundary:** This skill produces a task list with acceptance criteria from a spec. For a fully self-contained implementation plan (bite-sized steps with exact code, written for a zero-context executor), use `../writing-plans/SKILL.md` instead. Whichever produced the plan, finish with the Execution Handoff below.
+**Boundary:** This skill produces an acceptance-oriented task breakdown from a spec or clear requirements. When an executor will have little or no surrounding context, use the detailed handoff guidance in `../writing-plans/SKILL.md` to expand the tasks that need it. These are two uses of one planning artifact, not a requirement to create duplicate plans: a plan may lead with a compact acceptance table and add detailed steps only where they make execution safer.
+
+Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Planning organizes later work; it does not authorize implementation, Git actions, installation, or external delivery.
 
 ## When to Use
 
@@ -33,6 +35,8 @@ Before writing any code, operate in read-only mode:
 - Note risks and unknowns
 
 **Do NOT write code during planning.** The output is a plan document, not implementation.
+
+Reuse still-valid requirements, accepted designs, prior decisions, and project facts. Do not restart discovery or ask the user to approve a decision already established. Clarify only a new conflict or missing fact that materially changes the plan; derive routine choices from the available context.
 
 ### Step 2: Identify the Dependency Graph
 
@@ -80,30 +84,54 @@ Each vertical slice delivers working, testable functionality.
 
 ### Step 4: Write Tasks
 
-Each task follows this structure:
+Start with an acceptance task table so a reviewer can assess scope and ordering quickly:
+
+```markdown
+| Task | Outcome | Dependencies | File scope | Proof | Complete when |
+| --- | --- | --- | --- | --- | --- |
+| 1. [Title] | [Observable result] | None | `src/path/to/file.ts`, `tests/path/to/test.ts` | `[focused command]`; [review or observation] | [Result exists and named evidence passes] |
+```
+
+Expand a row with the following structure when its acceptance criteria, risk, or handoff context needs more detail:
 
 ```markdown
 ## Task [N]: [Short descriptive title]
 
 **Description:** One paragraph explaining what this task accomplishes.
 
+**Dependencies:** [Task numbers, external inputs, or authorizations required before this task; use "None" when independent]
+
+**File scope:**
+- Create: `src/path/to/new-file.ts`
+- Modify: `src/path/to/existing-file.ts`
+- Test: `tests/path/to/test.ts`
+
 **Acceptance criteria:**
 - [ ] [Specific, testable condition]
 - [ ] [Specific, testable condition]
 
-**Verification:**
+**Proof:**
 - [ ] Tests pass: `npm test -- --grep "feature-name"`
 - [ ] Build succeeds: `npm run build`
 - [ ] Manual check: [description of what to verify]
 
-**Dependencies:** [Task numbers this depends on, or "None"]
-
-**Files likely touched:**
-- `src/path/to/file.ts`
-- `tests/path/to/test.ts`
+**Completion condition:** [The observable state and evidence that make this task complete]
 
 **Estimated scope:** [Small: 1-2 files | Medium: 3-5 files | Large: 5+ files]
 ```
+
+Use exact known paths. If discovery is itself required, bound it to a named directory, interface, or preceding discovery task and state which later tasks depend on its result. Proof must name the check, review, or observation that demonstrates the acceptance criteria; a command is useful only when it is known and applicable.
+
+### Step 4a: Localize Unknowns
+
+Record each unresolved item beside the task and dependency it affects:
+
+```markdown
+**Blocked dependency:** Task 4 needs the provider's retry contract before its public error behavior can be finalized. Tasks 1-3 and 5 do not depend on that choice.
+**Resolution:** Inspect `docs/path/to/provider-contract.md`; if it is absent or contradictory, ask one focused question describing the affected behavior.
+```
+
+Continue planning independent tasks. Do not invent a high-impact product, security, data, cost, or compatibility decision to remove a blocker, and do not stop the whole plan for an unknown that affects only one branch. Complete safe investigation and prepare the concrete options before asking for a necessary decision.
 
 ### Step 5: Order and Checkpoint
 
@@ -121,8 +149,10 @@ Add explicit checkpoints:
 - [ ] All tests pass
 - [ ] Application builds without errors
 - [ ] Core user flow works end-to-end
-- [ ] Review with human before proceeding
+- [ ] If project policy, a grant condition, required acceptance, or an unresolved material decision requires human review, record it before the dependent task; otherwise record the evidence and continue authorized independent work
 ```
+
+A checkpoint records evidence and exposes real gates. It does not create a human-approval gate by itself. Reuse applicable authorization and continue independent tasks unless a named dependency, required acceptance, or authorization condition blocks them.
 
 ## Task Sizing Guidelines
 
@@ -155,6 +185,10 @@ If a task is L or larger, it should be broken into smaller tasks. An agent perfo
 - [Key decision 2 and rationale]
 
 ## Task List
+
+| Task | Outcome | Dependencies | File scope | Proof | Complete when |
+| --- | --- | --- | --- | --- | --- |
+| 1 | ... | None | `path/to/file` | `focused check` | ... |
 
 ### Phase 1: Foundation
 - [ ] Task 1: ...
@@ -218,15 +252,19 @@ When multiple agents or sessions are available:
 Before starting implementation, confirm:
 
 - [ ] Every task has acceptance criteria
-- [ ] Every task has a verification step
+- [ ] Every task identifies dependencies, file scope, proof, and a completion condition
 - [ ] Task dependencies are identified and ordered correctly
 - [ ] No task touches more than ~5 files
 - [ ] Checkpoints exist between major phases
-- [ ] The human has reviewed and approved the plan
+- [ ] Still-valid requirements and accepted decisions were reused
+- [ ] Unknowns are attached only to the tasks they block
+- [ ] The plan states its draft/review status and whether implementation has begun
 
-## Execution Handoff
+## Plan Delivery and Execution Handoff
 
-A finished plan is not the end of this skill — hand off to an execution mode explicitly:
+If the user requested only analysis, a Spec, a design, or a plan, stop when the requested conversation result or local plan is reviewable. Mark the artifact as draft or reviewed and state that implementation has not begun. One document may contain the problem, goals, requirements, acceptance, risks, task table, and any needed detailed handoff. Do not create or switch branches, create worktrees, commit, push, open a pull request, or implement merely because a template mentions those actions.
+
+When later execution is in scope, record the appropriate execution mode so the handoff is usable:
 
 **1. Subagent-Driven** (requires host subagent support; tasks mostly independent) — execute with `../subagent-driven-development/SKILL.md`: a fresh subagent per task, sequentially, with two-stage review between tasks. Prefer this when available; fresh context per task and enforced review checkpoints produce noticeably higher quality. **Context warning:** a task list is lighter than what a zero-context subagent needs — before dispatching each task, include the relevant spec excerpts and file context in the dispatch prompt. If that context can't be assembled per task, upgrade the plan with `../writing-plans/SKILL.md` (self-contained steps) before dispatching.
 
@@ -234,7 +272,9 @@ A finished plan is not the end of this skill — hand off to an execution mode e
 
 **3. Separate Session** — hand the plan to a later session via `../executing-plans/SKILL.md`.
 
-**Decide the mode yourself by the criteria above and announce it before starting** (e.g. "Executing this plan with subagent-driven-development") — do not ask the user to choose; the user can override at any point. If the host lacks subagents, say so and fall back to mode 2 — see the fallback contract in `../using-devflow/SKILL.md`.
+Choose the mode from task dependencies and host capabilities; ask only if the choice requires a material user decision. Record the choice separately from authorization. Selecting, recommending, or announcing a mode does not mean execution starts now. Begin implementation only when the current request or another effective grant authorizes that action, target, environment, and scope. Reuse a still-valid implementation grant instead of asking again; otherwise deliver the plan and identify implementation as the concrete pending action. If the host lacks subagents, use the fallback contract in `../using-devflow/SKILL.md` when execution is authorized.
+
+For a handoff that must survive a new session or context compaction, preserve the objective and deliverable, current phase, bounded scope and authorization source, selected skills, relevant evidence, unfinished items, and localized blockers. On resume, reconcile new user instructions and changed project rules or state, rereading only lost or changed material. Do not restart requirements discovery solely because context was compacted.
 
 ## See Also
 
