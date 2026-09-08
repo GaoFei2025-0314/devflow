@@ -9,6 +9,8 @@ description: Optimizes measured performance problems. Use when explicit performa
 
 Measure before optimizing. Performance work without measurement is guessing — and guessing leads to premature optimization that adds complexity without improving what matters. Profile first, identify the actual bottleneck, fix it, measure again. Optimize only what measurements prove matters.
 
+Select whether the request is investigation, a performance design, implementation, or verification before acting; an investigation does not imply an optimization. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Select benchmark, build, and test commands through [Project Command Selection](../using-devflow/references/project-commands.md).
+
 ## When to Use
 
 - Performance requirements exist in the spec (load time budgets, response time SLAs)
@@ -20,6 +22,8 @@ Measure before optimizing. Performance work without measurement is guessing — 
 **When NOT to use:** Don't optimize before you have evidence of a problem. Premature optimization adds complexity that costs more than the performance it gains.
 
 ## Core Web Vitals Targets
+
+These are common reference thresholds. Confirm the applicable product target and current authoritative definition when the conclusion depends on them; an example threshold is not automatically a project gate.
 
 | Metric | Good | Needs Improvement | Poor |
 |--------|------|-------------------|------|
@@ -34,15 +38,15 @@ Measure before optimizing. Performance work without measurement is guessing — 
 2. IDENTIFY → Find the actual bottleneck (not assumed)
 3. FIX      → Address the specific bottleneck
 4. VERIFY   → Measure again, confirm improvement
-5. GUARD    → Add monitoring or tests to prevent regression
+5. GUARD    → Add an applicable regression check or monitoring signal when the project and risk call for it
 ```
 
 ### Step 1: Measure
 
-Two complementary approaches — use both:
+Two complementary approaches may be useful; choose the one or both that answer the actual question and are available in the current environment:
 
 - **Synthetic (Lighthouse, DevTools Performance tab):** Controlled conditions, reproducible. Best for CI regression detection and isolating specific issues.
-- **RUM (web-vitals library, CrUX):** Real user data in real conditions. Required to validate that a fix actually improved user experience.
+- **RUM (web-vitals library, CrUX):** Real user data in real conditions. Use it when the claim concerns actual user experience and applicable telemetry exists.
 
 **Frontend:** Lighthouse or the DevTools Performance tab for synthetic traces; the web-vitals library for RUM (snippet in `references/examples.md`).
 
@@ -107,9 +111,9 @@ Worked before/after code for each fix is in `references/examples.md`.
 - **Large bundle size:** Lazy-load heavy, rarely-used features and split at route level with `Suspense`. Modern bundlers tree-shake named imports on ESM dependencies — profile before rewriting import styles; the real gains come from splitting.
 - **Missing caching (backend):** Cache frequently-read, rarely-changed data with a TTL; serve static assets with long-lived immutable cache headers (content-hashed filenames); set `Cache-Control` on cacheable API responses.
 
-## Performance Budget
+## Performance Budgets
 
-Set budgets and enforce them:
+Derive budgets from the product requirement, established project policy, representative baseline, or an accepted target. The values below are illustrative starting points, not universal gates:
 
 ```
 JavaScript bundle: < 200KB gzipped (initial load)
@@ -121,7 +125,7 @@ Time to Interactive: < 3.5s on 4G
 Lighthouse Performance score: ≥ 90
 ```
 
-**Enforce in CI:**
+When the project already uses the matching tools or separately chooses them, these are illustrative CI command shapes. Select the actual project command and package manager before execution:
 ```bash
 # Bundle size check
 npx bundlesize --config bundlesize.config.json
@@ -151,17 +155,23 @@ Worked anti-pattern fixes and measurement snippets: `references/examples.md`. Fo
 - List endpoints without pagination
 - Images without dimensions, lazy loading, or responsive sizes
 - Bundle size growing without review
-- No performance monitoring in production
+- A claimed production improvement with no representative measurement or applicable production/user evidence
 - `React.memo` and `useMemo` everywhere (overusing is as bad as underusing)
 
 ## Verification
 
-After any performance-related change:
+After performance work, verify the smallest scope that covers the requested deliverable and claim. Record missing measurements, uncertain attribution, mismatched conditions, and other limits as unknowns rather than forcing an optimization or converting code-size reduction, speculative causes, or unmatched evidence into a speed or user-benefit claim.
 
-- [ ] Before and after measurements exist (specific numbers)
-- [ ] The specific bottleneck is identified and addressed
-- [ ] Core Web Vitals are within "Good" thresholds
-- [ ] Bundle size hasn't increased significantly
-- [ ] No N+1 queries in new data fetching code
-- [ ] Performance budget passes in CI (if configured)
-- [ ] Existing tests still pass (optimization didn't break behavior)
+For an investigation or design:
+
+- [ ] Available measurements establish the relevant baseline, or unavailable evidence and the resulting unknowns are explicit
+- [ ] The observed or suspected bottleneck is attributed only as far as the evidence supports
+- [ ] The proposed remedy, experiment, or next measurement is stated when the requested deliverable calls for one
+- [ ] Representative workload, environment, data, warmup/cache state, sampling method, metric, and limits are recorded for later comparison
+
+When an optimization is implemented:
+
+- [ ] The specific bottleneck is addressed and before/after measurements contain specific numbers
+- [ ] Before and after use the same task, workload, conditions, metric definition, and quality gates
+- [ ] Applicable Core Web Vitals, service metrics, and configured performance budgets meet the project's requirement or the remaining gap is stated
+- [ ] Relevant bundle, query, allocation, latency, correctness, and surrounding regression checks cover the affected path
