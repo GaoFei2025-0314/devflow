@@ -37,23 +37,23 @@ A ready-made override template (stack commands, skills to ignore, fast-path thre
 
 **In Claude Code:** Installed as a plugin, skills appear as `devflow:<name>` — invoke them with the `Skill` tool and follow the loaded content directly. Installed as a skill folder instead, only the bundle entrypoint is registered; open the referenced `SKILL.md` files with the Read tool and follow them as instructions.
 
-**In Codex:** Skills load natively from `.codex/skills/`, or via the repository's `AGENTS.md`; follow the loaded instructions directly.
-
-**In Copilot CLI:** Use the `skill` tool. **In Gemini CLI:** Skills activate via `activate_skill`.
+**In Codex, Copilot CLI, and Gemini CLI:** use the skill-loading mechanism only when it is present in the current host inventory and follow its current parameter schema. The adapter pages below retain historical names as purpose hints, not API promises.
 
 **In other environments:** Treat each referenced `SKILL.md` as ordinary instructions: read the file, follow it.
 
 ## Platform Adaptation
 
-Skills use Claude Code tool names. On other platforms, see the mapping for your host: `references/codex-tools.md` (Codex), `references/copilot-tools.md` (Copilot CLI), `references/gemini-tools.md` (Gemini CLI). Hosts not listed: substitute your native file, shell, and subagent tools.
+Before choosing any tool, apply the shared [Host Capability and Fallback Contract](references/host-contract.md): inspect the interfaces and parameter schemas actually exposed by the current host, then choose an authorized capability for the required purpose. Static names and examples do not establish availability. Re-check the choice when tools, schemas, permissions, or scope change.
+
+The [Codex](references/codex-tools.md), [Copilot CLI](references/copilot-tools.md), and [Gemini CLI](references/gemini-tools.md) adapter pages retain useful purpose mappings and limited historical examples. Their support and evidence labels come from the shared contract. Hosts not listed follow the same contract using their current file, shell, browser, collaboration, and Git/PR capabilities.
 
 ### No-Subagent Fallback Contract
 
-Some skills dispatch subagents (subagent-driven-development, dispatching-parallel-agents, requesting-code-review). On a host without subagent support, apply this single contract:
+Agent selection must satisfy the capability, permission, independent-verification, context, write-isolation, and resource checks in the [Host Capability and Fallback Contract](references/host-contract.md). The mere presence of a dispatch interface is insufficient. On a host without suitable subagent support, or when delegation is disallowed or unsafe, apply this single fallback:
 
 1. **Plan execution:** use `../executing-plans/SKILL.md` instead of subagent-driven-development.
 2. **Parallel investigations:** work the same scoped problem domains sequentially in-session, keeping each investigation's scope exactly as the skill defines it.
-3. **Review dispatch:** fill the review prompt template yourself and work through it as a self-review checklist in a fresh pass over the diff.
+3. **Review dispatch:** fill the review prompt template yourself and work through it as a self-review checklist in a fresh pass over the diff. Do not label that result independent review.
 
 Skills reference this contract rather than restating it.
 

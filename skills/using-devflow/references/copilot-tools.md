@@ -1,52 +1,27 @@
-# Copilot CLI Tool Mapping
+# Copilot CLI Capability Guide
 
-Skills use Claude Code tool names. When you encounter these in a skill, use your platform equivalent:
+Apply the shared [Host Capability and Fallback Contract](host-contract.md) before using this page. Read the current Copilot CLI tool inventory and parameter schemas first. Every name below is a purpose hint or historical example, not a promise that the API exists in this session.
 
-| Skill references | Copilot CLI equivalent |
-|-----------------|----------------------|
-| `Read` (file reading) | `view` |
-| `Write` (file creation) | `create` |
-| `Edit` (file editing) | `edit` |
-| `Bash` (run commands) | `bash` |
-| `Grep` (search file content) | `grep` |
-| `Glob` (search files by name) | `glob` |
-| `Skill` tool (invoke a skill) | `skill` |
-| `WebFetch` | `web_fetch` |
-| `Task` tool (dispatch subagent) | `task` (see [Agent types](#agent-types)) |
-| Multiple `Task` calls (parallel) | Multiple `task` calls |
-| Task status/output | `read_agent`, `list_agents` |
-| `TodoWrite` (task tracking) | `sql` with built-in `todos` table |
-| `WebSearch` | No equivalent — use `web_fetch` with a search engine URL |
-| `EnterPlanMode` / `ExitPlanMode` | No equivalent — stay in the main session |
+## Evidence status
 
-## Agent types
+- **Native tested:** no native-support claim is established by this page.
+- **Controlled contract verified:** no controlled-support claim is established by this page.
+- **Format-only guidance:** this adapter's purpose mapping.
+- **Unverified:** runtime behavior, parameter availability, and complete host support.
 
-Copilot CLI's `task` tool accepts an `agent_type` parameter:
+## Purpose mapping
 
-| Claude Code agent | Copilot CLI equivalent |
-|-------------------|----------------------|
-| `general-purpose` | `"general-purpose"` |
-| `Explore` | `"explore"` |
-| Template-driven subagents (e.g. code-reviewer) | Dispatch `task` with the filled prompt template |
+| Devflow purpose | Historical Copilot CLI example | Required current check |
+| --- | --- | --- |
+| Read, create, or edit files | `view`, `create`, or `edit` | Confirm each operation exists and check its path, range, encoding, and replacement parameters. |
+| Search files or content | `grep` or `glob` | Confirm syntax, root/path scope, exclusions, pagination, and truncation behavior. |
+| Run commands | `bash`; some versions exposed async session operations | Confirm shell, working-directory, environment, timeout, async/session, input, and result parameters. |
+| Load a skill | historically `skill` | Confirm the loader exists and its current identifier schema; otherwise read the applicable `SKILL.md` as instructions. |
+| Track work | a host task interface; older guidance used a session database | Confirm an actual callable interface and schema. Tracking storage is not implied by this mapping. |
+| Dispatch or coordinate agents | historically `task`, agent listing, and result reading | Confirm dispatch, context, wait/result, cancellation, concurrency, and agent-type parameters before use. Apply all agent-choice checks. |
+| Fetch web or browser evidence | historically a fetch operation; use any current authorized browser interface when present | Confirm whether it provides documents only or real navigation, interaction, and visual evidence. Do not treat fetch output as browser acceptance. |
+| Work with Git or pull requests | shell Git or currently exposed GitHub interfaces | Confirm availability and parameters, then apply separate authorization and delivery gates before mutation. |
 
-## Async shell sessions
+Past versions have exposed additional memory, status, documentation, shell-session, and GitHub operations. Use them only when the current host describes them. Do not authenticate, install an extension, enable a service, or add an integration to match this guide.
 
-Copilot CLI supports persistent async shell sessions, which have no direct Claude Code equivalent:
-
-| Tool | Purpose |
-|------|---------|
-| `bash` with `async: true` | Start a long-running command in the background |
-| `write_bash` | Send input to a running async session |
-| `read_bash` | Read output from an async session |
-| `stop_bash` | Terminate an async session |
-| `list_bash` | List all active shell sessions |
-
-## Additional Copilot CLI tools
-
-| Tool | Purpose |
-|------|---------|
-| `store_memory` | Persist facts about the codebase for future sessions |
-| `report_intent` | Update the UI status line with current intent |
-| `sql` | Query the session's SQLite database (todos, metadata) |
-| `fetch_copilot_cli_documentation` | Look up Copilot CLI documentation |
-| GitHub MCP tools (`github-mcp-server-*`) | Native GitHub API access (issues, PRs, code search) |
+If collaboration is absent or the task fails the permission, independence, context, write-isolation, or resource checks, use the no-subagent fallback in [Using Devflow](../SKILL.md). If no suitable browser exists, preserve the evidence gap and any mandatory acceptance gate.
