@@ -1,218 +1,95 @@
 ---
 name: using-git-worktrees
-description: Use when starting feature work that needs isolation from current workspace or before executing implementation plans - creates isolated git worktrees with smart directory selection and safety verification
+description: Inspects, reuses, or creates an isolated Git worktree when the current project and task need one, while preserving existing work and respecting setup, evidence, authorization, and cleanup boundaries.
 ---
 
 # Using Git Worktrees
 
-## Overview
+## Purpose
 
-Git worktrees create isolated workspaces sharing the same repository, allowing work on multiple branches simultaneously without switching.
+Worktrees can isolate concurrent branches without repeated branch switching. Use one when isolation is useful and project policy allows it. Do not create a worktree merely because this skill was loaded or because a document or plan was approved.
 
-**Core principle:** Systematic directory selection + safety verification = reliable isolation.
+Use the [Shared Delivery Contract](../using-devflow/references/delivery-contract.md) for readiness and evidence, and the [Shared Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before creating, changing, or removing Git objects.
 
-**Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
+## 1. Decide Whether a Worktree Is Needed
 
-## Directory Selection Process
-
-Follow this priority order:
-
-### 1. Check Existing Directories
+First inspect the current environment:
 
 ```bash
-# Check in priority order
-ls -d .worktrees 2>/dev/null     # Preferred (hidden)
-ls -d worktrees 2>/dev/null      # Alternative
+git rev-parse --show-toplevel
+git status --short --branch
+git worktree list --porcelain
 ```
 
-**If found:** Use that directory. If both exist, `.worktrees` wins.
+Resolve the task scope, required base and branch, project policy, existing changes, and ownership of the current checkout. If an existing authorized environment has the correct repository, branch, base, and scope, reuse it after checking relevant state. Preserve other people's commits and uncommitted files. Do not nest or duplicate a worktree, reinitialize the repository, or clean existing state to satisfy a template.
 
-### 2. Check CLAUDE.md
+A spec-only or plan-only request normally ends with a local reviewable document under its project policy. It does not grant implementation, branch, worktree, commit, or external delivery authority.
+
+Create a new worktree only when the task needs isolation and the applicable policy and authorization cover the exact repository, path, branch, and scope.
+
+## 2. Select and Validate a Location
+
+Follow explicit repository instructions first. Existing conventions such as `.worktrees/`, `worktrees/`, or an external workspace root are useful evidence but do not override project policy.
+
+For a project-local location, verify Git ignores the parent before creating anything:
 
 ```bash
-grep -i "worktree.*director" CLAUDE.md 2>/dev/null
+git check-ignore -q .worktrees
 ```
 
-**If preference specified:** Use it without asking.
+If it is not ignored, report the conflict and obtain or reuse authorization before changing `.gitignore`; that edit and any commit are separate actions. An external worktree directory avoids repository tracking but still requires an exact, safe path.
 
-### 3. Ask User
-
-If no directory exists and no CLAUDE.md preference:
-
-```
-No worktree directory found. Where should I create worktrees?
-
-1. .worktrees/ (project-local, hidden)
-2. ~/.config/devflow/worktrees/<project-name>/ (global location)
-
-Which would you prefer?
-```
-
-## Safety Verification
-
-### For Project-Local Directories (.worktrees or worktrees)
-
-**MUST verify directory is ignored before creating worktree:**
+Before creation, verify the branch name is not already checked out elsewhere and confirm the intended base revision:
 
 ```bash
-# Check if directory is ignored (respects local, global, and system gitignore)
-git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
+git branch --show-current
+git rev-parse <base>
+git worktree list --porcelain
 ```
 
-**If NOT ignored:**
-
-Per Jesse's rule "Fix broken things immediately":
-1. Add appropriate line to .gitignore
-2. Commit the change
-3. Proceed with worktree creation
-
-**Why critical:** Prevents accidentally committing worktree contents to repository.
-
-### For Global Directory (~/.config/devflow/worktrees)
-
-No .gitignore verification needed - outside project entirely.
-
-## Creation Steps
-
-### 1. Detect Project Name
+Then use the project-approved form, for example:
 
 ```bash
-project=$(basename "$(git rev-parse --show-toplevel)")
+git worktree add <path> -b <branch> <base>
 ```
 
-### 2. Create Worktree
+Do not assume every project branches from `main`; use its actual default or required base. Short-lived branch naming such as `feature/<name>`, `fix/<name>`, `ui/<name>`, `refactor/<name>`, or `chore/<name>` is an example when the project adopts it.
 
-```bash
-# Determine full path
-case $LOCATION in
-  .worktrees|worktrees)
-    path="$LOCATION/$BRANCH_NAME"
-    ;;
-  ~/.config/devflow/worktrees/*)
-    path="~/.config/devflow/worktrees/$project/$BRANCH_NAME"
-    ;;
-esac
+## 3. Load the Existing Project
 
-# Create worktree with new branch
-git worktree add "$path" -b "$BRANCH_NAME"
-cd "$path"
+After entering a new or reused worktree, inspect its instructions, lockfiles, dependencies, and available runtime. Use the project's established package manager and commands. Do not automatically reinstall dependencies, change a lockfile, or install tooling solely because a worktree was selected.
+
+Run only setup needed for this environment and authorized scope. If setup would change dependencies, configuration, authentication, global installation, or an external service, apply the separate authorization boundary first.
+
+## 4. Establish Scoped Baseline Evidence
+
+Use focused project checks that distinguish pre-existing state from changes relevant to the task. Reuse valid current evidence when its artifact, revision, environment, command, and scope still match. Entering this skill does not invalidate evidence or require a full-suite rerun.
+
+Record each command, revision, result, and scope limit. If a required baseline check fails, preserve the failure and determine whether it blocks the intended work or delivery gate. Continue unrelated authorized work when safe; do not ask for a new permission merely because an existing failure was observed. Investigate, narrow scope, or request a decision only when the failure creates a real dependency or policy boundary.
+
+Report readiness accurately, for example:
+
+```text
+Worktree verified at <absolute-path> on <branch> at <revision>.
+Focused baseline: <command and result>.
+Known failure or pending gate: <scope and impact>.
 ```
 
-### 3. Run Project Setup
+Do not claim a clean or passing baseline without direct applicable evidence.
 
-Auto-detect and run appropriate setup:
+## 5. Delivery and Cleanup
 
-```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
+A worktree only supplies an isolated local environment. It does not authorize commits, push, PR creation, merge, deployment, synchronization, branch deletion, or worktree removal. Evaluate those steps under the shared contracts and current project policy.
 
-# Rust
-if [ -f Cargo.toml ]; then cargo build; fi
+After integration, preserve the worktree and its branch unless removal and any branch deletion are separately authorized for those exact targets. Inspect for uncommitted or unpushed work before any authorized removal. Never use forced cleanup to hide a conflict or erase work outside the current scope.
 
-# Python
-if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
+## Verification
 
-# Go
-if [ -f go.mod ]; then go mod download; fi
-```
-
-### 4. Verify Clean Baseline
-
-Run tests to ensure worktree starts clean:
-
-```bash
-# Examples - use project-appropriate command
-npm test
-cargo test
-pytest
-go test ./...
-```
-
-**If tests fail:** Report failures, ask whether to proceed or investigate.
-
-**If tests pass:** Report ready.
-
-### 5. Report Location
-
-```
-Worktree ready at <full-path>
-Tests passing (<N> tests, 0 failures)
-Ready to implement <feature-name>
-```
-
-## Quick Reference
-
-| Situation | Action |
-|-----------|--------|
-| `.worktrees/` exists | Use it (verify ignored) |
-| `worktrees/` exists | Use it (verify ignored) |
-| Both exist | Use `.worktrees/` |
-| Neither exists | Check CLAUDE.md → Ask user |
-| Directory not ignored | Add to .gitignore + commit |
-| Tests fail during baseline | Report failures + ask |
-| No package.json/Cargo.toml | Skip dependency install |
-
-## Common Mistakes
-
-### Skipping ignore verification
-
-- **Problem:** Worktree contents get tracked, pollute git status
-- **Fix:** Always use `git check-ignore` before creating project-local worktree
-
-### Assuming directory location
-
-- **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: existing > CLAUDE.md > ask
-
-### Proceeding with failing tests
-
-- **Problem:** Can't distinguish new bugs from pre-existing issues
-- **Fix:** Report failures, get explicit permission to proceed
-
-### Hardcoding setup commands
-
-- **Problem:** Breaks on projects using different tools
-- **Fix:** Auto-detect from project files (package.json, etc.)
-
-## Example Workflow
-
-```
-You: I'm using the using-git-worktrees skill to set up an isolated workspace.
-
-[Check .worktrees/ - exists]
-[Verify ignored - git check-ignore confirms .worktrees/ is ignored]
-[Create worktree: git worktree add .worktrees/auth -b feature/auth]
-[Run npm install]
-[Run npm test - 47 passing]
-
-Worktree ready at /Users/jesse/myproject/.worktrees/auth
-Tests passing (47 tests, 0 failures)
-Ready to implement auth feature
-```
-
-## Red Flags
-
-**Never:**
-- Create worktree without verifying it's ignored (project-local)
-- Skip baseline test verification
-- Proceed with failing tests without asking
-- Assume directory location when ambiguous
-- Skip CLAUDE.md check
-
-**Always:**
-- Follow directory priority: existing > CLAUDE.md > ask
-- Verify directory is ignored for project-local
-- Auto-detect and run project setup
-- Verify clean test baseline
-
-## Integration
-
-**Called by:**
-- **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **subagent-driven-development** - REQUIRED before executing any tasks
-- **executing-plans** - REQUIRED before executing any tasks
-- Any skill needing isolated workspace
-
-**Pairs with:**
-- **finishing-a-development-branch** - REQUIRED for cleanup after work complete
+- [ ] The repository, existing worktrees, branch, base, and working state were inspected.
+- [ ] An adequate existing authorized environment was reused when appropriate.
+- [ ] A new worktree was created only when isolation and policy required it.
+- [ ] A project-local parent was verified ignored before creation.
+- [ ] Existing work and other agents' changes were preserved.
+- [ ] Setup used the project's actual tools without automatic reinstall or lockfile changes.
+- [ ] Baseline evidence is scoped, current, and reports genuine failures.
+- [ ] Commit, delivery, synchronization, and cleanup remain separate decisions.
