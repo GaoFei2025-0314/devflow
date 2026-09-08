@@ -1,17 +1,17 @@
 # Definition of Done
 
-The project-wide standing bar every task, increment, and change clears before it counts as done — regardless of what the task-specific acceptance criteria say. Task-level criteria answer "did we build the right thing?"; this list answers "is it actually finished?".
+Apply this baseline to the **current requested deliverable and work package**, together with its task-specific acceptance criteria and the project's own required gates. A documentation deliverable, implementation, review result, and final delivery have different legal endpoints; use the [Phase and Delivery Contract](../../using-devflow/references/phase-contract.md) for their status and the [Delivery Contract](../../using-devflow/references/delivery-contract.md) for later actions. If the project defines its own Definition of Done, that version wins.
 
-A change is **done** when:
+Before calling the current deliverable complete:
 
-- [ ] **Behavior is proven.** Every new behavior has a passing test; bug fixes include a reproduction test that failed before the fix.
-- [ ] **The full relevant suite is green.** Not just the focused test — the broader suite that could catch regressions.
-- [ ] **The build succeeds** with no new warnings, lint errors, or type errors.
-- [ ] **The change was exercised end-to-end** in a runtime context (app run, API call, browser check) — not only through unit tests.
-- [ ] **Review happened.** The change passed the review standard (`../../code-review-and-quality/SKILL.md`) or an explicit self-review against it.
-- [ ] **Security surface was considered.** Untrusted input, secrets, and authorization touched by the change were checked (`../../security-and-hardening/SKILL.md` when applicable).
-- [ ] **Docs and specs are current.** Public API changes, behavior changes, and decisions are reflected in the relevant docs, specs, or ADRs.
-- [ ] **No dead code or leftover scaffolding.** Debug logging, commented-out blocks, and unused artifacts from the work are removed.
-- [ ] **The work is committed** with a standalone description, on the right branch, with nothing important left uncommitted.
+- [ ] **Scope is reconciled.** Every explicit obligation is completed, already satisfied by valid evidence, accepted as deferred, or still open. Required open work keeps the package interim; accepted deferrals stay visible with their source and reason.
+- [ ] **The deliverable is proven proportionately.** New behavior has appropriate tests; a bug fix has regression evidence; documentation has applicable content, structure, and reference checks. A check that does not address a risk in this scope is recorded as not applicable rather than performed ceremonially.
+- [ ] **Relevant gates are green.** Focused checks and the broader suite, build, lint, type checks, or other mandatory gates that can catch affected regressions have valid results for the current relevant state.
+- [ ] **Runtime and human evidence are accurate.** End-to-end, browser, API, manual, or stakeholder acceptance is completed when required, or remains pending or accepted as deferred. Static checks do not prove runtime or actual model behavior.
+- [ ] **Review is resolved.** The change passed the review standard (`../../code-review-and-quality/SKILL.md`) or the applicable fallback self-review, and required findings are fixed or explicitly accepted as deferred.
+- [ ] **Affected risk surfaces were checked.** Security, privacy, data, API, dependency, configuration, migration, performance, and operational concerns are considered only where the change touches them, using the corresponding skill when applicable.
+- [ ] **Artifacts are current and clean.** Relevant docs, specs, decisions, and public contracts match the result; no debug output, dead code, commented scaffolding, or unrelated changes were introduced.
+- [ ] **Evidence is current.** Records identify the checked object, operation, result, provenance, and material limit. Valid evidence is reused while relevant state is unchanged; affected checks alone are refreshed after a relevant change.
+- [ ] **Delivery state is truthful.** Local edits, commits, work-package completion, push or pull request, merge, deployment, installation, and cleanup are separate steps. Perform and report only those required for the current deliverable and authorized by project policy.
 
-If a project defines its own Definition of Done, the project's version wins — treat this file as the default baseline.
+Do not create duplicate mandatory records solely to prove this checklist was considered. Reuse the plan, task state, review, and evidence records that already contain the required facts. Report the exact completed scope, valid evidence, open or deferred obligations, manual status, and concrete pending action using the shared completion terms.
