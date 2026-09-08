@@ -33,7 +33,7 @@ Git `HEAD` alone is not a state identity: working-tree edits, participating untr
 
 A status or completion handoff must carry the essential evidence for its claim instead of requiring the user to reconstruct it from earlier commentary or unnamed tool output. For each result needed to support the claim, state compactly:
 
-- the concrete verified object: applicable file paths or another precise identifier, or a stable evidence reference that identifies it;
+- the concrete verified object: for file-backed checks, name the relevant implementation and test artifacts, or cite a stable evidence reference that identifies them; keep this separate from the operation, because a command identifier says how the check ran, not which objects it covered;
 - the exact command, tool operation, or human scenario and its observed result or current status;
 - the behavior or coverage established and any material limit; and
 - whether the evidence was newly executed, supplied, or reused, with the source and continuing validity of supplied or reused evidence.
