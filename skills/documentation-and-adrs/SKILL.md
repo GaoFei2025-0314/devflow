@@ -249,6 +249,12 @@ Keep automated engineering checks, observed visual or interaction evidence, and 
 
 A document-only request may finish with a reviewable document. Do not imply implementation or runtime verification from document readiness. In routine progress updates, report relevant decisions, findings, failures, or changed risk without dumping internal checklists; make the final delivery explanation self-contained.
 
+## Defect Records
+
+When recording a defect or answering whether one was recorded, inspect the project's authoritative defect source and relevant acceptance or release views before describing status. Use [Defect records and derived views](references/defect-records.md) to preserve the canonical stable ID, reproduction, expected and actual results, impact, status, affected and verified versions, update times, and verification evidence.
+
+Treat acceptance, release, and experience lists as derived views of the same defect when one canonical record suffices. Before delivery, compare relevant IDs plus actual status and update times; a missing derived entry means the view is incomplete, not that an existing canonical defect is wholly unrecorded. Update only authorized records, inspect the result, and keep recording, repair, retest, verification, and closure as separate factual states.
+
 ## Documentation for Agents
 
 Special consideration for AI agent context:
@@ -291,3 +297,4 @@ After documenting:
 - [ ] Required user acceptance is independently executable and identifies artifact/version, environment, prerequisites, entry, actions, expected and failure results, and unavailable scope
 - [ ] Engineering checks, observed visual/interaction evidence, human acceptance, and protected-action authorization are reported as distinct states
 - [ ] Major checks are explained by covered behavior or risk, and the final delivery explanation is self-contained
+- [ ] Defect views preserve canonical IDs and reconcile relevant status/update times; repair, retest, and closure claims have their own evidence
