@@ -61,7 +61,8 @@ output before switching; it is the basis for both review and recovery.
 ## Backup scope
 
 Before any switch, copy the **bundle-owned paths only** — exactly the paths
-listed in the candidate's `install-manifest.json` (`paths` field) that exist
+listed in the candidate's install manifest file (install-manifest.json,
+`paths` field) that exist
 in the current install — into a recovery directory. Do not back up or later
 delete unknown-source content; it is not yours to manage.
 
