@@ -63,6 +63,12 @@ class BundleCheckerTests(unittest.TestCase):
 
     def test_valid_small_unicode_bundle_passes_without_assuming_33_skills(self):
         self.write_skill("devflow")
+        router = self.root / "skills" / "devflow" / "SKILL.md"
+        router.write_text(
+            router.read_text(encoding="utf-8")
+            + f"\n- [文档-review](../文档-review/SKILL.md)\n",
+            encoding="utf-8",
+        )
         self.write_skill(
             "文档-review",
             support_files=("skills/文档-review/references/guide.md",),
@@ -223,6 +229,106 @@ class BundleCheckerTests(unittest.TestCase):
         self.assertIn("skills/unlisted/SKILL.md", result.stdout)
         self.assertIn("skill directory is missing from catalog", result.stdout)
 
+    def test_nested_skill_entry_is_rejected(self):
+        self.write_skill("alpha")
+        nested = self.root / "skills" / "alpha" / "references" / "SKILL.md"
+        nested.parent.mkdir(parents=True)
+        nested.write_text("---\nname: alpha\ndescription: Shadow.\n---\n", encoding="utf-8")
+        self.write_catalog([self.catalog_skill("alpha")])
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("skills/alpha/references/SKILL.md", result.stdout)
+        self.assertIn("SKILL.md must sit directly in its skill directory", result.stdout)
+
+    def test_oversized_entry_violates_line_budget(self):
+        self.write_skill("alpha")
+        entry = self.root / "skills" / "alpha" / "SKILL.md"
+        entry.write_text("---\nname: alpha\ndescription: Big.\n---\n" + "line\n" * 311, encoding="utf-8")
+        self.write_catalog([self.catalog_skill("alpha")])
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("skills/alpha/SKILL.md", result.stdout)
+        self.assertIn("exceeds the 310-line entry budget", result.stdout)
+
+    def write_template_pair(self, *, identical=True):
+        self.write_skill("using-devflow")
+        authoritative = (
+            self.root / "skills" / "using-devflow" / "references" / "project-overrides.md"
+        )
+        authoritative.parent.mkdir(parents=True, exist_ok=True)
+        authoritative.write_text("# Template\n\nRules here.\n", encoding="utf-8")
+        mirror = self.root / "templates" / "project-overrides.md"
+        mirror.parent.mkdir(parents=True, exist_ok=True)
+        mirror.write_text(
+            authoritative.read_text(encoding="utf-8") if identical else "# Diverged\n",
+            encoding="utf-8",
+        )
+        self.write_catalog(
+            [
+                self.catalog_skill(
+                    "using-devflow",
+                    required_resources=[
+                        "skills/using-devflow/references/project-overrides.md",
+                        "templates/project-overrides.md",
+                    ],
+                )
+            ]
+        )
+
+    def test_template_mirror_drift_is_rejected(self):
+        self.write_template_pair(identical=False)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("templates/project-overrides.md", result.stdout)
+        self.assertIn("template copy is out of sync", result.stdout)
+
+    def test_matching_template_mirror_passes(self):
+        self.write_template_pair(identical=True)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def write_router(self, links):
+        self.write_skill("devflow")
+        body = "\n".join(
+            f"- [{name}](../{name}/SKILL.md)" for name in links
+        )
+        entry = self.root / "skills" / "devflow" / "SKILL.md"
+        entry.write_text(
+            f"---\nname: devflow\ndescription: Router.\n---\n\n{body}\n",
+            encoding="utf-8",
+        )
+
+    def test_router_must_link_every_catalog_skill(self):
+        self.write_router(["beta"])
+        self.write_skill("beta")
+        self.write_skill("gamma")
+        self.write_catalog([self.catalog_skill("devflow"), self.catalog_skill("beta"), self.catalog_skill("gamma")])
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("gamma", result.stdout)
+        self.assertIn("is not reachable from the router", result.stdout)
+
+    def test_router_link_to_uncatalogued_skill_is_rejected(self):
+        self.write_router(["beta", "ghost"])
+        self.write_skill("beta")
+        self.write_catalog([self.catalog_skill("devflow"), self.catalog_skill("beta")])
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("ghost", result.stdout)
+        self.assertIn("router links 'ghost' which is not in the catalog", result.stdout)
+
     def test_malformed_catalog_is_invalid_input_without_traceback(self):
         path = self.root / "skills" / "devflow" / "references" / "skill-catalog.json"
         path.parent.mkdir(parents=True)
@@ -310,6 +416,65 @@ class BundleCheckerTests(unittest.TestCase):
         self.assertIn(
             "templates/project-overrides.md",
             using_devflow["required_resources"],
+        )
+
+    def test_repository_declares_all_shared_contracts(self):
+        catalog_path = (
+            REPOSITORY_ROOT
+            / "skills"
+            / "devflow"
+            / "references"
+            / "skill-catalog.json"
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        using_devflow = next(
+            skill for skill in catalog["skills"] if skill["id"] == "using-devflow"
+        )
+        shared_contracts = [
+            "skills/using-devflow/references/phase-contract.md",
+            "skills/using-devflow/references/authorization-contract.md",
+            "skills/using-devflow/references/evidence-contract.md",
+            "skills/using-devflow/references/delivery-contract.md",
+            "skills/using-devflow/references/host-contract.md",
+            "skills/using-devflow/references/loading-recovery.md",
+            "skills/using-devflow/references/project-commands.md",
+            "skills/using-devflow/references/project-overrides.md",
+        ]
+        for resource in shared_contracts:
+            self.assertIn(resource, using_devflow["required_resources"])
+
+    def test_repository_declares_catalog_and_domain_references(self):
+        catalog_path = (
+            REPOSITORY_ROOT
+            / "skills"
+            / "devflow"
+            / "references"
+            / "skill-catalog.json"
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        by_id = {skill["id"]: skill for skill in catalog["skills"]}
+        self.assertIn(
+            "skills/devflow/references/skill-catalog.json",
+            by_id["devflow"]["required_resources"],
+        )
+        for resource in (
+            "skills/documentation-and-adrs/references/user-acceptance.md",
+            "skills/documentation-and-adrs/references/defect-records.md",
+        ):
+            self.assertIn(
+                resource,
+                by_id["documentation-and-adrs"]["required_resources"],
+            )
+
+    def test_repository_template_mirror_is_byte_identical(self):
+        authoritative = (
+            REPOSITORY_ROOT / "skills" / "using-devflow" / "references" / "project-overrides.md"
+        )
+        mirror = REPOSITORY_ROOT / "templates" / "project-overrides.md"
+        self.assertEqual(
+            authoritative.read_bytes(),
+            mirror.read_bytes(),
+            "templates/project-overrides.md must stay in sync with the authoritative copy",
         )
 
 

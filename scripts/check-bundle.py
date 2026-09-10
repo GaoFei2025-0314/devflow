@@ -16,6 +16,11 @@ CATALOG_FIELDS = {"schema_version", "skills"}
 SKILL_FIELD_ORDER = ("id", "entry", "route_tags", "required_resources", "aliases")
 SKILL_FIELDS = set(SKILL_FIELD_ORDER)
 FRONTMATTER_NAME = re.compile(r"^name:\s*[\"']?([^\"'\r\n]+?)[\"']?\s*$")
+ROUTER_ID = "devflow"
+ROUTER_LINK = re.compile(r"\]\(\.\./([^)/\\]+)/SKILL\.md\)")
+ENTRY_LINE_BUDGET = 310
+TEMPLATE_MIRROR = "templates/project-overrides.md"
+TEMPLATE_AUTHORITATIVE = "skills/using-devflow/references/project-overrides.md"
 
 
 class InputError(Exception):
@@ -208,6 +213,71 @@ def validate(root: Path, catalog: dict[str, Any]) -> list[str]:
         errors.append(f"skills/{skill_id}/SKILL.md: skill directory is missing from catalog")
     for skill_id in sorted(declared_ids - actual_ids):
         errors.append(f"canonical id '{skill_id}' has no matching skill directory")
+
+    expected_entries = {Path(skill_id) / "SKILL.md" for skill_id in declared_ids}
+    try:
+        nested_entries = [
+            path
+            for path in skills_directory.rglob("SKILL.md")
+            if path.relative_to(skills_directory) not in expected_entries
+        ]
+    except OSError as error:
+        errors.append(f"skills: cannot scan for nested SKILL.md files: {error}")
+        nested_entries = []
+    for path in sorted(nested_entries):
+        display = path.relative_to(root).as_posix()
+        errors.append(
+            f"{display}: SKILL.md must sit directly in its skill directory"
+        )
+
+    for skill_id in sorted(declared_ids & actual_ids):
+        entry = skills_directory / skill_id / "SKILL.md"
+        try:
+            line_count = len(entry.read_text(encoding="utf-8").splitlines())
+        except (OSError, UnicodeError) as error:
+            errors.append(f"skills/{skill_id}/SKILL.md: cannot count lines: {error}")
+            continue
+        if line_count > ENTRY_LINE_BUDGET:
+            errors.append(
+                f"skills/{skill_id}/SKILL.md: {line_count} lines "
+                f"exceeds the {ENTRY_LINE_BUDGET}-line entry budget"
+            )
+
+    using_devflow_resources = {
+        skill["id"]: set(skill["required_resources"])
+        for skill in skills
+        if skill["id"] == "using-devflow"
+    }.get("using-devflow", set())
+    if {TEMPLATE_MIRROR, TEMPLATE_AUTHORITATIVE} <= using_devflow_resources:
+        mirror = root / TEMPLATE_MIRROR
+        authoritative = root / TEMPLATE_AUTHORITATIVE
+        try:
+            in_sync = mirror.read_bytes() == authoritative.read_bytes()
+        except OSError:
+            in_sync = False
+        if not in_sync:
+            errors.append(
+                f"{TEMPLATE_MIRROR}: template copy is out of sync with "
+                f"{TEMPLATE_AUTHORITATIVE}"
+            )
+
+    router_entry = root / "skills" / ROUTER_ID / "SKILL.md"
+    if ROUTER_ID in declared_ids and router_entry.is_file():
+        try:
+            router_text = router_entry.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            errors.append(f"skills/{ROUTER_ID}/SKILL.md: cannot read router: {error}")
+            router_text = ""
+        linked_ids = set(ROUTER_LINK.findall(router_text))
+        for skill_id in sorted(declared_ids - linked_ids - {ROUTER_ID}):
+            errors.append(
+                f"canonical id '{skill_id}' is not reachable from the router"
+            )
+        for skill_id in sorted(linked_ids - declared_ids):
+            errors.append(
+                f"skills/{ROUTER_ID}/SKILL.md: router links '{skill_id}' "
+                f"which is not in the catalog"
+            )
 
     return errors
 

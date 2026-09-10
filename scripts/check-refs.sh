@@ -1,10 +1,28 @@
 #!/usr/bin/env bash
 # Reference-integrity validator for the Devflow skill bundle.
 # Checks: frontmatter presence + name/dir match, resolvable file references,
-# no leftover third-party namespaces, and SKILL.md size budget.
+# no leftover third-party namespaces, SKILL.md size budget, and the
+# catalog/structure checks in scripts/check-bundle.py.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FAIL=0
+
+# Resolve a usable Python 3. `python3` alone is not enough on Windows, where
+# it may resolve to a store stub that exits without running the script.
+resolve_python() {
+  for candidate in python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1 \
+       && "$candidate" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" >/dev/null 2>&1; then
+      command -v "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+if ! PY="$(resolve_python)"; then
+  echo "NO USABLE PYTHON 3 FOUND: reference and bundle checks need Python >= 3.8"
+  exit 2
+fi
 
 echo "== 1. Frontmatter: every SKILL.md has name + description; name matches its directory =="
 while IFS= read -r f; do
@@ -29,7 +47,7 @@ else
 fi
 
 echo "== 3. Backtick file references resolve =="
-python3 - "$ROOT" <<'EOF'
+"$PY" - "$ROOT" <<'EOF'
 import os, re, sys
 ROOT = sys.argv[1]
 pat = re.compile(r'`([^`\s]+\.(?:md|sh|ts|txt|yaml|json|cjs|html))`')
@@ -79,6 +97,18 @@ while IFS= read -r f; do
   n=$(wc -l < "$f")
   if [ "$n" -gt 310 ]; then echo "TOO LONG ($n lines): $f"; FAIL=1; fi
 done < <(find "$ROOT/skills" -name SKILL.md)
+
+echo "== 5. Bundle catalog and structure checks =="
+if "$PY" "$ROOT/scripts/check-bundle.py" --root "$ROOT"; then
+  :
+else
+  rc=$?
+  if [ "$rc" -eq 2 ]; then
+    echo "INPUT ERROR from check-bundle.py (exit 2): cannot interpret the bundle"
+    exit 2
+  fi
+  FAIL=1
+fi
 
 echo "== RESULT =="
 if [ "$FAIL" -eq 0 ]; then echo "ALL CHECKS PASSED"; else echo "FAILURES FOUND"; fi
