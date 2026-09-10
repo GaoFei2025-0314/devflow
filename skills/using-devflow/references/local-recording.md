@@ -49,11 +49,21 @@ python scripts/usage.py enable  --store <dir>    # opt-in
 python scripts/usage.py disable --store <dir>    # keeps existing events
 python scripts/usage.py append  --store <dir> --input <events.jsonl>
 python scripts/usage.py export  --store <dir> --out <report.jsonl>
+python scripts/usage.py report  --store <dir> --out <report.json>
 ```
 
 - `status` on an uninitialized store reports off and creates nothing.
 - `append` validates the whole file first; one bad line rejects the batch.
 - `export` refuses to overwrite an existing output file.
+- `report` produces offline statistics: counts by category and status,
+  task grouping (sub-agent tasks carry their `parent_task_id`), exact
+  duplicate collapse by `task_id + event_id` (similar titles or close
+  timestamps are never merged; same-identity events with differing
+  content are listed as conflicts and excluded, not silently chosen),
+  measurement units as recorded, and applicability counts where a task
+  with no explicit signal counts as unknown — never as zero. The report
+  converts nothing to cost or satisfaction and never suggests deleting
+  low-frequency skills. It also refuses to overwrite an existing output.
 - Enable/disable affect only this explicit store. Host application logs
   are managed by the host; this tool never changes host log settings,
   spawns no background process, scans no directories, and uses no network.

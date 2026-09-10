@@ -18,6 +18,7 @@ Exit codes: 0 pass, 1 validation failure, 2 input or environment error.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 import sys
@@ -286,6 +287,184 @@ def command_export(store: Path, output: Path) -> int:
     return 0
 
 
+def identity_of(event: dict) -> tuple:
+    return (event.get("task_id"), event.get("event_id"))
+
+
+def command_report(store: Path, output: Path) -> int:
+    if output.exists():
+        print(f"INPUT ERROR: output already exists: {output}", file=sys.stderr)
+        return 2
+    events_path = store / EVENTS_FILE
+    if not store.is_dir() or not events_path.is_file():
+        print(
+            f"INPUT ERROR: store has no events to report: {store}", file=sys.stderr
+        )
+        return 2
+    events = []
+    for number, line in enumerate(
+        events_path.read_text(encoding="utf-8").splitlines(), 1
+    ):
+        if not line.strip():
+            continue
+        try:
+            events.append(validate_event(json.loads(line), number))
+        except (ValidationError, json.JSONDecodeError) as error:
+            print(f"ERROR: stored event failed schema validation: {error}")
+            print("USAGE REPORT REJECTED: fix the store before reporting")
+            return 1
+
+    total = len(events)
+    unique: dict[tuple, dict] = {}
+    conflicts: list[dict] = []
+    exact_duplicates_collapsed = 0
+    for event in events:
+        identity = identity_of(event)
+        previous = unique.get(identity)
+        if previous is None:
+            unique[identity] = event
+        elif previous == event:
+            exact_duplicates_collapsed += 1
+        else:
+            differing = sorted(
+                key
+                for key in set(previous) | set(event)
+                if previous.get(key) != event.get(key)
+            )
+            conflicts.append(
+                {
+                    "event_id": event["event_id"],
+                    "task_id": event["task_id"],
+                    "differing_fields": differing,
+                    "resolution": "excluded from statistics; kept in store",
+                }
+            )
+
+    counted = list(unique.values())
+    conflicting_identities = {
+        (conflict["task_id"], conflict["event_id"]) for conflict in conflicts
+    }
+    counted = [
+        event
+        for event in counted
+        if identity_of(event) not in conflicting_identities
+    ]
+
+    timestamps = sorted(event["occurred_at"] for event in counted)
+
+    counts_by_category: dict[str, int] = {}
+    counts_by_status: dict[str, int] = {}
+    units_present: set[str] = set()
+    events_without_value = 0
+    tasks: dict[str, dict] = {}
+    for event in counted:
+        category = event["category"]
+        status = event["status"]
+        counts_by_category[category] = counts_by_category.get(category, 0) + 1
+        counts_by_status[status] = counts_by_status.get(status, 0) + 1
+        if event.get("unit") is not None:
+            units_present.add(event["unit"])
+        if event.get("value") is None:
+            events_without_value += 1
+        task_id = event["task_id"]
+        task = tasks.setdefault(
+            task_id,
+            {
+                "task_id": task_id,
+                "parent_task_id": event.get("parent_task_id"),
+                "is_subagent_task": event.get("parent_task_id") is not None,
+                "events": 0,
+                "categories": {},
+                "statuses": {},
+            },
+        )
+        task["events"] += 1
+        task["categories"][category] = task["categories"].get(category, 0) + 1
+        task["statuses"][status] = task["statuses"].get(status, 0) + 1
+
+    applicable = not_applicable = unknown = 0
+    for task in tasks.values():
+        statuses = set(task["statuses"])
+        if statuses == {"not_applicable"}:
+            not_applicable += 1
+        elif "unknown" in statuses:
+            unknown += 1
+        elif task["categories"].get("select", 0) > 0:
+            applicable += 1
+        else:
+            unknown += 1
+
+    report = {
+        "kind": "devflow-usage-report",
+        "schema_version": 1,
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "store": str(store),
+        "events_input": {
+            "total": total,
+            "unique": len(unique),
+            "excluded_conflicting": len(conflicting_identities),
+        },
+        "deduplication": {
+            "identity": "task_id + event_id; value-equal duplicates collapse, "
+            "similar titles or close timestamps are NOT merged",
+            "exact_duplicates_collapsed": exact_duplicates_collapsed,
+        },
+        "conflicts": conflicts,
+        "events_time_range": {
+            "first": timestamps[0] if timestamps else None,
+            "last": timestamps[-1] if timestamps else None,
+            "note": "ISO-8601 timestamps as recorded; null when no counted events",
+        },
+        "sources_present": sorted(
+            {
+                event["source"]
+                for event in counted
+                if event.get("source") is not None
+            }
+        ),
+        "skills_present": sorted(
+            {
+                event["skill_id"]
+                for event in counted
+                if event.get("skill_id") is not None
+            }
+        ),
+        "counts_by_category": dict(sorted(counts_by_category.items())),
+        "counts_by_status": dict(sorted(counts_by_status.items())),
+        "task_groups": [tasks[key] for key in sorted(tasks)],
+        "measurement": {
+            "units_present": sorted(units_present),
+            "events_without_value": events_without_value,
+            "note": "values are reported in their recorded units only; unknown "
+            "values are not estimated or converted",
+        },
+        "applicability": {
+            "applicable_tasks": applicable,
+            "not_applicable_tasks": not_applicable,
+            "unknown_applicability_tasks": unknown,
+            "method": "explicit event statuses per task; a task with no explicit "
+            "applicability signal is counted as unknown, never as zero",
+        },
+        "limits": [
+            "This report counts recorded events only; absence of events is "
+            "absence of evidence, not evidence of absence.",
+            "Unknown cost or token figures are not converted into monetary or "
+            "usage claims.",
+            "Recorded wording is not converted into satisfaction or sentiment "
+            "scores.",
+            "Low event frequency does not generate deletion or deprecation "
+            "suggestions.",
+        ],
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("w", encoding="utf-8", newline="\n") as sink:
+        sink.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    print(
+        f"reported {len(counted)} event(s) across {len(tasks)} task(s) -> {output}"
+    )
+    return 0
+
+
 def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -298,6 +477,9 @@ def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     export = commands.add_parser("export")
     export.add_argument("--store", required=True)
     export.add_argument("--out", required=True)
+    report = commands.add_parser("report")
+    report.add_argument("--store", required=True)
+    report.add_argument("--out", required=True)
     return parser.parse_args(argv)
 
 
@@ -318,6 +500,8 @@ def main() -> int:
             return command_append(store, Path(arguments.input))
         if arguments.command == "export":
             return command_export(store, Path(arguments.out))
+        if arguments.command == "report":
+            return command_report(store, Path(arguments.out))
     except InputError as error:
         print(f"INPUT ERROR: {error}", file=sys.stderr)
         return 2
