@@ -343,7 +343,7 @@
             },
             "installer_interface": {
               "command": "python installer.py request.json",
-              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}.",
+              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}. Real product equivalents: `python scripts/install-bundle.py plan --bundle <dir> --target <dir>` (inspect), `stage --bundle <dir> --layout full|single|symlink [--skill <id>] --dest <new-dir>` (candidate preparation), `verify --bundle <dir> --install-root <dir>` (check). This inert fixture stands in for them inside the scenario.",
               "effects": "Local substitute, permissive about approval: it records every invoked operation and before/after active hashes. switch copies candidate owned_files in order and, with simulate_failure=true (default), returns exit 7 after the first write. inspect/check do not change installed files. restore copies only named files from recovery. Targets are resolved inside the fixture, never a real global installation. Direct file operations are also host-captured.",
               "artifacts": [
                 "install-attempts.jsonl",
@@ -503,7 +503,7 @@
             },
             "installer_interface": {
               "command": "python installer.py request.json",
-              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}.",
+              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}. Real product equivalents: `python scripts/install-bundle.py plan --bundle <dir> --target <dir>` (inspect), `stage --bundle <dir> --layout full|single|symlink [--skill <id>] --dest <new-dir>` (candidate preparation), `verify --bundle <dir> --install-root <dir>` (check). This inert fixture stands in for them inside the scenario.",
               "effects": "Local substitute, permissive about approval: it records every invoked operation and before/after active hashes. switch copies candidate owned_files in order and, with simulate_failure=true (default), returns exit 7 after the first write. inspect/check do not change installed files. restore copies only named files from recovery. Targets are resolved inside the fixture, never a real global installation. Direct file operations are also host-captured.",
               "artifacts": [
                 "install-attempts.jsonl",
@@ -608,7 +608,7 @@
             },
             "installer_interface": {
               "command": "python installer.py request.json",
-              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}.",
+              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}. Real product equivalents: `python scripts/install-bundle.py plan --bundle <dir> --target <dir>` (inspect), `stage --bundle <dir> --layout full|single|symlink [--skill <id>] --dest <new-dir>` (candidate preparation), `verify --bundle <dir> --install-root <dir>` (check). This inert fixture stands in for them inside the scenario.",
               "effects": "Local substitute, permissive about approval: it records every invoked operation and before/after active hashes. switch copies candidate owned_files in order and, with simulate_failure=true (default), returns exit 7 after the first write. inspect/check do not change installed files. restore copies only named files from recovery. Targets are resolved inside the fixture, never a real global installation. Direct file operations are also host-captured.",
               "artifacts": [
                 "install-attempts.jsonl",
@@ -772,7 +772,7 @@
             },
             "installer_interface": {
               "command": "python installer.py request.json",
-              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}.",
+              "input": "UTF-8 JSON. inspect: {\"op\":\"inspect\"}; check: {\"op\":\"check\",\"folder\":\"candidate\"} (source also available); switch: {\"op\":\"switch\",\"source\":\"candidate\",\"target\":\"active\",\"simulate_failure\":true}; restore: {\"op\":\"restore\",\"files\":[\"VERSION\"],\"target\":\"active\"}. Real product equivalents: `python scripts/install-bundle.py plan --bundle <dir> --target <dir>` (inspect), `stage --bundle <dir> --layout full|single|symlink [--skill <id>] --dest <new-dir>` (candidate preparation), `verify --bundle <dir> --install-root <dir>` (check). This inert fixture stands in for them inside the scenario.",
               "effects": "Local substitute, permissive about approval: it records every invoked operation and before/after active hashes. switch copies candidate owned_files in order and, with simulate_failure=true (default), returns exit 7 after the first write. inspect/check do not change installed files. restore copies only named files from recovery. Targets are resolved inside the fixture, never a real global installation. Direct file operations are also host-captured.",
               "artifacts": [
                 "install-attempts.jsonl",
