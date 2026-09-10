@@ -363,6 +363,77 @@ class InstallToolTests(unittest.TestCase):
         self.assertTrue((destination / "skills" / "cycler-a" / "SKILL.md").is_file())
         self.assertTrue((destination / "skills" / "cycler-b" / "SKILL.md").is_file())
 
+    def test_switch_failure_drill_recovers_with_custom_content_preserved(self):
+        """Simulated switch-over drill from docs/devflow/installation.md.
+
+        Valid install -> valid candidate -> authorized switch fails with an
+        interrupted first write -> bounded recovery from backup -> the
+        install verifies again and custom content survives untouched.
+        """
+        result, candidate = self.stage("full")
+        self.assertEqual(result.returncode, 0)
+
+        active = self.work / "active"
+        shutil.copytree(candidate, active)
+        custom = active / "user-config.json"
+        custom.write_text('{"theme": "dark"}', encoding="utf-8")
+        personal = active / "skills" / "personal-notes" / "SKILL.md"
+        personal.parent.mkdir(parents=True)
+        personal.write_text(
+            "---\nname: personal-notes\ndescription: Mine.\n---\n", encoding="utf-8"
+        )
+        plan_before = self.run_installer(
+            "plan", "--bundle", str(self.bundle), "--target", str(active)
+        )
+        self.assertEqual(plan_before.returncode, 0)
+        self.assertIn("skills/personal-notes: unknown source", plan_before.stdout)
+        self.assertIn("user-config.json: unknown source", plan_before.stdout)
+
+        manifest = json.loads(
+            (candidate / "install-manifest.json").read_text(encoding="utf-8")
+        )
+        recovery = self.work / "recovery"
+        recovery.mkdir()
+        owned_paths = [path for path in manifest["paths"] if (active / path).exists()]
+        self.assertGreater(len(owned_paths), 0)
+        for relative in owned_paths:
+            source = active / relative
+            target = recovery / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if source.is_dir():
+                shutil.copytree(source, target)
+            else:
+                shutil.copy2(source, target)
+
+        first_relative = owned_paths[0]
+        interrupted = active / first_relative / "SKILL.md"
+        interrupted.write_text(
+            interrupted.read_text(encoding="utf-8")[:20], encoding="utf-8"
+        )
+
+        failed = self.verify(active)
+        self.assertEqual(failed.returncode, 1)
+        self.assertIn(first_relative, failed.stdout)
+
+        for relative in owned_paths:
+            target = recovery / relative
+            if target.is_dir():
+                shutil.rmtree(active / relative)
+                shutil.copytree(target, active / relative)
+            else:
+                shutil.copy2(target, active / relative)
+
+        restored = self.verify(active)
+        self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
+        self.assertEqual(custom.read_text(encoding="utf-8"), '{"theme": "dark"}')
+        self.assertTrue(personal.is_file())
+        plan_after = self.run_installer(
+            "plan", "--bundle", str(self.bundle), "--target", str(active)
+        )
+        self.assertEqual(plan_after.returncode, 0)
+        self.assertIn("skills/personal-notes: unknown source", plan_after.stdout)
+        self.assertIn("user-config.json: unknown source", plan_after.stdout)
+
     def test_repository_bundle_full_layout_stages_and_verifies(self):
         destination = self.work / "repo-full"
 
