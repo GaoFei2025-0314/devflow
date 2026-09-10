@@ -61,6 +61,10 @@ Agent selection must satisfy the capability, permission, independent-verificatio
 
 Skills reference this contract rather than restating it.
 
+## Optional Local Recording
+
+Usage recording is off by default and no workflow step depends on it. Only after the user opts in to a named store, follow the minimal event protocol in [Local Usage Recording](references/local-recording.md): record observed selection/loading/reuse/result events, never raw dialogue or credentials, and record `unknown` honestly.
+
 ## Human-in-the-Loop Contract
 
 The canonical [Authorization and Trust Contract](references/authorization-contract.md) applies on every route. Match approval to the action, target and environment, scope, source, and conditions. Protected actions need explicit applicable authorization before execution, but an unchanged valid approval is reused. Complete safe preparation first, block only dependent work when authority is missing, and never treat a subagent as able to approve on the user's behalf.

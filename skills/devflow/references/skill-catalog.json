@@ -452,6 +452,7 @@
         "skills/using-devflow/references/codex-tools.md",
         "skills/using-devflow/references/copilot-tools.md",
         "skills/using-devflow/references/gemini-tools.md",
+        "skills/using-devflow/references/local-recording.md",
         "templates/project-overrides.md"
       ],
       "aliases": [
