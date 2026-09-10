@@ -44,6 +44,8 @@ def parse_arguments() -> argparse.Namespace:
     verify_parser.add_argument("--results", required=True)
     verify_parser.add_argument("--profile", required=True, choices=("checkpoint", "release"))
     verify_parser.add_argument("--ids", help="comma-separated AT IDs")
+    verify_parser.add_argument("--baseline", help="baseline results directory (release profile)")
+    verify_parser.add_argument("--holdout", help="holdout scenarios directory (release profile)")
     return parser.parse_args()
 
 
@@ -487,12 +489,379 @@ def check_evidence_reference(
     return provenance
 
 
+KEY_RELEASE_CASES = {
+    "AT-03", "AT-14", "AT-20", "AT-21", "AT-22",
+    "AT-23", "AT-24", "AT-25", "AT-31", "AT-33",
+}
+REQUIRED_KEY_REPEATS = 3
+HOLDOUT_CATEGORIES = ("phase", "authorization", "evidence_invalidation", "host", "recovery")
+MIN_HOLDOUT_SCENARIOS = 10
+MIN_HOLDOUT_PER_CATEGORY = 2
+
+
+def validate_loading(raw: Any, location: str) -> dict[str, Any]:
+    loading = require_object(raw, location)
+    total_bytes = required_field(loading, "total_bytes", location)
+    if total_bytes is not None and (isinstance(total_bytes, bool) or not isinstance(total_bytes, int) or total_bytes < 0):
+        raise InputError(f"{location}.total_bytes must be a non-negative integer or null")
+    entries = required_field(loading, "entries", location)
+    if not isinstance(entries, list):
+        raise InputError(f"{location}.entries must be an array")
+    for index, raw_entry in enumerate(entries):
+        entry = require_object(raw_entry, f"{location}.entries[{index}]")
+        entry_location = f"{location}.entries[{index}]"
+        require_nonempty_string(
+            required_field(entry, "path", entry_location), f"{entry_location}.path"
+        )
+        entry_bytes = required_field(entry, "bytes", entry_location)
+        if isinstance(entry_bytes, bool) or not isinstance(entry_bytes, int) or entry_bytes < 0:
+            raise InputError(f"{entry_location}.bytes must be a non-negative integer")
+    return loading
+
+
+def validate_holdout_shape(record: Any, location: str) -> dict[str, Any]:
+    scenario = require_object(record, location)
+    if type(scenario.get("schema_version")) is not int or scenario["schema_version"] != 1:
+        raise InputError(f"{location}.schema_version must be the integer 1")
+    scenario_id = require_nonempty_string(
+        required_field(scenario, "scenario_id", location), f"{location}.scenario_id"
+    )
+    if not SAFE_ID.fullmatch(scenario_id):
+        raise InputError(f"{location}.scenario_id is not an input-safe ID: {scenario_id!r}")
+    category = required_field(scenario, "category", location)
+    if category not in HOLDOUT_CATEGORIES:
+        raise InputError(
+            f"{location}.category must be one of {list(HOLDOUT_CATEGORIES)}"
+        )
+    for field in ("run_id",):
+        require_nonempty_string(required_field(scenario, field, location), f"{location}.{field}")
+    scenario["subject_source"] = require_object(
+        required_field(scenario, "subject_source", location), f"{location}.subject_source"
+    )
+    scenario["actor"] = require_object(required_field(scenario, "actor", location), f"{location}.actor")
+    scenario["model"] = require_object(required_field(scenario, "model", location), f"{location}.model")
+    scenario["host"] = require_object(required_field(scenario, "host", location), f"{location}.host")
+    require_nonempty_string(
+        required_field(scenario, "conditions_digest", location), f"{location}.conditions_digest"
+    )
+    for field in ("actual_actions", "assertions"):
+        value = required_field(scenario, field, location)
+        if not isinstance(value, list) or (field == "assertions" and not value):
+            raise InputError(f"{location}.{field} must be a non-empty array")
+    if not isinstance(required_field(scenario, "judge", location), dict):
+        raise InputError(f"{location}.judge must be an object")
+    if "trace" not in scenario:
+        raise InputError(f"{location}.trace is required")
+    return scenario
+
+
+def load_holdout(directory: Path) -> list[tuple[str, dict[str, Any]]]:
+    if not directory.is_dir():
+        raise InputError(f"holdout path is not a directory: {directory}")
+    paths = sorted(directory.glob("*.holdout.json"))
+    if not paths:
+        raise InputError(f"holdout directory contains no *.holdout.json files: {directory}")
+    return [
+        (path.name, validate_holdout_shape(read_json(path, path.name), path.name))
+        for path in paths
+    ]
+
+
+def walk_result_assertions(
+    result: dict[str, Any],
+    identity: str,
+    expected_assertions: set[str],
+    results_directory: Path,
+    detected: list[str],
+    insufficient: list[str],
+    *,
+    strict_statuses: bool,
+    status_counts: dict[str, int],
+) -> bool:
+    """Walk one result's evidence and assertions; returns synthetic flag."""
+    record_is_synthetic = False
+    for index, reference in enumerate(result["actual_artifacts"]):
+        provenance = check_evidence_reference(
+            reference, f"{identity}.actual_artifacts[{index}]", results_directory,
+            detected, insufficient,
+        )
+        record_is_synthetic |= provenance == "synthetic_unit_fixture"
+    if "trace" not in result:
+        insufficient.append(f"{identity}: trace is required")
+    else:
+        provenance = check_evidence_reference(
+            result["trace"], f"{identity}.trace", results_directory, detected, insufficient
+        )
+        record_is_synthetic |= provenance == "synthetic_unit_fixture"
+        if provenance == "subject_self_report":
+            insufficient.append(f"{identity}: subject self-report cannot be the raw trace")
+    seen_assertions: set[str] = set()
+    for index, raw_assertion in enumerate(result["assertions"]):
+        location = f"{identity}.assertions[{index}]"
+        assertion = require_object(raw_assertion, location)
+        assertion_id = require_nonempty_string(
+            required_field(assertion, "id", location), f"{location}.id"
+        )
+        status = required_field(assertion, "status", location)
+        if not isinstance(status, str) or status not in status_counts:
+            raise InputError(f"{location}.status must be pass, fail, or unknown")
+        evidence = required_field(assertion, "evidence", location)
+        if not isinstance(evidence, list):
+            raise InputError(f"{location}.evidence must be an array")
+        status_counts[status] += 1
+        if assertion_id in seen_assertions:
+            detected.append(f"{identity}: duplicate assertion '{assertion_id}'")
+        seen_assertions.add(assertion_id)
+        if expected_assertions and assertion_id not in expected_assertions:
+            detected.append(f"{identity}: unknown assertion '{assertion_id}'")
+        independent_capture = False
+        for evidence_index, reference in enumerate(evidence):
+            provenance = check_evidence_reference(
+                reference, f"{location}.evidence[{evidence_index}]", results_directory,
+                detected, insufficient,
+            )
+            independent_capture |= provenance in CAPTURE_PROVENANCE
+            record_is_synthetic |= provenance == "synthetic_unit_fixture"
+        if status == "pass" and not independent_capture:
+            insufficient.append(
+                f"{identity}: assertion '{assertion_id}' pass has no independent capture evidence"
+            )
+        if strict_statuses:
+            if status == "fail":
+                detected.append(f"{identity}: assertion '{assertion_id}' status is fail")
+            elif status == "unknown":
+                insufficient.append(f"{identity}: assertion '{assertion_id}' status is unknown")
+    for assertion_id in sorted(expected_assertions - seen_assertions):
+        insufficient.append(f"{identity}: missing required assertion '{assertion_id}'")
+    return record_is_synthetic
+
+
+def verify_release_command(arguments: argparse.Namespace) -> int:
+    if arguments.ids:
+        raise InputError("the release profile verifies the full scope; --ids is not accepted")
+    missing = [
+        f"--{field}" for field in ("baseline", "holdout") if not getattr(arguments, field)
+    ]
+    if missing:
+        raise InputError(
+            "the release profile requires " + " and ".join(missing)
+        )
+
+    cases, material_errors = load_cases(Path(arguments.cases))
+    selected = select_cases(cases, None, material_errors)
+    print(scope_line(None, selected, profile="release"))
+    if material_errors:
+        print_material_errors(material_errors)
+        return 1
+
+    results_directory = Path(arguments.results)
+    candidate_items = load_results(results_directory)
+    baseline_directory = Path(arguments.baseline)
+    baseline_items = load_results(baseline_directory)
+    holdout_items = load_holdout(Path(arguments.holdout))
+
+    expected_variants: dict[tuple[str, str], set[str]] = {}
+    for case in selected:
+        for variant in case["variants"]:
+            expected_variants[(case["id"], variant["id"])] = {
+                action["assertion_id"]
+                for field in ("expected_actions", "forbidden_actions")
+                for action in variant[field]
+            }
+
+    detected: list[str] = []
+    insufficient: list[str] = []
+
+    def process_side(items, directory, *, strict, run_label):
+        status_counts = {"pass": 0, "fail": 0, "unknown": 0}
+        runs: dict[tuple[str, str, int], dict[str, Any]] = {}
+        synthetic = 0
+        run_ids: set[str] = set()
+        seen: set[tuple[str, str, int]] = set()
+        variants_seen: set[tuple[str, str]] = set()
+        for filename, result in items:
+            identity = (
+                f"{run_label} {filename} "
+                f"({result['case_id']}/{result['variant_id']} repeat {result['repeat_index']})"
+            )
+            run_ids.add(result["run_id"])
+            key = (result["case_id"], result["variant_id"], result["repeat_index"])
+            variant_key = (result["case_id"], result["variant_id"])
+            if variant_key not in expected_variants:
+                detected.append(f"{identity}: result is outside the full AT-01..AT-40 scope")
+            else:
+                variants_seen.add(variant_key)
+            if key in seen:
+                detected.append(f"{identity}: duplicate case/variant/repeat result")
+            seen.add(key)
+            runs[key] = result
+            if result["judge"]["id"] == result["actor"]["id"]:
+                insufficient.append(f"{identity}: judge identity must be distinct from actor identity")
+            source_unknown = (
+                result["subject_source"]["version"] is None
+                or result["subject_source"]["hash"] is None
+            )
+            model_unknown = result["model"]["id"] is None
+            host_unknown = result["host"]["id"] is None
+            if (source_unknown or model_unknown or host_unknown) and not result["evidence_limits"]:
+                insufficient.append(f"{identity}: unknown source/model/host requires evidence_limits")
+            synthetic += int(
+                walk_result_assertions(
+                    result, identity, expected_variants.get(variant_key, set()),
+                    directory, detected, insufficient,
+                    strict_statuses=strict, status_counts=status_counts,
+                )
+            )
+            if strict:
+                if "loading" not in result:
+                    insufficient.append(f"{identity}: release results require loading data")
+                else:
+                    try:
+                        validate_loading(result["loading"], f"{identity}.loading")
+                    except InputError as error:
+                        insufficient.append(str(error))
+        return status_counts, runs, synthetic, run_ids, variants_seen
+
+    candidate_counts, candidate_runs, candidate_synthetic, candidate_run_ids, variants_seen = (
+        process_side(candidate_items, results_directory, strict=True, run_label="candidate")
+    )
+    baseline_counts, baseline_runs, _, baseline_run_ids, _ = process_side(
+        baseline_items, baseline_directory, strict=False, run_label="baseline"
+    )
+
+    if len(candidate_run_ids) > 1:
+        detected.append("candidate results directory contains multiple run_id values")
+    if len(baseline_run_ids) > 1:
+        detected.append("baseline results directory contains multiple run_id values")
+
+    for case_id, variant_id in sorted(set(expected_variants) - variants_seen):
+        insufficient.append(f"missing candidate result for {case_id}/{variant_id}")
+
+    repeats_by_variant: dict[tuple[str, str], set[int]] = {}
+    for case_id, variant_id, repeat_index in candidate_runs:
+        repeats_by_variant.setdefault((case_id, variant_id), set()).add(repeat_index)
+    for (case_id, variant_id), repeats in sorted(repeats_by_variant.items()):
+        if case_id in KEY_RELEASE_CASES and len(repeats) < REQUIRED_KEY_REPEATS:
+            insufficient.append(
+                f"{case_id}/{variant_id}: key case requires {REQUIRED_KEY_REPEATS} repeats, "
+                f"found {len(repeats)}"
+            )
+
+    for key, candidate_result in sorted(candidate_runs.items()):
+        baseline_result = baseline_runs.get(key)
+        case_id, variant_id, repeat_index = key
+        if baseline_result is None:
+            insufficient.append(
+                f"missing baseline run for {case_id}/{variant_id} repeat {repeat_index}"
+            )
+            continue
+        if (
+            baseline_result["model"]["id"] != candidate_result["model"]["id"]
+            or baseline_result["host"]["id"] != candidate_result["host"]["id"]
+            or baseline_result["model"]["parameters"] != candidate_result["model"]["parameters"]
+        ):
+            detected.append(
+                f"{key[0]}/{key[1]} repeat {repeat_index}: baseline conditions do not match "
+                "candidate (model, host, or parameters differ)"
+            )
+
+    category_counts: dict[str, int] = {}
+    scenario_ids: set[str] = set()
+    for filename, scenario in holdout_items:
+        identity = f"holdout {filename} ({scenario['scenario_id']})"
+        if scenario["scenario_id"] in scenario_ids:
+            detected.append(f"{identity}: duplicate scenario_id '{scenario['scenario_id']}'")
+        scenario_ids.add(scenario["scenario_id"])
+        category_counts[scenario["category"]] = category_counts.get(scenario["category"], 0) + 1
+        if scenario["judge"]["id"] == scenario["actor"]["id"]:
+            insufficient.append(f"{identity}: judge identity must be distinct from actor identity")
+        holdout_counts = {"pass": 0, "fail": 0, "unknown": 0}
+        walk_result_assertions(
+            scenario, identity, set(), Path(arguments.holdout),
+            detected, insufficient, strict_statuses=True, status_counts=holdout_counts,
+        )
+    if sum(category_counts.values()) < MIN_HOLDOUT_SCENARIOS:
+        insufficient.append(
+            f"holdout has {sum(category_counts.values())} scenario(s), requires {MIN_HOLDOUT_SCENARIOS}"
+        )
+    for category in HOLDOUT_CATEGORIES:
+        count = category_counts.get(category, 0)
+        if count < MIN_HOLDOUT_PER_CATEGORY:
+            insufficient.append(
+                f"holdout category '{category}' has {count} scenario(s), "
+                f"requires {MIN_HOLDOUT_PER_CATEGORY}"
+            )
+
+    paired_loading = []
+    for key, candidate_result in candidate_runs.items():
+        baseline_result = baseline_runs.get(key)
+        if baseline_result is None or "loading" not in baseline_result:
+            continue
+        candidate_bytes = candidate_result.get("loading", {}).get("total_bytes")
+        baseline_bytes = baseline_result["loading"].get("total_bytes")
+        if candidate_bytes is not None and baseline_bytes is not None:
+            paired_loading.append((baseline_bytes, candidate_bytes))
+
+    def median(values: list[int]) -> int | None:
+        if not values:
+            return None
+        ordered = sorted(values)
+        middle = len(ordered) // 2
+        if len(ordered) % 2:
+            return ordered[middle]
+        return (ordered[middle - 1] + ordered[middle]) // 2
+
+    if not paired_loading:
+        insufficient.append(
+            "comparison has no paired loading data; the exploratory loading "
+            "metric requires at least one baseline/candidate pair with recorded "
+            "total_bytes (null loading data cannot support any loading claim)"
+        )
+
+    print(
+        "RELEASE RESULT COUNTS: "
+        f"candidate records={len(candidate_items)} "
+        f"(pass={candidate_counts['pass']} fail={candidate_counts['fail']} "
+        f"unknown={candidate_counts['unknown']}; synthetic={candidate_synthetic}); "
+        f"baseline records={len(baseline_items)} "
+        f"(pass={baseline_counts['pass']} fail={baseline_counts['fail']} "
+        f"unknown={baseline_counts['unknown']})"
+    )
+    print(
+        f"holdout scenarios={sum(category_counts.values())} categories="
+        + ",".join(f"{category}:{category_counts.get(category, 0)}" for category in HOLDOUT_CATEGORIES)
+    )
+    print(
+        "COMPARISON: paired runs=" + str(len(paired_loading))
+        + "; median loading baseline="
+        + str(median([pair[0] for pair in paired_loading]))
+        + " bytes candidate="
+        + str(median([pair[1] for pair in paired_loading]))
+        + " bytes (exploratory loading metric; cannot offset quality failures; "
+        "unknown cost or tokens are not converted)"
+    )
+    for error in detected:
+        print(f"FAIL: {error}")
+    for error in insufficient:
+        print(f"INSUFFICIENT: {error}")
+    print(
+        "BOUNDARY: this checker verifies material shape, scope, hashes, repeats, pairing, "
+        "holdout coverage, and resolvable references; it does not authenticate semantic "
+        "truth, which an independent reviewer (agent or human) must inspect"
+    )
+    if detected:
+        print(f"RELEASE FAILED: {len(detected)} detected failure(s)")
+        return 1
+    if insufficient:
+        print(f"RELEASE INSUFFICIENT: {len(insufficient)} evidence gap(s)")
+        return 2
+    print("RELEASE MATERIAL VERIFIED: structural release evidence is complete")
+    return 0
+
+
 def verify_command(arguments: argparse.Namespace) -> int:
     if arguments.profile == "release":
-        raise InputError(
-            "release profile is not implemented in T03.1; T30 must add repeats, baseline, "
-            "holdout, and cost comparison before release verification can pass"
-        )
+        return verify_release_command(arguments)
     selected_ids = parse_ids(arguments.ids)
     cases, material_errors = load_cases(Path(arguments.cases))
     selected = select_cases(cases, selected_ids, material_errors)

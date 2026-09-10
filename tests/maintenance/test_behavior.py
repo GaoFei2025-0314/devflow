@@ -489,18 +489,239 @@ class BehaviorCheckerTests(unittest.TestCase):
         self.assertIn("status must be pass, fail, or unknown", result.stderr)
         self.assertNotIn("Traceback", result.stdout + result.stderr)
 
-    def test_release_profile_is_explicitly_unimplemented_and_cannot_pass(self):
+    def test_release_profile_requires_full_scope_and_companion_directories(self):
         self.write_cases()
         self.write_result(self.result_record())
 
-        result = self.run_checker(
+        scoped = self.run_checker(
             "verify", "--cases", self.cases, "--results", self.results,
             "--profile", "release", "--ids", "AT-03",
         )
+        self.assertEqual(scoped.returncode, 2)
+        self.assertIn("--ids is not accepted", scoped.stderr)
 
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("release profile is not implemented", result.stderr)
+        missing = self.run_checker(
+            "verify", "--cases", self.cases, "--results", self.results,
+            "--profile", "release",
+        )
+        self.assertEqual(missing.returncode, 2)
+        self.assertIn("the release profile requires --baseline and --holdout", missing.stderr)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+KEY_RELEASE_CASES = (
+    "AT-03", "AT-14", "AT-20", "AT-21", "AT-22",
+    "AT-23", "AT-24", "AT-25", "AT-31", "AT-33",
+)
+HOLDOUT_CATEGORIES = (
+    "phase", "authorization", "evidence_invalidation", "host", "recovery",
+)
+
+
+class ReleaseProfileTests(BehaviorCheckerTests):
+    def setUp(self):
+        super().setUp()
+        self.baseline = self.root / "baseline"
+        self.holdout = self.root / "holdout"
+        self.baseline.mkdir()
+        self.holdout.mkdir()
+
+    def release_record(self, case_number, repeat_index, *, trace_name=None):
+        case_id = f"AT-{case_number:02d}"
+        variant_id = f"variant-{case_number:02d}"
+        record = self.result_record(
+            case_id=case_id, variant_id=variant_id, repeat_index=repeat_index
+        )
+        record["assertions"] = [
+            {"id": f"{case_id}-A01", "status": "pass", "evidence": [dict(record["trace"])]},
+            {"id": f"{case_id}-F01", "status": "pass", "evidence": [dict(record["trace"])]},
+        ]
+        record["loading"] = {"total_bytes": 1000, "entries": [{"path": "router", "bytes": 1000}]}
+        return record
+
+    def write_release_fixture(self):
+        self.write_full_cases()
+        for number in range(1, 41):
+            repeats = (1, 2, 3) if f"AT-{number:02d}" in KEY_RELEASE_CASES else (1,)
+            for repeat in repeats:
+                candidate = self.release_record(number, repeat)
+                self.write_result(candidate, f"case-{number:02d}-r{repeat}.result.json")
+                baseline_record = self.release_record(number, repeat)
+                baseline_record["run_id"] = "run-baseline-001"
+                baseline_record["subject_source"] = {"version": "1.3.1", "hash": "b" * 40}
+                path = self.baseline / f"case-{number:02d}-r{repeat}.result.json"
+                path.write_text(json.dumps(baseline_record), encoding="utf-8")
+        (self.baseline / "trace.txt").write_bytes((self.results / "trace.txt").read_bytes())
+        trace = self.holdout / "trace.txt"
+        trace.write_text("synthetic holdout capture\n", encoding="utf-8")
+        evidence = {
+            "path": "trace.txt",
+            "sha256": self.sha256(trace),
+            "provenance": "synthetic_unit_fixture",
+        }
+        for index in range(10):
+            category = HOLDOUT_CATEGORIES[index % len(HOLDOUT_CATEGORIES)]
+            scenario = {
+                "schema_version": 1,
+                "scenario_id": f"holdout-{index:02d}",
+                "category": category,
+                "run_id": "run-unit-001",
+                "subject_source": {"version": "2.0.0-test", "hash": "a" * 40},
+                "actor": {"id": "actor-unit"},
+                "model": {"id": "synthetic-model", "parameters": {"temperature": 0}},
+                "host": {"id": "synthetic-host"},
+                "conditions_digest": hashlib.sha256(b"holdout conditions").hexdigest(),
+                "actual_actions": [
+                    {"action": "observe", "target": "scenario", "outcome": "completed"}
+                ],
+                "actual_artifacts": [copy.deepcopy(evidence)],
+                "trace": copy.deepcopy(evidence),
+                "assertions": [
+                    {
+                        "id": f"HOLDOUT-{index:02d}-A01",
+                        "status": "pass",
+                        "evidence": [copy.deepcopy(evidence)],
+                    }
+                ],
+                "judge": {"id": "judge-unit", "type": "human_fixture"},
+                "evidence_limits": ["Synthetic unit fixture; not release evidence."],
+            }
+            (self.holdout / f"holdout-{index:02d}.holdout.json").write_text(
+                json.dumps(scenario), encoding="utf-8"
+            )
+
+    def release_verify(self):
+        return self.run_checker(
+            "verify", "--cases", self.cases, "--results", self.results,
+            "--baseline", self.baseline, "--holdout", self.holdout,
+            "--profile", "release",
+        )
+
+    def test_release_passes_with_complete_fixture(self):
+        self.write_release_fixture()
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("RELEASE MATERIAL VERIFIED", result.stdout)
+        self.assertIn("holdout scenarios=10", result.stdout)
+        self.assertIn("COMPARISON", result.stdout)
+
+    def test_release_missing_key_repeat_is_insufficient(self):
+        self.write_release_fixture()
+        (self.results / "case-03-r3.result.json").unlink()
+        (self.baseline / "case-03-r3.result.json").unlink()
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("AT-03/variant-03: key case requires 3 repeats, found 2", result.stdout)
+
+    def test_release_holdout_category_gap_is_insufficient(self):
+        self.write_release_fixture()
+        (self.holdout / "holdout-04.holdout.json").unlink()
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("holdout category 'recovery' has 1 scenario(s), requires 2", result.stdout)
+
+    def test_release_holdout_failure_is_detected(self):
+        self.write_release_fixture()
+        path = self.holdout / "holdout-00.holdout.json"
+        scenario = json.loads(path.read_text(encoding="utf-8"))
+        scenario["assertions"][0]["status"] = "fail"
+        path.write_text(json.dumps(scenario), encoding="utf-8")
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("holdout-00", result.stdout)
+        self.assertIn("status is fail", result.stdout)
+
+    def test_release_mismatched_baseline_conditions_are_detected(self):
+        self.write_release_fixture()
+        path = self.baseline / "case-10-r1.result.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["model"]["id"] = "different-model"
+        path.write_text(json.dumps(record), encoding="utf-8")
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("baseline conditions do not match", result.stdout)
+
+    def test_release_missing_baseline_run_is_insufficient(self):
+        self.write_release_fixture()
+        (self.baseline / "case-10-r1.result.json").unlink()
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("missing baseline run for AT-10/variant-10 repeat 1", result.stdout)
+
+    def test_release_missing_loading_is_insufficient(self):
+        self.write_release_fixture()
+        path = self.results / "case-10-r1.result.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        del record["loading"]
+        path.write_text(json.dumps(record), encoding="utf-8")
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("loading", result.stdout)
+
+    def test_release_comparison_reports_loading_medians_as_exploratory(self):
+        self.write_release_fixture()
+        for number in (10, 11, 12):
+            path = self.results / f"case-{number:02d}-r1.result.json"
+            record = json.loads(path.read_text(encoding="utf-8"))
+            record["loading"]["total_bytes"] = 500
+            path.write_text(json.dumps(record), encoding="utf-8")
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("median loading", result.stdout)
+        self.assertIn("exploratory", result.stdout)
+
+    def test_release_duplicate_holdout_scenario_id_is_detected(self):
+        self.write_release_fixture()
+        duplicated = json.loads((self.holdout / "holdout-00.holdout.json").read_text(encoding="utf-8"))
+        (self.holdout / "holdout-10.holdout.json").write_text(
+            json.dumps(duplicated), encoding="utf-8"
+        )
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("duplicate scenario_id 'holdout-00'", result.stdout)
+
+    def test_release_malformed_holdout_rejects_without_traceback(self):
+        self.write_release_fixture()
+        path = self.holdout / "holdout-00.holdout.json"
+        scenario = json.loads(path.read_text(encoding="utf-8"))
+        del scenario["judge"]
+        path.write_text(json.dumps(scenario), encoding="utf-8")
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("judge", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_release_without_any_paired_loading_is_insufficient(self):
+        self.write_release_fixture()
+        for path in sorted(self.results.glob("*.result.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            record["loading"]["total_bytes"] = None
+            path.write_text(json.dumps(record), encoding="utf-8")
+
+        result = self.release_verify()
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("no paired loading data", result.stdout)

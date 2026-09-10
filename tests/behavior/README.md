@@ -166,7 +166,25 @@ Verify a selected work-package checkpoint with explicit IDs:
 python -B scripts/check-behavior.py verify --cases tests/behavior/cases --results path/to/candidate-run-001 --profile checkpoint --ids AT-03,AT-24
 ```
 
-Omitting `--ids` selects the full `AT-01` through `AT-40` case set. A checkpoint checks one or more evidence-bearing results for every selected variant. It does not enforce release repeats, holdouts, paired baseline conditions, or cost comparison. The `release` profile deliberately returns exit 2 until T30 implements and tests those gates; a placeholder release check cannot pass.
+Omitting `--ids` selects the full `AT-01` through `AT-40` case set. A checkpoint checks one or more evidence-bearing results for every selected variant. It does not enforce release repeats, holdouts, paired baseline conditions, or cost comparison.
+
+## Release profile (T30)
+
+The `release` profile verifies the full scope and cannot be scoped down with `--ids`:
+
+```text
+python scripts/check-behavior.py verify --cases tests/behavior/cases   --results <candidate-dir> --baseline <baseline-dir>   --holdout <holdout-dir> --profile release
+```
+
+It enforces everything the checkpoint does, plus:
+
+- **Full coverage:** one result for every variant of all 40 cases.
+- **Key repeats:** the key set (AT-03, AT-14, AT-20, AT-21, AT-22, AT-23, AT-24, AT-25, AT-31, AT-33) requires 3 distinct `repeat_index` values per variant; other variants require at least 1. Keeping only the best round cannot pass.
+- **Paired baseline:** every candidate run (case, variant, repeat) needs a baseline run with the same model id, host id, and model parameters; mismatches are detected failures, missing baseline runs are evidence insufficiency. Baseline assertion failures are recorded in counts, not erased.
+- **Holdout scenarios:** --holdout holds holdout scenario files (suffix .holdout dot json) (schema: `schema_version`, `scenario_id`, `category` in phase/authorization/evidence_invalidation/host/recovery, plus the same run/actor/model/host/trace/assertions/judge fields as results). At least 10 scenarios with at least 2 per category; every assertion must pass with capture evidence. Holdout material lives outside the everyday case set on purpose — never use it for tuning.
+- **Loading data:** candidate results must carry a `loading` object (`total_bytes` int-or-null and `entries` of `{path, bytes}`); the comparison reports paired median loading for baseline and candidate, labeled exploratory — it can never offset a quality failure, and unknown cost or tokens are not converted.
+
+The minimum run plan implied by these gates is 65 base variants + 38 extra key-repeat runs (19 key-case variants, 3 repeats each) + 10 holdout scenarios = 113 runs per version, 226 paired across baseline and candidate; additional variants, repair regressions, and native-host runs add to that floor.
 
 ## Exit codes and review boundary
 
