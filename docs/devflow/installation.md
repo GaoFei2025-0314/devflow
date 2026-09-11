@@ -73,7 +73,12 @@ delete unknown-source content; it is not yours to manage.
 - Overwriting an existing installation — local or global — requires an
   explicit, current user authorization naming the target directory and the
   candidate identity. "The candidate passed verification" is not switch
-  authorization.
+  authorization. Neither is a **staged** approval: a task packet, plan, or
+  script that merely describes or schedules a future approval does not
+  deliver one. The switch step runs only after the approving user event has
+  actually been received in the current task context; an anticipated or
+  simulated approval that never arrived leaves the switch pending, not
+  executed.
 - If the switch fails after being authorized, recovery within the already
   backed-up scope is part of that grant; recovery actions **beyond** the
   backup scope (touching unknown sources, deleting custom content, widening

@@ -25,7 +25,7 @@ Classify the message by its explicit effect on the active objective:
 - **Explicit replacement:** replace the active objective only when the user clearly requests a different objective or the new objective is incompatible with it. Retain applicable facts and decisions, but do not continue work that belongs only to the replaced objective.
 - **Explicit cancellation:** stop the canceled objective and report its reviewable partial state. Do not infer cancellation from a question, correction, interruption, or added requirement.
 
-If one missing decision affects only part of the work, name that dependency and continue independent work already authorized. Do not guess a high-impact choice to avoid asking, and do not stop unrelated work merely because one branch is pending.
+If one missing decision affects only part of the work, name that dependency and continue independent work already authorized. Do not guess a high-impact choice to avoid asking, and do not stop unrelated work merely because one branch is pending. A pending staged user event — a future message, receipt, or approval that the task waits on for one part of its outcome — defers only the parts that genuinely require it. Deliverables the task already owes from its current facts, such as an analysis or report that does not depend on that event, remain due now; state the event-pending part separately instead of withholding the whole deliverable to wait.
 
 ## Completion language
 
