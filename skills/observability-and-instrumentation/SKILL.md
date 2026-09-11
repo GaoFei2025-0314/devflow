@@ -170,6 +170,8 @@ Instrumentation is code; it can be wrong. Verify applicable signals on an author
 - Follow one representative request in an available test tracing view → confirm required spans and context propagation
 - Validate alert rules and runbook links with provider-supported dry-run/test facilities when available and authorized; otherwise record live delivery verification as pending
 
+When you analyze a telemetry or log sample for someone, ground the analysis in the sample's own frame: state the observation window the sample covers, and report the identity units the records actually carry — task, tree/agent, turn, and call or correlation ids — naming their values where the sample provides them. Grouping counts "by task" while never naming which task, turn, or call ids were observed leaves the reader unable to re-check the sample; a complete analysis names the units it counted, keeps observed fact separate from inference, and states which units or values are absent or unknown.
+
 ## Common Rationalizations
 
 | Rationalization | Reality |
