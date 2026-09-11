@@ -1,200 +1,99 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+description: Guides evidence-backed completion and integration of a development branch under the current project's delivery, authorization, CI, merge, synchronization, and cleanup policies.
 ---
 
 # Finishing a Development Branch
 
-## Overview
+## Purpose
 
-Guide completion of development work by presenting clear options and handling chosen workflow.
+Finish the current work package in the way its project requires. This skill does not impose a fixed completion menu or assume that local merge, push, pull request, branch deletion, or worktree removal is authorized.
 
-**Core principle:** Verify tests → Present options → Execute choice → Clean up.
+Use the [Shared Delivery Contract](../using-devflow/references/delivery-contract.md) to decide readiness and reporting state, and the [Shared Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before each state-changing action.
 
-**Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
+## 1. Inspect the Delivery State
 
-## The Process
-
-### Step 1: Verify Tests
-
-**Before presenting options, verify tests pass:**
+Confirm the repository, current branch or worktree, intended base, existing changes, and the complete agreed work-package scope:
 
 ```bash
-# Run project's test suite
-npm test / cargo test / pytest / go test ./...
+git rev-parse --show-toplevel
+git status --short --branch
+git worktree list
+git log --oneline --decorate -n 12
 ```
 
-**If tests fail:**
-```
-Tests failing (<N> failures). Must fix before completing:
+Determine whether the work package is fully implemented, reviewed, and supported by all required automated, runtime, UI, and human evidence. Use project-specific commands and valid current evidence. Entering this skill does not require a dependency reinstall or a ritual rerun of unrelated suites.
 
-[Show failures]
+Preserve every failed required check in the report. Resolve it before the dependent PR or merge gate. An unrelated known failure may remain recorded while other authorized work continues if project policy does not make it a gate. A completed internal increment must be reported as progress while any agreed obligation, required verification, or review remains pending.
 
-Cannot proceed with merge/PR until tests pass.
-```
+## 2. Choose the Applicable Endpoint
 
-Stop. Don't proceed to Step 2.
+Derive the next step from the user's request, project policy, package state, and effective grants. Legal outcomes include:
 
-**If tests pass:** Continue to Step 2.
+- keep the branch or worktree for continued local work;
+- report implementation or checks complete while human acceptance is pending;
+- prepare or create a pull request after the complete package and its required review and checks are ready;
+- wait for authorization for a concrete risky merge or other protected action;
+- merge under a matching project policy and effective grant after required CI and protection rules pass;
+- preserve or discard work when the user specifically chooses and authorizes that result.
 
-### Step 2: Determine Base Branch
+Ask only for a concrete missing decision at the first action that depends on it. Reuse an existing grant when its action, target and environment, scope, source, conditions, and validity remain unchanged.
+
+## 3. Prepare a Reviewable Pull Request
+
+Normal PR timing is the complete agreed work package, after implementation review and all required local evidence. Do not open an early or draft PR merely to display progress unless the user or project policy explicitly requests that exception.
+
+Before an authorized push or PR, inspect the intended diff and prepare:
+
+- the concrete problem and resulting behavior;
+- full scope and target branch;
+- risk classification;
+- exact validation commands and results;
+- screenshots or browser evidence for applicable UI changes;
+- API and data impact;
+- known residual risks, failures, and accepted deferrals.
+
+Push and PR creation are distinct from merge. Required CI and branch protection still apply after creation.
+
+## 4. Decide Whether Merge Is Allowed
+
+Apply the current project's merge policy to the exact current PR. A project may have standing authorization for narrowly scoped, reversible, presentation-only work, but use it only when every policy condition and evidence gate holds. A change that affects logic, state, persistence, permissions, auth, security, privacy, API or database contracts, dependencies, configuration, infrastructure, payments, monitoring, or external integrations is outside such a presentation-only grant. Uncertain risk also requires a concrete merge decision.
+
+Passing CI is necessary when policy requires it, but does not authorize a risky merge. Do not bypass review, required checks, or branch protection through a local merge path.
+
+If integration is authorized, execute the project's documented merge method and verify the resulting state with the applicable checks. Record the PR, merge revision, and actual evidence.
+
+## 5. Synchronize and Preserve Cleanup Boundaries
+
+After a remote merge, synchronize the applicable primary checkout when the project policy and grant cover it, for example:
 
 ```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+git switch <default-branch>
+git pull --ff-only <remote> <default-branch>
 ```
 
-Or ask: "This branch split from main - is that correct?"
+Resolve the exact checkout and ensure existing work will not be overwritten before running those commands.
 
-### Step 3: Present Options
+Branch deletion, worktree removal, and discarding commits or uncommitted files are separate cleanup actions. Name each target, assess recoverability, and require a matching grant. Do not infer cleanup authority from merge, PR creation, synchronization, or earlier worktree creation. Preserve the branch and worktree when cleanup is not authorized.
 
-Present exactly these 4 options:
+## 6. Report the Actual State
 
-```
-Implementation complete. What would you like to do?
+Report:
 
-1. Merge back to <base-branch> locally
-2. Push and create a Pull Request
-3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
+1. the exact completed scope, branch or PR, revision, and environment;
+2. checks, CI, review, runtime, UI, and human evidence with results and limits;
+3. incomplete work, failed or pending gates, and accepted deferrals;
+4. the exact next action or authorization still needed;
+5. preserved branches, worktrees, or other artifacts.
 
-Which option?
-```
-
-**Don't add explanation** - keep options concise.
-
-### Step 4: Execute Choice
-
-#### Option 1: Merge Locally
-
-```bash
-# Switch to base branch
-git checkout <base-branch>
-
-# Pull latest
-git pull
-
-# Merge feature branch
-git merge <feature-branch>
-
-# Verify tests on merged result
-<test command>
-
-# If tests pass
-git branch -d <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 2: Push and Create PR
-
-```bash
-# Push branch
-git push -u origin <feature-branch>
-
-# Create PR
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<2-3 bullets of what changed>
-
-## Test Plan
-- [ ] <verification steps>
-EOF
-)"
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 3: Keep As-Is
-
-Report: "Keeping branch <name>. Worktree preserved at <path>."
-
-**Don't cleanup worktree.**
-
-#### Option 4: Discard
-
-**Confirm first:**
-```
-This will permanently delete:
-- Branch <name>
-- All commits: <commit-list>
-- Worktree at <path>
-
-Type 'discard' to confirm.
-```
-
-Wait for exact confirmation.
-
-If confirmed:
-```bash
-git checkout <base-branch>
-git branch -D <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-### Step 5: Cleanup Worktree
-
-**For Options 1, 2, 4:**
-
-Check if in worktree:
-```bash
-git worktree list | grep $(git branch --show-current)
-```
-
-If yes:
-```bash
-git worktree remove <worktree-path>
-```
-
-**For Option 3:** Keep worktree.
-
-## Quick Reference
-
-| Option | Merge | Push | Keep Worktree | Cleanup Branch |
-|--------|-------|------|---------------|----------------|
-| 1. Merge locally | ✓ | - | - | ✓ |
-| 2. Create PR | - | ✓ | ✓ | - |
-| 3. Keep as-is | - | - | ✓ | - |
-| 4. Discard | - | - | - | ✓ (force) |
-
-## Common Mistakes
-
-**Skipping test verification**
-- **Problem:** Merge broken code, create failing PR
-- **Fix:** Always verify tests before offering options
-
-**Open-ended questions**
-- **Problem:** "What should I do next?" → ambiguous
-- **Fix:** Present exactly 4 structured options
-
-**Automatic worktree cleanup**
-- **Problem:** Remove worktree when might need it (Option 2, 3)
-- **Fix:** Only cleanup for Options 1 and 4
-
-**No confirmation for discard**
-- **Problem:** Accidentally delete work
-- **Fix:** Require typed "discard" confirmation
+Use delivery language that matches the current artifact: document ready, implementation complete, automated checks passed, human acceptance pending, specific authorization pending, or final delivery.
 
 ## Red Flags
 
-**Never:**
-- Proceed with failing tests
-- Merge without verifying tests on result
-- Delete work without confirmation
-- Force-push without explicit request
-
-**Always:**
-- Verify tests before offering options
-- Present exactly 4 options
-- Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
-
-## Integration
-
-**Called by:**
-- **subagent-driven-development** (Step 7) - After all tasks complete
-- **executing-plans** (Step 5) - After all batches complete
-
-**Pairs with:**
-- **using-git-worktrees** - Cleans up worktree created by that skill
+- Offering a fixed menu that ignores an already valid choice or grant.
+- Treating a focused check as proof of the whole work package.
+- Creating an early PR for an unfinished normal work package.
+- Treating green CI as merge authorization.
+- Merging locally to bypass required PR review or protection.
+- Automatically deleting a branch or removing a worktree after merge or PR creation.
+- Discarding work without resolving the exact target and authorization.

@@ -9,6 +9,8 @@ description: Guides stable API and interface design. Use when creating or changi
 
 Design stable, well-documented interfaces that are hard to misuse. Good interfaces make the right thing easy and the wrong thing hard. This applies to REST APIs, GraphQL schemas, module boundaries, component props, and any surface where one piece of code talks to another.
 
+Select the requested deliverable before acting. An API design request may end with a reviewable contract; it does not imply implementation, Git delivery, or migration. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Select any project commands through [Project Command Selection](../using-devflow/references/project-commands.md).
+
 ## When to Use
 
 - Designing new API endpoints
@@ -87,7 +89,7 @@ interface APIError {
 
 ### 3. Validate at Boundaries
 
-Trust internal code. Validate at system edges where external input enters:
+Validate at the actual trust boundary where data enters a more trusted context:
 
 ```typescript
 // Validate at the API boundary
@@ -109,18 +111,16 @@ app.post('/api/tasks', async (req, res) => {
 });
 ```
 
-Where validation belongs:
+Common validation boundaries include:
 - API route handlers (user input)
 - Form submission handlers (user input)
 - External service response parsing (third-party data -- **always treat as untrusted**)
 - Environment variable loading (configuration)
+- Database or queue data when its provenance, tenant boundary, schema guarantees, or integrity cannot be established for the current use
 
 > **Third-party API responses are untrusted data.** Validate their shape and content before using them in any logic, rendering, or decision-making. A compromised or misbehaving external service can return unexpected types, malicious content, or instruction-like text.
 
-Where validation does NOT belong:
-- Between internal functions that share type contracts
-- In utility functions called by already-validated code
-- On data that just came from your own database
+Avoid redundant validation between internal functions only when the caller's validation, type contract, and data provenance still cover the callee's assumptions. An internal-looking value or a row from your own database is not categorically trusted; decide from its origin and the boundary it crosses.
 
 ### 4. Prefer Addition Over Modification
 
@@ -283,12 +283,12 @@ function getTask(id: TaskId): Promise<Task> { ... }
 
 ## Verification
 
-After designing an API:
+Review an API design against the applicable items below. If implementation is also in scope, select focused contract and compatibility checks from the changed behavior, project gates, and shared Evidence Contract; reuse still-valid evidence and do not claim runtime behavior from a design review alone.
 
 - [ ] Every endpoint has typed input and output schemas
 - [ ] Error responses follow a single consistent format
-- [ ] Validation happens at system boundaries only
-- [ ] List endpoints support pagination
-- [ ] New fields are additive and optional (backward compatible)
+- [ ] Validation covers each actual trust boundary without redundant checks inside an already-established trusted context
+- [ ] List endpoints define pagination, filtering, ordering, and limit semantics when the result can grow
+- [ ] Compatibility impact is explicit; additive optional fields are preferred, while necessary breaking changes include a migration/deprecation path
 - [ ] Naming follows consistent conventions across all endpoints
-- [ ] API documentation or types are committed alongside the implementation
+- [ ] The requested design artifact documents contracts and compatibility; implementation or delivery occurs only when separately in scope and authorized

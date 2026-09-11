@@ -1,33 +1,42 @@
 # Shipping and Launch Templates
 
-Worked code and templates for `../SKILL.md`.
+Worked preparation examples for [Shipping and Launch](../SKILL.md). Replace placeholders with project-verified values. These templates do not authorize deployment, rollback, data changes, notifications, cleanup, or a new telemetry integration.
 
 ## Feature Flag Check
 
+Use this pattern only when the project already has an applicable flag system and both states are in the verification scope.
+
 ```typescript
-// Feature flag check
 const flags = await getFeatureFlags(userId);
 
 if (flags.taskSharing) {
-  // New feature: task sharing
   return <TaskSharingPanel task={task} />;
 }
 
-// Default: existing behavior
 return null;
 ```
 
-## Error Reporting
+Record the flag owner, cohort rule, relevant state tests, removal condition, and what happens when the flag service is unavailable. A flag does not make incomplete work ready to merge.
 
-```typescript
-// Set up error boundary with reporting
-class ErrorBoundary extends React.Component {
+## Conditional Error Reporting
+
+This example assumes the project already has an authorized error-reporting integration and approved data handling. Minimize identifiers and sensitive request data. Introducing a provider, changing privacy behavior, or sending additional fields is a separate decision.
+
+```tsx
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state: Readonly<{ hasError: boolean }> = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Report to error tracking service
     reportError(error, {
       componentStack: info.componentStack,
-      userId: getCurrentUser()?.id,
-      page: window.location.pathname,
+      routeTemplate: getCurrentRouteTemplate(),
     });
   }
 
@@ -39,44 +48,64 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Server-side error reporting
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   reportError(err, {
     method: req.method,
-    url: req.url,
-    userId: req.user?.id,
+    routeTemplate: req.route?.path,
   });
 
-  // Don't expose internals to users
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' },
   });
 });
 ```
 
-## Rollback Plan Template
+## Recovery Preparation Template
 
 ```markdown
-## Rollback Plan for [Feature/Release]
+## Recovery Plan for [artifact or release]
 
-### Trigger Conditions
-- Error rate > 2x baseline
-- P95 latency > [X]ms
-- User reports of [specific issue]
+### Scope and current state
+- Artifact/revision: [immutable identifier]
+- Target/environment: [exact target]
+- Affected consumers and data: [bounded scope]
+- Current rollout state: [deployed/exposure percentage/migration stage]
 
-### Rollback Steps
-1. Disable feature flag (if applicable)
-   OR
-1. Deploy previous version: `git revert <commit> && git push`
-2. Verify rollback: health check, error monitoring
-3. Communicate: notify team of rollback
+### Decision criteria
+- Hold when: [project-specific criterion and evidence source]
+- Recover when: [project-specific criterion and decision owner]
+- Observation window: [duration justified by traffic and risk]
 
-### Database Considerations
-- Migration [X] has a rollback: `npx prisma migrate rollback`
-- Data inserted by new feature: [preserved / cleaned up]
+### Candidate actions
+For each action record its order, prerequisites, expected effect, authority, and verification.
 
-### Time to Rollback
-- Feature flag: < 1 minute
-- Redeploy previous version: < 5 minutes
-- Database rollback: < 15 minutes
+1. Exposure control: [project-verified procedure, if applicable]
+2. Artifact recovery: [redeploy/revert/forward-fix procedure selected by project policy]
+3. Compatibility restoration: [adapter or routing procedure, if applicable]
+4. Data recovery: [verified recovery or reconciliation procedure, if one exists]
+5. Communication: [audience and channel, only when separately authorized]
+6. Cleanup: [exact objects, only when separately authorized]
+
+### Authorization check
+- Action: [concrete operation]
+- Target and environment: [exact object]
+- Scope: [bounded effects]
+- Source: [received instruction or applicable policy]
+- Conditions and limits: [checks, window, risk, cost]
+- Current validity: [why the record still matches]
+
+### Data and reversibility
+- Backup/recovery point: [identity and verified restore scope]
+- Non-reversible or lossy effects: [details]
+- Customizations and unrelated data preserved: [how]
+- Point where forward repair is safer than rollback: [criterion]
+
+### Post-action verification
+- Confirm artifact and target: [operation]
+- Health and critical flows: [operations]
+- Error/latency signals: [project dashboards]
+- Data integrity/reconciliation: [operations]
+- Result record: [time, environment, source, limits]
 ```
+
+Thresholds, durations, and commands remain placeholders until selected from project evidence. Do not invent a generic database rollback command: some changes require a forward migration, restore, reconciliation, or an explicit decision about data loss.

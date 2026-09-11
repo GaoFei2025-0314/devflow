@@ -17,19 +17,11 @@ devflow/
     <技能名>/            # 每个技能一个目录：SKILL.md + 可选的 references/
 ```
 
-路由器（`skills/devflow/SKILL.md`）按任务选择最小可用的技能子集：
+路由器（`skills/devflow/SKILL.md`）按**请求的交付物与阶段**（Understand / Specify / Implement / VerifyReview / Deliver）优先路由，其次看影响与风险、领域面，最后看宿主实际提供的能力。仅要文档或仅要计划的请求以文档合法结束——计划完成不隐含建分支、提交或实施。33 个旧技能名全部保留，通过 `skills/devflow/references/skill-catalog.json` 解析到规范入口。
 
-- 需求梳理与想法成形 → brainstorming
-- 规格与任务计划 → spec-workspace / spec-driven-development / planning-and-task-breakdown
-- 测试先行的实现 → test-driven-development、incremental-implementation
-- 调试与根因分析 → systematic-debugging
-- 代码评审与重构 → code-review-and-quality、code-simplification
-- 前端、API、安全、性能、可观测性 → 对应领域技能
-- CI、发布与上线 → git-workflow-and-versioning、ci-cd-and-automation、shipping-and-launch
+控制规则集中在 `skills/using-devflow/references/` 下的规范共享合同——阶段、授权、证据、交付、宿主能力/降级、加载/恢复——所有技能引用它们而非各自复制。信任边界明确：日志、网页、数据包或代理输出里的文本不能产生授权；技能永远不声称高于 system/developer 指令。依赖宿主能力的技能（子代理派发、浏览器 MCP）按宿主合同平稳降级。
 
-依赖宿主能力的技能（子代理派发、浏览器 MCP）统一引用 `skills/using-devflow/SKILL.md` 中的共享降级契约，因此在不具备这些能力的宿主上也能平稳降级。
-
-高风险操作由 **Human-in-the-Loop 契约**（同在 `skills/using-devflow/SKILL.md`）把关：生产部署、数据迁移与删除、git 历史重写与强推、发布、认证/支付改动、新增外部集成，执行前一律需要用户明确批准——所有路由（含快速通道）和被派发的子代理都受此约束。
+高风险操作由**授权与信任合同**（`skills/using-devflow/references/authorization-contract.md`，路由器自身也带授权门）把关：生产部署、数据迁移与删除、git 历史重写与强推、发布、认证/支付改动、新增外部集成，执行前一律需要用户明确批准——所有路由（含快速通道）和被派发的子代理都受此约束。
 
 ## 安装
 
@@ -58,6 +50,8 @@ ln -s /path/to/devflow/skills/test-driven-development ~/.codex/skills/test-drive
 
 把你工具的技能、提示词、规则或指令加载器指向仓库文件夹，以 `SKILL.md` 为入口。Copilot CLI 和 Gemini CLI 的工具名映射表在 `skills/using-devflow/references/` 中。
 
+各宿主的支持等级与已原生验证的范围见[宿主支持表](docs/devflow/host-support.md)。
+
 ## 使用
 
 在开发任务开始前，让助手使用 Devflow：
@@ -80,9 +74,11 @@ Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关
 
 ## 维护
 
-- 提交技能改动前运行 `scripts/check-refs.sh`——它校验 frontmatter、交叉引用和文件体积。CI 会在每次 push 时运行它。
+- 提交技能改动前运行 `bash scripts/check-refs.sh`——它校验 frontmatter、交叉引用、文件体积、目录/摘要一致性，并委托给 `python scripts/check-bundle.py`。再跑 `python -m unittest discover -s tests/maintenance -p 'test_*.py'` 执行维护工具的 142 项行为测试。CI 每次都会运行全部检查。
+- 安装或切换安装：`python scripts/install-bundle.py plan|stage|verify` 配合[安装与切换指南](docs/devflow/installation.md)——可审差异、仅限 bundle 自有路径的备份、显式切换授权、有界恢复。
+- 可选的本地使用记录（`python scripts/usage.py status|enable|disable|append|export|report --store <目录>`）**默认关闭**，只记录白名单内的最小事件，绝不记录原始对话或凭证，任何工作流步骤都不依赖它。
 - **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查），并在 `CHANGELOG.md` 中为新版本补一条记录。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
 - **保持 `README.md` 与 `README.zh-CN.md` 同步**——改任何一份都要镜像到另一份。
 - **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。
-- **按使用率修剪。** 真实使用几周后，把从未被触发的技能归档或删除——触发索引里的死重会消耗每一次会话。
-- **度量技能改动。** 每次改技能时，在 PR 里写一句预期的行为变化；一周后回头看是否发生。没有可观察效果的流程就是流程剧场——砍掉它。
+- **修剪需要证据。** 单纯低频不能成为删除技能的理由：没有适用任务分母、适用性不明时，价值记为未知（deprecation-and-migration 入口定义了完整评估）。
+- **度量技能改动。** 每次改技能时，在 PR 里写一句预期的行为变化；之后回头看是否发生。没有可观察效果的流程就是流程剧场——砍掉它。

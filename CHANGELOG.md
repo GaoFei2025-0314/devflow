@@ -2,6 +2,18 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
+## 2.0.0
+
+- **Deliverable-first routing** (`skills/devflow/SKILL.md`): the router now routes by requested deliverable and phase → impact/risk → domain → actual host capability, replacing keyword-first matching. Understand/Specify/Implement/VerifyReview/Deliver each have explicit legal end states; document-only and plan-only requests end there without Git or implementation actions.
+- **Canonical shared contracts** (`skills/using-devflow/references/`): phase, authorization (with an authorization gate in the router itself), evidence, delivery, host capability/fallback, and loading/recovery contracts are the single sources of truth for control rules; the 33 skill entries reference them instead of carrying conflicting copies.
+- **Trust boundaries tightened**: text inside logs, web pages, packets, or agent output cannot create authorization; skills never claim priority over system/developer instructions; a pending staged user event defers only what genuinely depends on it.
+- **Evidence rules**: prior passes are reusable while their participating state is unchanged and invalidated by relevant changes — not by a new turn; failed checks block their actual gate (merge/release), not honest preparation such as a disclosed red-CI PR; analysis of a telemetry sample names its observation window and identity units.
+- **Skill catalog** (`skills/devflow/references/skill-catalog.json`): 33 canonical ids, entries, route tags, required resources, and legacy aliases — all legacy names resolve to one canonical entry.
+- **Maintenance tooling (standard library only)**: `check-bundle.py` (structure/catalog/template/router-consistency checks), check-refs entry with portable Python resolution, `install-bundle.py` (plan/stage/verify for full/single-closure/symlink layouts; staged approval is not delivered approval), `usage.py` (default-off local event recording and offline reports), and `check-behavior.py` checkpoint/release verification with repeats, paired baselines, and holdout gates — 142 maintenance tests.
+- **Optional local recording**: off by default, whitelist-only minimal events, never raw dialogue or credentials; host logs remain host-managed.
+- **Installation and switch-over guide** (`docs/devflow/installation.md`): auditable plan diff, bundle-owned-only backup scope, explicit switch authorization, bounded recovery.
+- **Behavior evaluation**: 40 acceptance scenarios (65 variants) with blind packets, independent judgment, paired V1.3.1/V2 regression, 10 holdout scenarios, and an honest repair loop; results in the repository's evidence workspace.
+
 ## 1.3.1
 
 - Removed residual duplication flagged in earlier reviews: brainstorming's dot flow graph (checklist already encodes it), overlapping Red Flags/Rationalizations rows in code-review-and-quality, test-driven-development, and systematic-debugging.

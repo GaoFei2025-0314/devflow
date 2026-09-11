@@ -1,304 +1,114 @@
 ---
 name: git-workflow-and-versioning
-description: Structures git branching, commits, and versioning. Use when deciding commit granularity or messages, creating or merging branches, resolving conflicts, tagging releases, or organizing parallel work streams. Not for routine edits where the project's existing git conventions already answer the question.
+description: Structures Git branches, commits, work packages, and versioning under the current project's delivery and authorization policy. Use when deciding Git state or actions, commit granularity, PR timing, integration, or cleanup.
 ---
 
 # Git Workflow and Versioning
 
-## Overview
+## Purpose
 
-Git is your safety net. Treat commits as save points, branches as sandboxes, and history as documentation. With AI agents generating code at high speed, disciplined version control is the mechanism that keeps changes manageable, reviewable, and reversible.
+Use Git to keep changes reviewable and recoverable. Branching, commits, pull requests, merges, synchronization, and cleanup are separate decisions; the current project's policy decides which apply.
 
-## When to Use
+Before changing Git state, use the [Shared Delivery Contract](../using-devflow/references/delivery-contract.md) for readiness and evidence and the [Shared Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) for action grants. A skill recommendation, completed implementation, or passing check does not supply authorization.
 
-Always. Every code change flows through git.
+## Inspect Before Acting
 
-## Core Principles
+Resolve the actual repository and policy before choosing a workflow:
 
-### Approval Gates (Human-in-the-Loop)
-
-These git operations always require explicit user approval before running — no exceptions, regardless of confidence: **history rewrites** (rebase of pushed commits, filter-repo), **force-pushes**, **branch deletion**, and **direct pushes to the default branch**. They are irreversible or affect shared state. Full gate list: the Human-in-the-Loop Contract in `../using-devflow/SKILL.md`.
-
-### Trunk-Based Development (Recommended)
-
-Keep `main` always deployable. Work in short-lived feature branches that merge back within 1-3 days. Long-lived development branches are hidden costs — they diverge, create merge conflicts, and delay integration. DORA research consistently shows trunk-based development correlates with high-performing engineering teams.
-
-```
-main ──●──●──●──●──●──●──●──●──●──  (always deployable)
-        ╲      ╱  ╲    ╱
-         ●──●─╱    ●──╱    ← short-lived feature branches (1-3 days)
+```bash
+git rev-parse --show-toplevel
+git status --short --branch
+git worktree list
+git remote -v
 ```
 
-This is the recommended default. Teams using gitflow or long-lived branches can adapt the principles (atomic commits, small changes, descriptive messages) to their branching model — the commit discipline matters more than the specific branching strategy.
+Identify the intended base, current branch or worktree, existing changes, and the project's commands and delivery rules. Preserve unrelated and pre-existing work. If an adequate authorized branch or worktree already exists, verify its identity and relevant state and reuse it; do not create a nested workspace or repeat initialization merely because this skill was entered.
 
-- **Dev branches are costs.** Every day a branch lives, it accumulates merge risk.
-- **Release branches are acceptable.** When you need to stabilize a release while main moves forward.
-- **Feature flags > long branches.** Prefer deploying incomplete work behind flags rather than keeping it on a branch for weeks.
+A document-only request can end with a local reviewable document. It does not itself authorize implementation, branch creation, a worktree, a commit, or an external Git action.
 
-### 1. Commit Early, Commit Often
+## Separate Git and Delivery Decisions
 
-Each successful increment gets its own commit. Don't accumulate large uncommitted changes.
+Evaluate these stages independently:
 
-```
-Work pattern:
-  Implement slice → Test → Verify → Commit → Next slice
+1. local edits;
+2. commits;
+3. complete work package;
+4. push and pull request;
+5. merge;
+6. synchronization after merge;
+7. branch, worktree, or artifact cleanup.
 
-Not this:
-  Implement everything → Hope it works → Giant commit
-```
+For every state-changing action, bind the grant to the operation, repository and environment, exact scope, source, conditions, and current validity. Reuse an existing grant while all those fields still match. Re-check only when the action, target, scope, environment, conditions, risk, or source changes. Subagents cannot approve protected actions.
 
-Commits are save points. If the next change breaks something, you can revert to the last known-good state instantly.
+## Branch Strategy Follows Project Policy
 
-### 2. Atomic Commits
+Short-lived topic branches are often useful because they isolate a reviewable unit, but they are not mandatory for every project or phase. Read the repository's policy and inspect existing state first.
 
-Each commit does one logical thing:
+A supported project policy may, for example, allow V1 implementation and local commits on local `main` while treating a push to remote `main` as a separate protected action. The same project may require V2 and later work to start from current `main` on `feature/<name>`, `fix/<name>`, `ui/<name>`, `refactor/<name>`, or `chore/<name>` and to integrate through a pull request. These are adaptation examples, not universal Devflow defaults.
 
-```
-# Good: Each commit is self-contained
-git log --oneline
-a1b2c3d Add task creation endpoint with validation
-d4e5f6g Add task creation form component
-h7i8j9k Connect form to API and add loading state
-m1n2o3p Add task creation tests (unit + integration)
+When a new branch is required, confirm the base is the revision required by project policy before creating it. Do not overwrite or clean existing changes to make the state look clean.
 
-# Bad: Everything mixed together
-git log --oneline
-x1y2z3a Add task feature, fix sidebar, update deps, refactor utils
-```
+## Commits
 
-### 3. Descriptive Messages
+When commits are authorized and appropriate, make each commit a coherent, reviewable unit. Keep behavior changes, broad formatting, refactors, and dependency changes separate when that improves review and rollback. Commit size is a reviewability judgment, not a fixed line limit.
 
-Commit messages explain the *why*, not just the *what*:
+Use the repository's message convention. A common format is:
 
-```
-# Good: Explains intent
-feat: add email validation to registration endpoint
-
-Prevents invalid email formats from reaching the database.
-Uses Zod schema validation at the route handler level,
-consistent with existing validation patterns in auth.ts.
-
-# Bad: Describes what's obvious from the diff
-update auth.ts
-```
-
-**Format:**
-```
+```text
 <type>: <short description>
 
-<optional body explaining why, not what>
+<optional reason or context>
 ```
 
-**Types:**
-- `feat` — New feature
-- `fix` — Bug fix
-- `refactor` — Code change that neither fixes a bug nor adds a feature
-- `test` — Adding or updating tests
-- `docs` — Documentation only
-- `chore` — Tooling, dependencies, config
-
-### 4. Keep Concerns Separate
-
-Don't combine formatting changes with behavior changes. Don't combine refactors with features. Each type of change should be a separate commit — and ideally a separate PR:
-
-```
-# Good: Separate concerns
-git commit -m "refactor: extract validation logic to shared utility"
-git commit -m "feat: add phone number validation to registration"
-
-# Bad: Mixed concerns
-git commit -m "refactor validation and add phone number field"
-```
-
-**Separate refactoring from feature work.** A refactoring change and a feature change are two different changes — submit them separately. This makes each change easier to review, revert, and understand in history. Small cleanups (renaming a variable) can be included in a feature commit at reviewer discretion.
-
-### 5. Size Your Changes
-
-Target ~100 lines per commit/PR. Changes over ~1000 lines should be split. See the splitting strategies in `code-review-and-quality` for how to break down large changes.
-
-```
-~100 lines  → Easy to review, easy to revert
-~300 lines  → Acceptable for a single logical change
-~1000 lines → Split into smaller changes
-```
-
-## Branching Strategy
-
-### Feature Branches
-
-```
-main (always deployable)
-  │
-  ├── feature/task-creation    ← One feature per branch
-  ├── feature/user-settings    ← Parallel work
-  └── fix/duplicate-tasks      ← Bug fixes
-```
-
-- Branch from `main` (or the team's default branch)
-- Keep branches short-lived (merge within 1-3 days) — long-lived branches are hidden costs
-- Delete branches after merge
-- Prefer feature flags over long-lived branches for incomplete features
-
-### Branch Naming
-
-```
-feature/<short-description>   → feature/task-creation
-fix/<short-description>       → fix/duplicate-tasks
-chore/<short-description>     → chore/update-deps
-refactor/<short-description>  → refactor/auth-module
-```
-
-## Working with Worktrees
-
-For parallel AI agent work, use git worktrees to run multiple branches simultaneously:
+Before committing, inspect the exact staged diff and run the relevant current checks required by the project:
 
 ```bash
-# Create a worktree for a feature branch
-git worktree add ../project-feature-a feature/task-creation
-git worktree add ../project-feature-b feature/user-settings
-
-# Each worktree is a separate directory with its own branch
-# Agents can work in parallel without interfering
-ls ../
-  project/              ← main branch
-  project-feature-a/    ← task-creation branch
-  project-feature-b/    ← user-settings branch
-
-# When done, merge and clean up
-git worktree remove ../project-feature-a
-```
-
-Benefits:
-- Multiple agents can work on different features simultaneously
-- No branch switching needed (each directory has its own branch)
-- If one experiment fails, delete the worktree — nothing is lost
-- Changes are isolated until explicitly merged
-
-## The Save Point Pattern
-
-```
-Agent starts work
-    │
-    ├── Makes a change
-    │   ├── Test passes? → Commit → Continue
-    │   └── Test fails? → Revert to last commit → Investigate
-    │
-    ├── Makes another change
-    │   ├── Test passes? → Commit → Continue
-    │   └── Test fails? → Revert to last commit → Investigate
-    │
-    └── Feature complete → All commits form a clean history
-```
-
-This pattern means you never lose more than one increment of work. If an agent goes off the rails, `git reset --hard HEAD` takes you back to the last successful state.
-
-## Change Summaries
-
-After any modification, provide a structured summary. This makes review easier, documents scope discipline, and surfaces unintended changes:
-
-```
-CHANGES MADE:
-- src/routes/tasks.ts: Added validation middleware to POST endpoint
-- src/lib/validation.ts: Added TaskCreateSchema using Zod
-
-THINGS I DIDN'T TOUCH (intentionally):
-- src/routes/auth.ts: Has similar validation gap but out of scope
-- src/middleware/error.ts: Error format could be improved (separate task)
-
-POTENTIAL CONCERNS:
-- The Zod schema is strict — rejects extra fields. Confirm this is desired.
-- Added zod as a dependency (72KB gzipped) — already in package.json
-```
-
-This pattern catches wrong assumptions early and gives reviewers a clear map of the change. The "DIDN'T TOUCH" section is especially important — it shows you exercised scope discipline and didn't go on an unsolicited renovation.
-
-## Pre-Commit Hygiene
-
-Before every commit:
-
-```bash
-# 1. Check what you're about to commit
 git diff --staged
-
-# 2. Ensure no secrets
-git diff --staged | grep -i "password\|secret\|api_key\|token"
-
-# 3. Run tests
-npm test
-
-# 4. Run linting
-npm run lint
-
-# 5. Run type checking
-npx tsc --noEmit
+git status --short
+<project-specific focused checks>
 ```
 
-Automate this with git hooks:
+Do not assume `npm`, reinstall dependencies, or run an unrelated full suite solely because a Git skill was loaded. Use the project's package manager and commands. Record existing failures and decide whether each is relevant to the current gate. Do not discard work with `reset --hard` as a routine recovery technique; inspect the state and preserve work before choosing a recovery action.
 
-```json
-// package.json (using lint-staged + husky)
-{
-  "lint-staged": {
-    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-    "*.{json,md}": ["prettier --write"]
-  }
-}
-```
+## Work-Package and Pull-Request Timing
 
-## Handling Generated Files
+Open a pull request when the entire agreed work package is implemented, reviewed, and supported by every required check and evidence item under project policy. An internal increment is progress, not a completed version. Do not use an early or draft PR as the default progress mechanism; an explicit project or user request may authorize that exception.
 
-- **Commit generated files** only if the project expects them (e.g., `package-lock.json`, Prisma migrations)
-- **Don't commit** build output (`dist/`, `.next/`), environment files (`.env`), or IDE config (`.vscode/settings.json` unless shared)
-- **Have a `.gitignore`** that covers: `node_modules/`, `dist/`, `.env`, `.env.local`, `*.pem`
+PR material should let a reviewer assess the final change without conversational history. Include:
 
-## Using Git for Debugging
+- the concrete problem and resulting behavior;
+- the complete scope and exact target branch;
+- risk classification;
+- validation commands and results, including relevant failures;
+- UI or browser evidence when applicable;
+- API and data impact;
+- known residual risks and accepted deferrals.
 
-```bash
-# Find which commit introduced a bug
-git bisect start
-git bisect bad HEAD
-git bisect good <known-good-commit>
-# Git checkouts midpoints; run your test at each to narrow down
+Push and PR creation require the applicable action grant. Required CI, review, and branch protection remain gates after the PR exists and cannot be bypassed by local integration.
 
-# View what changed recently
-git log --oneline -20
-git diff HEAD~5..HEAD -- src/
+## Merge Policy
 
-# Find who last changed a specific line
-git blame src/services/task.ts
+Apply the actual project policy to the exact reviewable PR. Passing CI establishes evidence; it does not create merge authorization.
 
-# Search commit messages for a keyword
-git log --grep="validation" --oneline
-```
+Some projects grant standing merge authorization for presentation-only changes. Use it only when every stated condition holds, including narrow and reversible scope, presentation-only behavior, all required checks and browser evidence, and no logic, state, persistence, auth, security, privacy, API, database, dependency, configuration, infrastructure, payment, monitoring, integration, secret, generated-artifact, unrelated-change, or unresolved-review impact. If any condition fails or risk is uncertain, prepare the reviewable PR and wait for authorization for that concrete merge.
 
-## Common Rationalizations
+Never bypass required CI or branch protection. History rewrites, force-pushes, direct pushes to a default branch, and branch deletion require matching authorization under the shared contract and project policy.
 
-| Rationalization | Reality |
-|---|---|
-| "I'll commit when the feature is done" | One giant commit is impossible to review, debug, or revert. Commit each slice. |
-| "The message doesn't matter" | Messages are documentation. Future you (and future agents) will need to understand what changed and why. |
-| "I'll squash it all later" | Squashing destroys the development narrative. Prefer clean incremental commits from the start. |
-| "Branches add overhead" | Short-lived branches are free and prevent conflicting work from colliding. Long-lived branches are the problem — merge within 1-3 days. |
-| "I'll split this change later" | Large changes are harder to review, riskier to deploy, and harder to revert. Split before submitting, not after. |
-| "I don't need a .gitignore" | Until `.env` with production secrets gets committed. Set it up immediately. |
+## After Integration
 
-## Red Flags
+After a remote merge, synchronize the applicable primary checkout when project policy and authorization cover that step, then report the resulting revision and evidence. A completed merge does not authorize deleting local or remote branches, removing worktrees, or discarding other artifacts. Resolve each cleanup target and grant separately; otherwise preserve it.
 
-- Large uncommitted changes accumulating
-- Commit messages like "fix", "update", "misc"
-- Formatting changes mixed with behavior changes
-- No `.gitignore` in the project
-- Committing `node_modules/`, `.env`, or build artifacts
-- Long-lived branches that diverge significantly from main
-- Force-pushing to shared branches
+## Reporting
+
+Report the exact completed scope, revision and environment, checks and review evidence with their limits, failures or pending gates, accepted deferrals, and the next concrete Git or delivery action. Use accurate states such as document ready, implementation complete, automated checks passed, human acceptance pending, specific authorization pending, or final delivery.
 
 ## Verification
 
-For every commit:
-
-- [ ] Commit does one logical thing
-- [ ] Message explains the why, follows type conventions
-- [ ] Tests pass before committing
-- [ ] No secrets in the diff
-- [ ] No formatting-only changes mixed with behavior changes
-- [ ] `.gitignore` covers standard exclusions
+- [ ] Repository, branch or worktree, base, and existing changes were inspected.
+- [ ] The current project policy was applied rather than inferred from this skill.
+- [ ] Unrelated work was preserved.
+- [ ] The diff and commits, if any, are coherent and reviewable.
+- [ ] Evidence is current, scoped, and recorded with failures and limits.
+- [ ] The whole agreed work package is complete before a normal push or PR.
+- [ ] Merge conditions and authorization match the exact PR and risk.
+- [ ] Synchronization and every cleanup action were evaluated separately.

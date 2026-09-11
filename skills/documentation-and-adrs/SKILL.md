@@ -143,6 +143,8 @@ export function initializeTheme(theme: Theme): void {
 
 For public APIs (REST, GraphQL, library interfaces):
 
+The technologies and commands below illustrate documentation shapes. Follow the actual project's language, framework, package manager, scripts, and repository conventions; examples here do not establish a stack or authorize installation.
+
 ### Inline with Types (Preferred for TypeScript)
 
 ```typescript
@@ -218,6 +220,8 @@ Link to ADRs for details.
 How to contribute, coding standards, PR process.
 ```
 
+Adapt quick-start and command examples to the project's real manifest, lockfile, task runner, and policy. Do not copy the illustrative `npm` commands into a project that uses another established convention.
+
 ## Changelog Maintenance
 
 For shipped features:
@@ -236,6 +240,20 @@ For shipped features:
 ### Changed
 - Task list now loads 50 items per page (was 20) for better UX (#126)
 ```
+
+## User-executable Acceptance
+
+When a delivery needs user or stakeholder judgment, create acceptance material that can be followed without searching earlier conversation. Use [User-executable acceptance](references/user-acceptance.md) to identify the exact artifact/version, environment and prerequisites, entrypoint, actions, expected and failure results, unavailable or placeholder scope, and the decision to record.
+
+Keep automated engineering checks, observed visual or interaction evidence, and required human acceptance separate. Explain major checks by the behavior or risk they cover. For paid, external-send, destructive, production, permission, or sensitive actions, prepare a safe local, sandbox, dry-run, or read-only substitute unless the exact action is already authorized under the applicable project and host policy.
+
+A document-only request may finish with a reviewable document. Do not imply implementation or runtime verification from document readiness. In routine progress updates, report relevant decisions, findings, failures, or changed risk without dumping internal checklists; make the final delivery explanation self-contained.
+
+## Defect Records
+
+When recording a defect or answering whether one was recorded, inspect the project's authoritative defect source and relevant acceptance or release views before describing status. Use [Defect records and derived views](references/defect-records.md) to preserve the canonical stable ID, reproduction, expected and actual results, impact, status, affected and verified versions, update times, and verification evidence.
+
+Treat acceptance, release, and experience lists as derived views of the same defect when one canonical record suffices. Before delivery, compare relevant IDs plus actual status and update times; a missing derived entry means the view is incomplete, not that an existing canonical defect is wholly unrecorded. Update only authorized records, inspect the result, and keep recording, repair, retest, verification, and closure as separate factual states.
 
 ## Documentation for Agents
 
@@ -276,3 +294,7 @@ After documenting:
 - [ ] Known gotchas are documented inline where they matter
 - [ ] No commented-out code remains
 - [ ] Rules files (CLAUDE.md etc.) are current and accurate
+- [ ] Required user acceptance is independently executable and identifies artifact/version, environment, prerequisites, entry, actions, expected and failure results, and unavailable scope
+- [ ] Engineering checks, observed visual/interaction evidence, human acceptance, and protected-action authorization are reported as distinct states
+- [ ] Major checks are explained by covered behavior or risk, and the final delivery explanation is self-contained
+- [ ] Defect views preserve canonical IDs and reconcile relevant status/update times; repair, retest, and closure claims have their own evidence

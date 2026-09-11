@@ -1,0 +1,504 @@
+{
+  "schema_version": 1,
+  "skills": [
+    {
+      "id": "api-and-interface-design",
+      "entry": "skills/api-and-interface-design/SKILL.md",
+      "route_tags": [
+        "implement",
+        "domain-api",
+        "public-contracts",
+        "high-impact"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "api-design"
+      ]
+    },
+    {
+      "id": "brainstorming",
+      "entry": "skills/brainstorming/SKILL.md",
+      "route_tags": [
+        "understand",
+        "specify",
+        "requirements-ambiguity"
+      ],
+      "required_resources": [
+        "skills/brainstorming/spec-document-reviewer-prompt.md",
+        "skills/brainstorming/visual-companion.md",
+        "skills/brainstorming/scripts/frame-template.html",
+        "skills/brainstorming/scripts/helper.js",
+        "skills/brainstorming/scripts/server.cjs",
+        "skills/brainstorming/scripts/start-server.sh",
+        "skills/brainstorming/scripts/stop-server.sh"
+      ],
+      "aliases": [
+        "ideation"
+      ]
+    },
+    {
+      "id": "browser-testing-with-devtools",
+      "entry": "skills/browser-testing-with-devtools/SKILL.md",
+      "route_tags": [
+        "verify-review",
+        "domain-frontend",
+        "capability-browser"
+      ],
+      "required_resources": [
+        "skills/browser-testing-with-devtools/references/setup-and-templates.md"
+      ],
+      "aliases": [
+        "browser-qa"
+      ]
+    },
+    {
+      "id": "ci-cd-and-automation",
+      "entry": "skills/ci-cd-and-automation/SKILL.md",
+      "route_tags": [
+        "implement",
+        "deliver",
+        "domain-ci-cd",
+        "high-impact"
+      ],
+      "required_resources": [
+        "skills/ci-cd-and-automation/references/examples.md"
+      ],
+      "aliases": [
+        "pipeline-automation"
+      ]
+    },
+    {
+      "id": "code-review-and-quality",
+      "entry": "skills/code-review-and-quality/SKILL.md",
+      "route_tags": [
+        "verify-review",
+        "quality"
+      ],
+      "required_resources": [
+        "skills/code-review-and-quality/references/review-playbook.md"
+      ],
+      "aliases": [
+        "code-review"
+      ]
+    },
+    {
+      "id": "code-simplification",
+      "entry": "skills/code-simplification/SKILL.md",
+      "route_tags": [
+        "implement",
+        "verify-review",
+        "domain-refactor"
+      ],
+      "required_resources": [
+        "skills/code-simplification/references/examples.md"
+      ],
+      "aliases": [
+        "simplification"
+      ]
+    },
+    {
+      "id": "deprecation-and-migration",
+      "entry": "skills/deprecation-and-migration/SKILL.md",
+      "route_tags": [
+        "implement",
+        "deliver",
+        "domain-migration",
+        "high-impact"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "migration"
+      ]
+    },
+    {
+      "id": "devflow",
+      "entry": "skills/devflow/SKILL.md",
+      "route_tags": [
+        "router",
+        "deliverable-first",
+        "risk",
+        "capability"
+      ],
+      "required_resources": [
+        "skills/devflow/references/skill-catalog.json"
+      ],
+      "aliases": [
+        "workflow-router"
+      ]
+    },
+    {
+      "id": "dispatching-parallel-agents",
+      "entry": "skills/dispatching-parallel-agents/SKILL.md",
+      "route_tags": [
+        "understand",
+        "independent-investigations",
+        "capability-subagents"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "parallel-agents"
+      ]
+    },
+    {
+      "id": "documentation-and-adrs",
+      "entry": "skills/documentation-and-adrs/SKILL.md",
+      "route_tags": [
+        "specify",
+        "implement",
+        "domain-documentation"
+      ],
+      "required_resources": [
+        "skills/documentation-and-adrs/references/user-acceptance.md",
+        "skills/documentation-and-adrs/references/defect-records.md"
+      ],
+      "aliases": [
+        "adrs"
+      ]
+    },
+    {
+      "id": "executing-plans",
+      "entry": "skills/executing-plans/SKILL.md",
+      "route_tags": [
+        "implement",
+        "approved-plan",
+        "capability-in-session"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "plan-execution"
+      ]
+    },
+    {
+      "id": "finishing-a-development-branch",
+      "entry": "skills/finishing-a-development-branch/SKILL.md",
+      "route_tags": [
+        "deliver",
+        "domain-git",
+        "branch-readiness"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "branch-finish"
+      ]
+    },
+    {
+      "id": "frontend-design",
+      "entry": "skills/frontend-design/SKILL.md",
+      "route_tags": [
+        "specify",
+        "implement",
+        "domain-visual-design"
+      ],
+      "required_resources": [
+        "skills/frontend-design/LICENSE.txt"
+      ],
+      "aliases": [
+        "visual-design"
+      ]
+    },
+    {
+      "id": "frontend-ui-engineering",
+      "entry": "skills/frontend-ui-engineering/SKILL.md",
+      "route_tags": [
+        "implement",
+        "domain-frontend",
+        "behavior-change"
+      ],
+      "required_resources": [
+        "skills/frontend-ui-engineering/references/examples.md"
+      ],
+      "aliases": [
+        "frontend-engineering"
+      ]
+    },
+    {
+      "id": "git-workflow-and-versioning",
+      "entry": "skills/git-workflow-and-versioning/SKILL.md",
+      "route_tags": [
+        "deliver",
+        "domain-git",
+        "versioning"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "git-workflow"
+      ]
+    },
+    {
+      "id": "incremental-implementation",
+      "entry": "skills/incremental-implementation/SKILL.md",
+      "route_tags": [
+        "implement",
+        "approved-plan",
+        "capability-in-session"
+      ],
+      "required_resources": [
+        "skills/incremental-implementation/references/definition-of-done.md"
+      ],
+      "aliases": [
+        "incremental-delivery"
+      ]
+    },
+    {
+      "id": "observability-and-instrumentation",
+      "entry": "skills/observability-and-instrumentation/SKILL.md",
+      "route_tags": [
+        "implement",
+        "domain-observability",
+        "operations"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "observability"
+      ]
+    },
+    {
+      "id": "performance-optimization",
+      "entry": "skills/performance-optimization/SKILL.md",
+      "route_tags": [
+        "understand",
+        "implement",
+        "domain-performance"
+      ],
+      "required_resources": [
+        "skills/performance-optimization/references/examples.md"
+      ],
+      "aliases": [
+        "performance"
+      ]
+    },
+    {
+      "id": "planning-and-task-breakdown",
+      "entry": "skills/planning-and-task-breakdown/SKILL.md",
+      "route_tags": [
+        "specify",
+        "plan-only",
+        "task-breakdown"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "task-planning"
+      ]
+    },
+    {
+      "id": "receiving-code-review",
+      "entry": "skills/receiving-code-review/SKILL.md",
+      "route_tags": [
+        "verify-review",
+        "feedback",
+        "revision"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "review-feedback"
+      ]
+    },
+    {
+      "id": "requesting-code-review",
+      "entry": "skills/requesting-code-review/SKILL.md",
+      "route_tags": [
+        "verify-review",
+        "review-handoff",
+        "quality"
+      ],
+      "required_resources": [
+        "skills/requesting-code-review/code-reviewer.md"
+      ],
+      "aliases": [
+        "request-review"
+      ]
+    },
+    {
+      "id": "security-and-hardening",
+      "entry": "skills/security-and-hardening/SKILL.md",
+      "route_tags": [
+        "implement",
+        "verify-review",
+        "domain-security",
+        "high-impact"
+      ],
+      "required_resources": [
+        "skills/security-and-hardening/references/examples.md"
+      ],
+      "aliases": [
+        "security-review"
+      ]
+    },
+    {
+      "id": "shipping-and-launch",
+      "entry": "skills/shipping-and-launch/SKILL.md",
+      "route_tags": [
+        "deliver",
+        "release",
+        "high-impact"
+      ],
+      "required_resources": [
+        "skills/shipping-and-launch/references/examples.md"
+      ],
+      "aliases": [
+        "release-readiness"
+      ]
+    },
+    {
+      "id": "source-driven-development",
+      "entry": "skills/source-driven-development/SKILL.md",
+      "route_tags": [
+        "understand",
+        "external-sources",
+        "api-version-verification"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "source-driven"
+      ]
+    },
+    {
+      "id": "spec-driven-development",
+      "entry": "skills/spec-driven-development/SKILL.md",
+      "route_tags": [
+        "specify",
+        "spec-only",
+        "requirements"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "spec-development"
+      ]
+    },
+    {
+      "id": "spec-workspace",
+      "entry": "skills/spec-workspace/SKILL.md",
+      "route_tags": [
+        "specify",
+        "spec-only",
+        "durable-change-workspace"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "durable-specs"
+      ]
+    },
+    {
+      "id": "subagent-driven-development",
+      "entry": "skills/subagent-driven-development/SKILL.md",
+      "route_tags": [
+        "implement",
+        "approved-plan",
+        "capability-subagents"
+      ],
+      "required_resources": [
+        "skills/subagent-driven-development/code-quality-reviewer-prompt.md",
+        "skills/subagent-driven-development/implementer-prompt.md",
+        "skills/subagent-driven-development/spec-reviewer-prompt.md"
+      ],
+      "aliases": [
+        "agent-execution"
+      ]
+    },
+    {
+      "id": "systematic-debugging",
+      "entry": "skills/systematic-debugging/SKILL.md",
+      "route_tags": [
+        "understand",
+        "implement",
+        "failure-diagnosis"
+      ],
+      "required_resources": [
+        "skills/systematic-debugging/condition-based-waiting-example.ts",
+        "skills/systematic-debugging/condition-based-waiting.md",
+        "skills/systematic-debugging/defense-in-depth.md",
+        "skills/systematic-debugging/error-triage.md",
+        "skills/systematic-debugging/find-polluter.sh",
+        "skills/systematic-debugging/root-cause-tracing.md"
+      ],
+      "aliases": [
+        "debugging"
+      ]
+    },
+    {
+      "id": "test-driven-development",
+      "entry": "skills/test-driven-development/SKILL.md",
+      "route_tags": [
+        "implement",
+        "behavior-change",
+        "testing"
+      ],
+      "required_resources": [
+        "skills/test-driven-development/references/examples.md",
+        "skills/test-driven-development/references/testing-anti-patterns.md"
+      ],
+      "aliases": [
+        "tdd"
+      ]
+    },
+    {
+      "id": "using-devflow",
+      "entry": "skills/using-devflow/SKILL.md",
+      "route_tags": [
+        "router",
+        "host-adaptation",
+        "authorization",
+        "capability-fallback"
+      ],
+      "required_resources": [
+        "skills/using-devflow/references/phase-contract.md",
+        "skills/using-devflow/references/authorization-contract.md",
+        "skills/using-devflow/references/evidence-contract.md",
+        "skills/using-devflow/references/delivery-contract.md",
+        "skills/using-devflow/references/host-contract.md",
+        "skills/using-devflow/references/loading-recovery.md",
+        "skills/using-devflow/references/project-commands.md",
+        "skills/using-devflow/references/project-overrides.md",
+        "skills/using-devflow/references/codex-tools.md",
+        "skills/using-devflow/references/copilot-tools.md",
+        "skills/using-devflow/references/gemini-tools.md",
+        "skills/using-devflow/references/local-recording.md",
+        "templates/project-overrides.md"
+      ],
+      "aliases": [
+        "host-adaptation"
+      ]
+    },
+    {
+      "id": "using-git-worktrees",
+      "entry": "skills/using-git-worktrees/SKILL.md",
+      "route_tags": [
+        "implement",
+        "domain-git",
+        "capability-isolation"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "worktrees"
+      ]
+    },
+    {
+      "id": "verification-before-completion",
+      "entry": "skills/verification-before-completion/SKILL.md",
+      "route_tags": [
+        "verify-review",
+        "evidence",
+        "completion"
+      ],
+      "required_resources": [],
+      "aliases": [
+        "completion-verification"
+      ]
+    },
+    {
+      "id": "writing-plans",
+      "entry": "skills/writing-plans/SKILL.md",
+      "route_tags": [
+        "specify",
+        "plan-only",
+        "implementation-plan"
+      ],
+      "required_resources": [
+        "skills/writing-plans/plan-document-reviewer-prompt.md"
+      ],
+      "aliases": [
+        "plan-writing"
+      ]
+    }
+  ]
+}

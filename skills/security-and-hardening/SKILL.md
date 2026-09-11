@@ -9,7 +9,9 @@ description: Hardens code against vulnerabilities. Use when a change touches unt
 
 Security-first development practices for web applications. Treat every external input as hostile, every secret as sacred, and every authorization check as mandatory. Security isn't a phase — it's a constraint on every line of code that touches user data, authentication, or external systems.
 
-Worked code examples for every pattern in this skill are in `references/examples.md`.
+Worked code examples for every pattern in this skill are in `references/examples.md`. They are illustrative; they do not select a project dependency, package manager, command, or authorization.
+
+Select whether the requested deliverable is a threat model, review, remediation design, or implementation before changing anything. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Select audit, test, build, and package-manager commands through [Project Command Selection](../using-devflow/references/project-commands.md).
 
 ## When to Use
 
@@ -43,7 +45,7 @@ If you can't name the trust boundaries for a feature, you're not ready to secure
 
 ## The Three-Tier Boundary System
 
-### Always Do (No Exceptions)
+### Baseline Controls
 
 - **Validate all external input** at the system boundary (API routes, form handlers)
 - **Parameterize all database queries** — never concatenate user input into SQL
@@ -52,19 +54,11 @@ If you can't name the trust boundaries for a feature, you're not ready to secure
 - **Hash passwords** with bcrypt/scrypt/argon2 (never store plaintext)
 - **Set security headers** (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
 - **Use httpOnly, secure, sameSite cookies** for sessions
-- **Run `npm audit`** (or equivalent) before every release
+- **Audit applicable dependencies** with the project's actual package-manager or ecosystem command when dependency or release risk makes that check relevant
 
-### Ask First (Requires Human Approval)
+### Protected Actions
 
-This tier is part of the bundle-wide Human-in-the-Loop Contract (`../using-devflow/SKILL.md`):
-
-- Adding new authentication flows or changing auth logic
-- Storing new categories of sensitive data (PII, payment info)
-- Adding new external service integrations
-- Changing CORS configuration
-- Adding file upload handlers
-- Modifying rate limiting or throttling
-- Granting elevated permissions or roles
+Before changing authentication, authorization, permissions, payments, sensitive-data handling, secrets, privacy behavior, or external integrations, apply the canonical Authorization and Trust Contract to the exact action, target, environment, scope, source, and conditions. A security finding or recommendation is evidence to assess; it does not itself authorize credential rotation, history rewriting, data deletion, global configuration, or another protected remediation. Complete safe local analysis and preparation while an uncovered action waits for authorization.
 
 ### Never Do
 
@@ -97,23 +91,25 @@ Not all audit findings require immediate action:
 
 ```
 Audit reports a vulnerability
+├── Mandatory project security gate covers it? → Satisfy that gate; a failing required gate blocks its dependent conclusion
+├── Determine actual reachability: production runtime, build, test, install/postinstall, CI, tooling, and deployment paths
 ├── Severity: critical or high
-│   ├── Reachable in your app? → Fix immediately (update, patch, or replace)
-│   ├── Dev-only or unused path? → Fix soon, not a blocker
-│   └── No fix available? → Workaround, replace, or allowlist with a review date
+│   ├── Reachable in a relevant path? → Fix immediately (update, patch, replace, or mitigate)
+│   ├── Reachability unknown? → Investigate before assigning a nonblocking disposition
+│   └── Demonstrably unreachable and no applicable gate blocks? → Document controls, rationale, owner, and review date
 ├── Severity: moderate
-│   ├── Reachable in production? → Fix in the next release cycle
-│   └── Dev-only? → Backlog
-└── Severity: low → Fix during regular dependency updates
+│   ├── Reachable in a relevant path? → Prioritize for the applicable release or risk window
+│   └── Demonstrably unreachable and no applicable gate blocks? → Record a bounded backlog/deferral with review date
+└── Severity: low → Schedule through normal dependency maintenance unless reachability or project policy raises priority
 ```
 
-**Key questions:** Is the vulnerable function actually called? Runtime or dev-only dependency? Exploitable in your deployment context? When you defer a fix, document the reason and set a review date.
+**Key questions:** Is the vulnerable function or package lifecycle hook reachable in runtime, build, test, install, CI, tooling, or deployment? Is it exploitable in the actual environment? Does project policy impose a mandatory gate? “Dev-only” or “not called in production” is evidence to investigate, not a disposition by itself. Any allowed deferral records the reason, compensating controls, owner, and review date.
 
 ### Supply-Chain Hygiene
 
-`npm audit` catches known CVEs; it won't catch a malicious or typosquatted package. Also:
+Known-vulnerability audit tools catch reported CVEs; they do not catch every malicious or typosquatted package. Also:
 
-- **Commit the lockfile** and install with `npm ci` (not `npm install`) in CI — reproducible builds, no silent version drift.
+- **Use the project's established lockfile and frozen/reproducible install mode in CI.** Do not substitute a hard-coded package manager or create a competing lockfile; select the actual command through Project Command Selection.
 - **Review new dependencies before adding them** — maintenance, download counts, and whether they truly earn their place. Every dependency is attack surface.
 - **Be wary of `postinstall` scripts** in unfamiliar packages — they run arbitrary code at install time.
 - **Watch for typosquats** — `cross-env` vs `crossenv`, `react-dom` vs `reactdom`.
@@ -129,9 +125,9 @@ Audit reports a vulnerability
 .gitignore must include: .env, .env.local, .env.*.local, *.pem, *.key
 ```
 
-**Always check before committing:** `git diff --cached | grep -i "password\|secret\|api_key\|token"`
+Before an authorized commit, use the project's applicable secret scanning and a bounded staged-diff inspection. A text search is a useful signal, not proof that no secret exists; avoid printing suspected values in diagnostic output.
 
-**If a secret is ever committed, rotate it.** Deleting the line or rewriting history is not enough — assume it's compromised the moment it reaches a remote. Revoke and reissue the key first, then purge it from history.
+If a secret reached a remote, treat it as compromised and prepare revocation/reissue plus history-remediation guidance. Discovery alone does not authorize rotating credentials or rewriting shared history; execute each protected action only under an applicable grant.
 
 ## Securing AI / LLM Features
 
@@ -171,7 +167,7 @@ If your app calls an LLM — chatbots, summarizers, agents, RAG — it inherits 
 ### Infrastructure
 - [ ] Security headers configured (CSP, HSTS, etc.)
 - [ ] CORS restricted to known origins
-- [ ] Dependencies audited; lockfile committed; CI installs with `npm ci`
+- [ ] Applicable dependencies audited; the established lockfile and reproducible CI install mode are used
 - [ ] Error messages don't expose internals
 
 ### AI / LLM (if used)
@@ -207,14 +203,12 @@ If your app calls an LLM — chatbots, summarizers, agents, RAG — it inherits 
 
 ## Verification
 
-After implementing security-relevant code:
+After security-relevant work, select only checks that cover the changed trust boundaries, controls, dependencies, and mandatory project gates. Reuse still-valid evidence, preserve failures, and distinguish a design/review conclusion from implemented or runtime-verified behavior.
 
-- [ ] `npm audit` shows no critical or high vulnerabilities
-- [ ] No secrets in source code or git history
-- [ ] All user input validated at system boundaries
-- [ ] Authentication and authorization checked on every protected endpoint
-- [ ] Security headers present in response (check with browser DevTools)
-- [ ] Error responses don't expose internal details
-- [ ] Rate limiting active on auth endpoints
-- [ ] Server-side URL fetches validated against an allowlist (no SSRF)
-- [ ] LLM/model output validated and encoded before use (if AI features present)
+- [ ] Applicable dependency audit results were triaged for severity, reachability, deployment context, and available remediation
+- [ ] Relevant source, staged changes, configuration, and output were checked for secret exposure without echoing suspected secrets
+- [ ] Untrusted inputs are validated at their actual boundaries and outputs are safely encoded for their destination
+- [ ] Authentication and resource authorization are checked on each affected protected path
+- [ ] Applicable headers, CORS, cookies, error responses, rate limits, SSRF defenses, and upload limits were verified on the changed surface
+- [ ] LLM/model and tool output is treated as untrusted input where AI features are involved
+- [ ] Any protected remediation or delivery action has its own applicable authorization; otherwise it remains explicitly pending

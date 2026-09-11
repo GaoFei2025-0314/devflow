@@ -7,11 +7,13 @@ description: Instruments code so production behavior is visible and diagnosable.
 
 ## Overview
 
-Code you can't observe is code you can't operate. Observability is the ability to answer "what is the system doing and why?" from the outside, using the telemetry the code emits. Instrumentation is not a post-launch add-on — it's written alongside the feature, the same way tests are. If a feature ships without telemetry, the first user-reported bug becomes archaeology instead of a query.
+Code you can't observe is code you can't operate. Observability is the ability to answer "what is the system doing and why?" from the outside, using the telemetry the code emits. For a path whose operational questions require new signals, design instrumentation alongside the feature instead of waiting for an incident.
+
+Select the requested deliverable first: an instrumentation or alert design may end as a reviewable design. It does not by itself authorize provider setup, recurring monitoring, data transmission, live notifications, deployment, or fault injection. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Select build, test, and telemetry verification commands through [Project Command Selection](../using-devflow/references/project-commands.md).
 
 ## When to Use
 
-- Building any feature that will run in production
+- Building or changing a production path whose operational questions, risk, or project policy call for new signals
 - Adding a new service, endpoint, background job, or external integration
 - A production incident took too long to diagnose ("we couldn't tell what happened")
 - Setting up or reviewing alerting rules
@@ -76,25 +78,28 @@ logger.warn({
 | `info` | Significant business event (order placed, job finished) | None |
 | `debug` | Diagnostic detail | Off in production by default |
 
-**Correlation IDs are mandatory.** Generate (or accept) a request ID at the system boundary and attach it to every log line, span, and outbound call. Without it, you cannot reconstruct a single request from interleaved logs:
+Use a bounded correlation or request identifier when events must be joined across a request or workflow. Generate it at the system boundary, or validate an accepted external value before propagation; an example request header is untrusted input. Attach it consistently to the relevant logs, spans, and outbound calls without turning it into an unbounded metric label:
 
 ```typescript
-// Express: child logger per request, ID propagated downstream
+// Express: validate a bounded incoming ID or generate one, then propagate it
 app.use((req, res, next) => {
-  req.id = req.headers['x-request-id'] ?? crypto.randomUUID();
+  const candidate = req.headers['x-request-id'];
+  req.id = typeof candidate === 'string' && /^[A-Za-z0-9._-]{1,128}$/.test(candidate)
+    ? candidate
+    : crypto.randomUUID();
   req.log = logger.child({ requestId: req.id });
   res.setHeader('x-request-id', req.id);
   next();
 });
 ```
 
-**Never log secrets, tokens, passwords, or full PII.** This is a hard rule from the `security-and-hardening` skill — telemetry pipelines are a classic data-leak path. Allowlist fields; don't log whole request bodies.
+**Never log secrets, tokens, passwords, or unapproved sensitive data.** Telemetry pipelines are a classic data-leak path. Define an explicit field allowlist, transform or redact approved identifiers, and apply applicable retention and access policy. Do not log whole request bodies or headers.
 
 ### 4. Metrics
 
-For request-driven services, instrument **RED** on every endpoint and every external dependency: **R**ate (requests/sec), **E**rrors (failure rate), **D**uration (latency histogram, not average). For resources (queues, pools, hosts), use **USE**: **U**tilization, **S**aturation, **E**rrors.
+For affected request-driven paths, use **RED** where it answers the operational question: **R**ate (requests/sec), **E**rrors (failure rate), **D**uration (latency histogram, not average). For affected resources such as queues, pools, and hosts, consider **USE**: **U**tilization, **S**aturation, **E**rrors. Do not require a new telemetry system for an unrelated or already-observable change.
 
-As with tracing, the vendor-neutral path is the OpenTelemetry metrics API (same SDK and context as step 5). The example below uses Prometheus' `prom-client` — one common backend choice, not the only one; the RED/USE and cardinality rules are identical either way.
+The example below uses Prometheus' `prom-client` to illustrate a histogram. Use an existing project provider or a separately selected integration; the example does not authorize installing a dependency or enabling a service. The RED/USE and cardinality rules apply across providers.
 
 ```typescript
 import { Histogram } from 'prom-client';
@@ -118,7 +123,7 @@ Track averages never, percentiles always: an average hides the 1% of users havin
 
 ### 5. Distributed tracing
 
-Use OpenTelemetry — it's the vendor-neutral standard, and auto-instrumentation covers HTTP, gRPC, and common DB clients with near-zero code:
+OpenTelemetry is one vendor-neutral option, and auto-instrumentation can cover HTTP, gRPC, and common DB clients. The example is illustrative; use it only when it fits the current architecture and an authorized dependency/provider decision:
 
 ```typescript
 // tracing.ts — must be imported before anything else
@@ -132,7 +137,7 @@ const sdk = new NodeSDK({
 sdk.start();
 ```
 
-Add manual spans only around meaningful internal units of work (e.g., `applyDiscounts`, `chargeProvider`) and attach the attributes on-call will filter by. Propagate context across every async boundary — HTTP headers, queue message metadata — or the trace dies at the gap. Sample head-based at a low rate by default; keep 100% of errors if your backend supports tail sampling.
+Add manual spans only around meaningful internal units of work (e.g., `applyDiscounts`, `chargeProvider`) and attach allowlisted attributes that answer the defined questions. Propagate validated context across relevant async boundaries. Choose sampling and retention from volume, cost, sensitivity, incident needs, provider capability, and policy; do not adopt an example rate as a universal default.
 
 ### 6. Alerting
 
@@ -154,14 +159,18 @@ Rules for every alert you create:
 3. **It has a threshold and duration** justified by the SLO or by historical data, not by a guess.
 4. Use two severities only: **page** (user-facing, act now) and **ticket** (degradation, act this week). A third tier becomes noise that trains people to ignore everything.
 
+Designing an alert does not create a recurring monitor or authorize a live notification. Provider configuration, notification channels, and ongoing operation remain separate implementation and delivery actions.
+
 ### 7. Verify the telemetry itself
 
-Instrumentation is code; it can be wrong. Before calling the work done, trigger the paths and look at the actual output:
+Instrumentation is code; it can be wrong. Verify applicable signals on an authorized safe environment and path. Prefer existing test hooks, fixtures, replay, or non-destructive test traffic. Do not induce a staging or production fault, lower a live threshold, or fire a real notification without authorization for that concrete effect:
 
-- Force an error in staging → find it in the logs by `requestId`, confirm fields are structured (not `[object Object]`)
-- Send test traffic → confirm metric series appear with the expected labels and sane values
-- Follow one request across services in the tracing UI → no broken spans
-- Fire each new alert once (lower the threshold temporarily) → confirm it reaches the right channel and the runbook link works
+- Exercise an error path safely → find it in captured or test logs by correlation ID and confirm fields are structured
+- Use authorized test traffic or captured telemetry → confirm metric series have expected bounded labels and sane values
+- Follow one representative request in an available test tracing view → confirm required spans and context propagation
+- Validate alert rules and runbook links with provider-supported dry-run/test facilities when available and authorized; otherwise record live delivery verification as pending
+
+When you analyze a telemetry or log sample for someone, ground the analysis in the sample's own frame: state the observation window the sample covers, and report the identity units the records actually carry — task, tree/agent, turn, and call or correlation ids — naming their values where the sample provides them. Grouping counts "by task" while never naming which task, turn, or call ids were observed leaves the reader unable to re-check the sample; a complete analysis names the units it counted, keeps observed fact separate from inference, and states which units or values are absent or unknown.
 
 ## Common Rationalizations
 
@@ -173,11 +182,11 @@ Instrumentation is code; it can be wrong. Before calling the work done, trigger 
 | "We can just look at the dashboards when something breaks" | Dashboards built without defined questions show you everything except the answer. Start from on-call questions. |
 | "Alert on everything important, we'll tune later" | A noisy pager trains people to ignore it. The tuning never happens; the missed real page does. |
 | "User ID as a metric label makes debugging easier" | It also makes your metrics backend fall over. High-cardinality lookups belong in logs and traces. |
-| "Tracing is overkill for our two services" | Two services already means cross-service latency questions logs can't answer. Auto-instrumentation makes the cost trivial. |
+| "Tracing is overkill for our two services" | Two services can create cross-service latency questions that logs cannot answer. Auto-instrumentation may reduce setup work, but verify runtime overhead, telemetry cost, sensitive-data policy, and provider fit. |
 
 ## Red Flags
 
-- A feature PR with retries, queues, or external calls and zero new telemetry
+- An affected retry, queue, or external-call path whose relevant operational questions remain unanswered by existing or new signals
 - Log lines built by string interpolation instead of structured fields
 - No correlation/request ID — each log line is an orphan
 - Metrics labeled with user IDs, raw URLs, or error message text (cardinality bomb)
@@ -189,13 +198,12 @@ Instrumentation is code; it can be wrong. Before calling the work done, trigger 
 
 ## Verification
 
-After instrumenting a feature, confirm:
+After observability work, confirm only the signals applicable to the defined operational questions and changed surface. Record actual signal observations separately from static configuration checks; reuse valid evidence and leave provider, live-notification, or fault-injection checks pending when they were not authorized or available.
 
 - [ ] The on-call questions for this feature are written down, and each signal maps to one
-- [ ] All log output is structured (JSON), with stable event names and a correlation ID on every line
-- [ ] No secrets, tokens, or unredacted PII in any log line (spot-check actual output)
-- [ ] RED metrics exist for every new endpoint and every external dependency, with bounded label sets
-- [ ] Latency is a histogram; p95/p99 are queryable
-- [ ] A single request can be followed end-to-end in the tracing UI without broken spans
-- [ ] Every new alert is symptom-based, has a runbook link, and was test-fired once
-- [ ] An induced failure in staging was located via telemetry alone, without reading the source
+- [ ] Applicable log output is structured, uses stable event names, and carries a bounded correlation ID where correlation is needed
+- [ ] Logged fields follow an explicit allowlist; sampled output contains no secrets, tokens, or unapproved sensitive data
+- [ ] Applicable RED/USE metrics use bounded label sets; latency uses a histogram with the required percentiles queryable
+- [ ] Applicable traces preserve required context across the affected path with useful, allowlisted span attributes
+- [ ] New alert designs are symptom-based, actionable, justified, and linked to a runbook
+- [ ] Actual logs, metrics, traces, or alert test results were inspected where available; unperformed live checks are reported as pending rather than passed
