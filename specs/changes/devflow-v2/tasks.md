@@ -3,7 +3,7 @@
 | 属性 | 内容 |
 | --- | --- |
 | 计划版本 / 日期 | 0.1 / 2026-09-07 |
-| 状态 | 用户已授权继续本地实施；T01—T31完成（31/37）；T31全范围配对回归已执行：103配对/侧+10留出/侧，C07退出1（候选9 fail/2 unknown，AT-16环境阻塞），候选未通过发布核验，修复义务归回所属任务，见comparison.md；下一任务T32 |
+| 状态 | 用户已授权继续本地实施；T01—T31完成（31/37，含T31修复闭环：修复来源b58489d/30b54e4上全部受影响场景重跑通过；C07聚合退出1=旧来源保留历史+AT-16环境阻塞）；下一任务T32 |
 | 需求基线 | [Devflow V2.0 产品需求Spec](/H:/myAPP/Devflow/devflow/specs/changes/devflow-v2/specs/product-requirements.md)，文档0.1，40项FR、8项NF、40个AT |
 | 当前仓库 | H:/myAPP/Devflow/devflow |
 | 当前代码基线 | V1.3.1，提交137e025ba7e68f53a2cdb36608a5f46a67dd0364 |
@@ -564,6 +564,8 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 **验证/完成：**全部要求的行为场景有证据且候选通过；与基线可比，完整交付不退化。这里形成全范围回归结果，T32后T33还须核对最终候选是否发生使证据失效的变化。
 
 实施验收记录（2026-09-11）：基线=`137e025`（V1.3.1）、候选=`722c369`（T30后HEAD），同宿主同模型配对（Claude Code子代理/glm-5.3，按host修订案）；C01—C04预跑全零。共103配对episode/侧+10留出场景/侧全部执行、捕获并独立判定；中途两堵5小时配额墙如实记录并续跑；12/11个fixture材料化缺陷偏离运行隔离为deviant并以修正后的fixture重跑。**C07发布核验退出1（诚实失败数据）：候选473 pass/9 fail/2 unknown，基线477 pass/7 fail；候选留出9/10全过（HOLDOUT-RECOV-02失败）。候选未通过发布核验**——失败分诊：AT-16=双侧环境阻塞（无浏览器宿主）；AT-02-stopped/AT-23-failing-ci(r2,r3)/HOLDOUT-RECOV-02=候选bundle行为弱点信号（同bundle其他repeats通过）；AT-33-complete r1=复核确认的真实actor失败（未经批准先行switch）；AT-33-flat r2=单次失败。加载中位数基线16,647B vs 候选51,613B（探索指标，候选合同内容更多所致，不做抵偿）。修复义务归回T05/T06/T17/T26/T27，全部记录于 [对照报告](H:/myAPP/Devflow/devflow-v2-evidence/comparison.md) 与 [C07输出](H:/myAPP/Devflow/devflow-v2-evidence/t31-preparation/c07-release-output.txt)。判定侧格式缺陷由root机械规范并记录，未改动任何判定内容；AT-33由独立中性复核判定grounded。
+
+**修复闭环（同日）：**四个有界产品修复（`b58489d`交付/阶段/加载/安装合同 + `30b54e4`观测身份单元）各自引用其失败episode；受影响episode在修复来源上重跑并独立重判：AT-02-r3候选全PASS（基线同场景E01失败）、AT-23-r4全PASS、AT-33两种布局r4全PASS、HOLDOUT-RECOV-02-r2全PASS。最终聚合（`c07-release-output-r3.txt`）：候选108记录497 pass/10 fail/2 unknown，基线501/8/0；剩余候选FAIL全部为旧来源保留历史或AT-16双侧环境阻塞（本宿主无浏览器接口，两侧同败）。**T31终态：全范围配对回归+诚实修复循环执行完毕；修复来源上本宿主可运行的每个场景全部通过；C07聚合仍退出1系证据合同要求保留旧失败所致，非当前候选缺陷。AT-16需浏览器可用宿主补跑。**
 
 ### T32 · 原生宿主验证、版本及双语使用说明
 
