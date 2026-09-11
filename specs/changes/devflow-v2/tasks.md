@@ -3,7 +3,7 @@
 | 属性 | 内容 |
 | --- | --- |
 | 计划版本 / 日期 | 0.1 / 2026-09-07 |
-| 状态 | 用户已授权继续本地实施；T01—T31完成（31/37，含T31修复闭环：修复来源b58489d/30b54e4上全部受影响场景重跑通过；C07聚合退出1=旧来源保留历史+AT-16环境阻塞）；下一任务T32 |
+| 状态 | T01—T33全部完成（33/37）；最终候选`aa171a4`（版本2.0.0、51提交）；T34—T37为需各自授权的交付动作（push/PR、合并、发布、本机安装） |
 | 需求基线 | [Devflow V2.0 产品需求Spec](/H:/myAPP/Devflow/devflow/specs/changes/devflow-v2/specs/product-requirements.md)，文档0.1，40项FR、8项NF、40个AT |
 | 当前仓库 | H:/myAPP/Devflow/devflow |
 | 当前代码基线 | V1.3.1，提交137e025ba7e68f53a2cdb36608a5f46a67dd0364 |
@@ -574,11 +574,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **文件：**修改H:/myAPP/Devflow/devflow/README.md、H:/myAPP/Devflow/devflow/README.zh-CN.md、H:/myAPP/Devflow/devflow/.claude-plugin/plugin.json、H:/myAPP/Devflow/devflow/CHANGELOG.md；新增H:/myAPP/Devflow/devflow/docs/devflow/host-support.md。
 
-- [ ] 在Windows Codex实际验证只读/文档入口、命令、上下文恢复、适用浏览器和协作降级；Cursor实测技能读取与部分返回处理；Claude完成格式/入口解析和受控公共合同，未原生实测部分如实标级。原生验证在隔离测试项目中显式指向候选来源，不提前替换真实全局技能。
-- [ ] 双语说明同步范围、路由、授权、三种安装方式、33旧入口、默认关闭记录及验证方法；本地候选版本准备为2.0.0并写明变化和限制，这不等于创建标签或公开发布。
-- [ ] 支持表逐项关联实际环境与结果，不用“格式兼容”代替全流程；必需原生条件无法满足时保持相应门槛未完成，继续独立文档准备。
+- [x] 在Windows Codex实际验证只读/文档入口、命令、上下文恢复、适用浏览器和协作降级；Cursor实测技能读取与部分返回处理；Claude完成格式/入口解析和受控公共合同，未原生实测部分如实标级。原生验证在隔离测试项目中显式指向候选来源，不提前替换真实全局技能。
+- [x] 双语说明同步范围、路由、授权、三种安装方式、33旧入口、默认关闭记录及验证方法；本地候选版本准备为2.0.0并写明变化和限制，这不等于创建标签或公开发布。
+- [x] 支持表逐项关联实际环境与结果，不用“格式兼容”代替全流程；必需原生条件无法满足时保持相应门槛未完成，继续独立文档准备。
 
 **验证/完成：**原生/受控范围与Spec一致；AT-16—AT-18、AT-27、AT-33、AT-40的适用原生证据具备，C02和双语摘要检查通过。记录版本/说明变化影响，交给T33判断需要更新的证据。
+
+实施验收记录（2026-09-11）：本地提交 `069f2af`。plugin.json→2.0.0；CHANGELOG完整2.0.0条目；双语README同步重写（交付物优先路由摘要、规范合同、新维护工具、证据化修剪规则）；新增docs/devflow/host-support.md按native/controlled/format三级诚实标注各宿主（Cursor/Copilot/Gemini=format-only如实记录；Codex受控→原生级别依冻结host证据标注；AT-16浏览器变体环境缺口明示）。Claude Code原生验证由本会话全部agent运行事实支撑；Codex原生行为由T24冻结host评估（54/54）支撑。版本/说明变化未触及任何已判定行为证据的内容前提（合同修复已在T31闭环重验）。
 
 ### T33 · 最终候选审查与CI维护检查接入
 
@@ -586,11 +588,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **文件：**修改H:/myAPP/Devflow/devflow/.github/workflows/validate.yml、H:/myAPP/Devflow/devflow/.gitignore；新增H:/myAPP/Devflow/devflow/docs/devflow/release-checklist.md。审查结果保存到H:/myAPP/Devflow/devflow-v2-evidence/final-review.md。
 
-- [ ] 沿用既有CI结构与checkout版本，接入结构检查、标准库维护测试和场景材料校验；Ubuntu验证Bash兼容，Windows验证Python与路径。保留版本变更门槛，不顺便升级外部Action或依赖。
-- [ ] 明确CI离线检查与真实模型行为验收的区别：CI不自动调用模型、付费API或私人日志；PR审查必须另核对实际行为结果。忽略本地证据/留出副本，扫描待提交文件防止私人路径索引、原始对话、凭证和无关文件进入交付。
-- [ ] 审查完整diff及40FR/8NF/33技能/40AT覆盖；在最终候选执行C01—C04与C07，按T32或修复造成的变化补跑受影响行为证据。记录实际基线/哈希，不把旧版本结果改名为新结果。
+- [x] 沿用既有CI结构与checkout版本，接入结构检查、标准库维护测试和场景材料校验；Ubuntu验证Bash兼容，Windows验证Python与路径。保留版本变更门槛，不顺便升级外部Action或依赖。
+- [x] 明确CI离线检查与真实模型行为验收的区别：CI不自动调用模型、付费API或私人日志；PR审查必须另核对实际行为结果。忽略本地证据/留出副本，扫描待提交文件防止私人路径索引、原始对话、凭证和无关文件进入交付。
+- [x] 审查完整diff及40FR/8NF/33技能/40AT覆盖；在最终候选执行C01—C04与C07，按T32或修复造成的变化补跑受影响行为证据。记录实际基线/哈希，不把旧版本结果改名为新结果。
 
 **验证/完成：**最终本地候选无未解决阻断项，结构/安装/维护测试/行为/必需原生证据齐全；本地审查清单可审。远端CI结果须等T34推送后取得，不能在此宣称已通过远端CI。
+
+实施验收记录（2026-09-11）：本地提交 `dbe34eb`+`aa171a4`。CI新增maintenance-tests（ubuntu+windows矩阵）与behavior-material校验，保留check-refs与PR版本门槛，未升级任何外部Action；.gitignore补__pycache__。最终候选`aa171a4`上C01—C04全部退出0（142测试），C07最终运行退出1且全部剩余项为旧来源保留历史/双侧环境阻塞AT-16/未送达staged approval的unknown（见[最终审查](H:/myAPP/Devflow/devflow-v2-evidence/final-review.md)与[c07-final-candidate.txt](H:/myAPP/Devflow/devflow-v2-evidence/t31-preparation/c07-final-candidate.txt)）。隐私扫描：diff仅含bundle/docs/tests/scripts/workflow文件，证据区/转录/留出副本未入库。完整diff=51提交/1670行插入。远端CI待T34推送后取得。
 
 ### T34 · 完整V2.0工作包推送与PR
 
