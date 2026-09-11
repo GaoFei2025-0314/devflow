@@ -17,8 +17,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check references, frontmatter, and size budgets
+      - name: Check references, frontmatter, catalog/template consistency, and size budgets
         run: bash scripts/check-refs.sh
+
+  maintenance-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run maintenance tooling behavior tests
+        run: python -m unittest discover -s tests/maintenance -p 'test_*.py'
+
+  behavior-material:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate behavior scenario materials
+        run: python scripts/check-behavior.py validate --cases tests/behavior/cases
 
   version-bump:
     if: github.event_name == 'pull_request'
