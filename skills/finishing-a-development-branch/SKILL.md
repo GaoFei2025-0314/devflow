@@ -41,7 +41,7 @@ Ask only for a concrete missing decision at the first action that depends on it.
 
 ## 3. Prepare a Reviewable Pull Request
 
-Normal PR timing is the complete agreed work package, after implementation review and all required local evidence. Do not open an early or draft PR merely to display progress unless the user or project policy explicitly requests that exception.
+Normal PR timing is the complete agreed work package, after implementation review and every check the project requires before push/PR, including CI when assigned to that gate. Resolve this gate from the effective rules before choosing operation order, using the Shared Delivery Contract. A general push/PR grant does not waive a pending, failed, or unobserved pre-PR check. Finish reviewable local material while that gate is closed. An early or draft PR requires the explicit exception provided by the user or project policy.
 
 Before an authorized push or PR, inspect the intended diff and prepare:
 
@@ -53,7 +53,7 @@ Before an authorized push or PR, inspect the intended diff and prepare:
 - API and data impact;
 - known residual risks, failures, and accepted deferrals.
 
-Push and PR creation are distinct from merge. Required CI and branch protection still apply after creation.
+Push and PR creation are distinct from merge. Checks assigned to the push/PR gate must pass before those actions; required merge CI and branch protection also apply after creation.
 
 ## 4. Decide Whether Merge Is Allowed
 
