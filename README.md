@@ -52,6 +52,8 @@ Point your tool's skill, prompt, rules, or instruction loader at the repository 
 
 Per-host support levels and what was natively verified: [host support table](docs/devflow/host-support.md).
 
+The 2.0.0 tag is available, but full V2.0 acceptance remains open: native host coverage and some final behavior evidence need completion. The support table records these limits; a published version or passing offline CI does not establish those results.
+
 ## Usage
 
 Ask the assistant to use Devflow before a development task:
@@ -74,7 +76,7 @@ Devflow's skill examples are TypeScript/web-flavored, but the rules are stack-ag
 
 ## Maintenance
 
-- Run `bash scripts/check-refs.sh` before committing skill changes — it validates frontmatter, cross-references, file sizes, catalog/summary consistency, and delegates to `python scripts/check-bundle.py`. Run `python -m unittest discover -s tests/maintenance -p 'test_*.py'` for the tooling's 142 behavior tests. CI runs all of these on every push.
+- Run `bash scripts/check-refs.sh` before committing skill changes — it validates frontmatter, cross-references, file sizes, catalog/summary consistency, and delegates to `python scripts/check-bundle.py`. Run `python -m unittest discover -s tests/maintenance -p 'test_*.py'` for the maintenance tooling tests; the command reports the current count. CI runs these offline checks, which do not execute or judge actual model behavior.
 - Installing or switching an installation: `python scripts/install-bundle.py plan|stage|verify` plus the [installation and switch-over guide](docs/devflow/installation.md) — auditable diff, bundle-owned-only backup, explicit switch authorization, bounded recovery.
 - Optional local usage recording (`python scripts/usage.py status|enable|disable|append|export|report --store <dir>`) is **off by default**, records only whitelisted minimal events, never raw dialogue or credentials, and no workflow step depends on it.
 - **Bump `version` in `.claude-plugin/plugin.json` in any PR that changes skill content** (CI enforces this on pull requests), and add a `CHANGELOG.md` entry for the new version. Installed plugins only receive updates when the version string changes — content changes without a version bump never reach `/plugin update` users.

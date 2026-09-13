@@ -14,9 +14,13 @@ Pre-push checklist for a Devflow release candidate. CI runs the offline part on 
 ## Behavior (human/independent review — CI cannot do this)
 
 - [ ] Checkpoint/release behavior results reviewed against actual traces (not self-reports); failures preserved, not retried to green
+- [ ] Staged approvals were actually delivered after the specified event; a packet describing future approval is not a received user message. Judgments cite the actual delivery and subsequent action trace.
 - [ ] Paired baseline/candidate comparison conditions matched (same task/state/model/host); mixed-host results disclosed
+- [ ] The release target is explicit; each reused older-source result has a reviewed validity record. Critical repeats count only evidence valid for that target, not an unchecked mixture of pre-repair and post-repair runs.
 - [ ] Holdout scenarios pass; any failure converts to regression material and a fresh holdout replaces it
+- [ ] Holdout identity is checked against the actual blind input and exposure history; renaming a repaired sample does not make it an untouched holdout.
 - [ ] Environment-blocked variants (e.g. browser-interface on hosts without a browser) explicitly recorded as gaps — never claimed as passed
+- [ ] Mandatory native host checks are complete, or an explicitly accepted scope change is recorded as a deferral. Desktop, CLI and plugin installation evidence are kept separate.
 
 ## Privacy scan (before any push)
 

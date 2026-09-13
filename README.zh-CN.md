@@ -52,6 +52,8 @@ ln -s /path/to/devflow/skills/test-driven-development ~/.codex/skills/test-drive
 
 各宿主的支持等级与已原生验证的范围见[宿主支持表](docs/devflow/host-support.md)。
 
+2.0.0 标签已发布，但完整 V2.0 验收仍未完成：原生宿主覆盖及部分最终行为证据需要补齐。支持表列明这些限制；版本已发布或离线 CI 通过不能代替相应验收结果。
+
 ## 使用
 
 在开发任务开始前，让助手使用 Devflow：
@@ -74,7 +76,7 @@ Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关
 
 ## 维护
 
-- 提交技能改动前运行 `bash scripts/check-refs.sh`——它校验 frontmatter、交叉引用、文件体积、目录/摘要一致性，并委托给 `python scripts/check-bundle.py`。再跑 `python -m unittest discover -s tests/maintenance -p 'test_*.py'` 执行维护工具的 142 项行为测试。CI 每次都会运行全部检查。
+- 提交技能改动前运行 `bash scripts/check-refs.sh`——它校验 frontmatter、交叉引用、文件体积、目录/摘要一致性，并委托给 `python scripts/check-bundle.py`。再跑 `python -m unittest discover -s tests/maintenance -p 'test_*.py'` 执行维护工具测试，命令会报告当前数量。CI 执行这些离线检查，不执行或判定真实模型行为。
 - 安装或切换安装：`python scripts/install-bundle.py plan|stage|verify` 配合[安装与切换指南](docs/devflow/installation.md)——可审差异、仅限 bundle 自有路径的备份、显式切换授权、有界恢复。
 - 可选的本地使用记录（`python scripts/usage.py status|enable|disable|append|export|report --store <目录>`）**默认关闭**，只记录白名单内的最小事件，绝不记录原始对话或凭证，任何工作流步骤都不依赖它。
 - **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查），并在 `CHANGELOG.md` 中为新版本补一条记录。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。

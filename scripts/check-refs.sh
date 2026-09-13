@@ -7,6 +7,13 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FAIL=0
 
+# A Claude worktree is a separate checkout, not part of this bundle. Keep
+# other .claude content and ordinary directories named worktrees in scope.
+find_bundle_files() {
+  find "$1" -type d \( -name .git -o -path "$ROOT/.claude/worktrees" \) -prune \
+    -o -name "$2" -print
+}
+
 # Resolve a usable Python 3. `python3` alone is not enough on Windows, where
 # it may resolve to a store stub that exits without running the script.
 resolve_python() {
@@ -34,17 +41,19 @@ while IFS= read -r f; do
   if [ "$f" != "$ROOT/SKILL.md" ] && [ "$name" != "$dir" ]; then
     echo "NAME MISMATCH: $f (name=$name dir=$dir)"; FAIL=1
   fi
-done < <(find "$ROOT" -name SKILL.md -not -path "*/.git/*")
+done < <(find_bundle_files "$ROOT" SKILL.md)
 
 echo "== 2. No third-party namespaces or references to removed files =="
 # Path-like fragments only, so prose mentions (e.g. "legacy openspec/ folders"
 # or upstream-credit URLs) stay legal without hand-maintained exclusions.
-if grep -rn "superpowers:[a-z]\|skills/agent-skills\|skills/superpowers\|skills/openspec\|\.\./agent-skills/\|\.\./superpowers/\|openspec/SKILL\|writing-skills\|MANIFEST\.md\|openai\.yaml\|mcp-builder" \
-    "$ROOT" --include="*.md" --exclude-dir=.git; then
-  FAIL=1
-else
-  echo OK
-fi
+NAMESPACE_FAIL=0
+while IFS= read -r f; do
+  if grep -nH "superpowers:[a-z]\|skills/agent-skills\|skills/superpowers\|skills/openspec\|\.\./agent-skills/\|\.\./superpowers/\|openspec/SKILL\|writing-skills\|MANIFEST\.md\|openai\.yaml\|mcp-builder" "$f"; then
+    FAIL=1
+    NAMESPACE_FAIL=1
+  fi
+done < <(find_bundle_files "$ROOT" '*.md')
+[ "$NAMESPACE_FAIL" -eq 0 ] && echo OK
 
 echo "== 3. Backtick file references resolve =="
 "$PY" - "$ROOT" <<'EOF'
@@ -61,7 +70,12 @@ placeholders = {
 }
 broken, total = [], 0
 for dirpath, dirs, files in os.walk(ROOT):
-    dirs[:] = [d for d in dirs if d != ".git"]
+    dirs[:] = [
+        d for d in dirs
+        if d != ".git"
+        and os.path.relpath(os.path.join(dirpath, d), ROOT).replace(os.sep, "/")
+        != ".claude/worktrees"
+    ]
     for fn in files:
         if not fn.endswith(".md"):
             continue
@@ -96,7 +110,7 @@ echo "== 4. Size budget: SKILL.md files <= 310 lines =="
 while IFS= read -r f; do
   n=$(wc -l < "$f")
   if [ "$n" -gt 310 ]; then echo "TOO LONG ($n lines): $f"; FAIL=1; fi
-done < <(find "$ROOT/skills" -name SKILL.md)
+done < <(find_bundle_files "$ROOT/skills" SKILL.md)
 
 echo "== 5. Bundle catalog and structure checks =="
 if "$PY" "$ROOT/scripts/check-bundle.py" --root "$ROOT"; then

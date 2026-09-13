@@ -86,7 +86,7 @@ Give these packets and the tested product rules to the actor. Keep the case defi
 
 ## Result records (schema version 1)
 
-The results directory contains one or more direct child files ending in the result JSON suffix shown below, plus the evidence files they reference. Every selected case variant needs at least one result for the checkpoint profile. All result records in one directory use a single `run_id`, which identifies that checkpoint or evaluation campaign. The combination of `case_id`, `variant_id`, and `repeat_index` identifies an individual episode within it, while `actor.id` links that episode to its captured host trace. T30 will define aggregation across complete release campaigns. A result records one repeat and has this shape:
+The results directory contains one or more direct child files ending in the result JSON suffix shown below, plus the evidence files they reference. Every selected case variant needs at least one result for the checkpoint profile. All result records in one directory use a single `run_id`, which identifies that checkpoint or evaluation campaign. The combination of `case_id`, `variant_id`, and `repeat_index` identifies an individual episode within it, while `actor.id` links that episode to its captured host trace. The release profile below defines aggregation across complete release campaigns. A result records one repeat and has this shape:
 
 ```text
 *.result.json
@@ -173,18 +173,83 @@ Omitting `--ids` selects the full `AT-01` through `AT-40` case set. A checkpoint
 The `release` profile verifies the full scope and cannot be scoped down with `--ids`:
 
 ```text
-python scripts/check-behavior.py verify --cases tests/behavior/cases   --results <candidate-dir> --baseline <baseline-dir>   --holdout <holdout-dir> --profile release
+python scripts/check-behavior.py verify --cases tests/behavior/cases --results <candidate-dir> --baseline <baseline-dir> --holdout <candidate-holdout-dir> --baseline-holdout <baseline-holdout-dir> --profile release --target-candidate-source <Git-SHA-or-source-SHA256> --release-manifest <manifest.json>
 ```
 
 It enforces everything the checkpoint does, plus:
 
 - **Full coverage:** one result for every variant of all 40 cases.
-- **Key repeats:** the key set (AT-03, AT-14, AT-20, AT-21, AT-22, AT-23, AT-24, AT-25, AT-31, AT-33) requires 3 distinct `repeat_index` values per variant; other variants require at least 1. Keeping only the best round cannot pass.
-- **Paired baseline:** every candidate run (case, variant, repeat) needs a baseline run with the same model id, host id, and model parameters; mismatches are detected failures, missing baseline runs are evidence insufficiency. Baseline assertion failures are recorded in counts, not erased.
-- **Holdout scenarios:** --holdout holds holdout scenario files (suffix .holdout dot json) (schema: `schema_version`, `scenario_id`, `category` in phase/authorization/evidence_invalidation/host/recovery, plus the same run/actor/model/host/trace/assertions/judge fields as results). At least 10 scenarios with at least 2 per category; every assertion must pass with capture evidence. Holdout material lives outside the everyday case set on purpose — never use it for tuning.
+- **Key repeats:** the key set (AT-03, AT-14, AT-20, AT-21, AT-22, AT-23, AT-24, AT-25, AT-31, AT-33) requires 3 distinct `repeat_index` values per variant; other variants require at least 1. Only records bound to the target candidate source or a valid reviewed reuse count. Every submitted assertion is still checked; an old failure is never silently removed by source selection. The reviewer must reconcile the full attempt inventory and independence of actual executions; renumbering or keeping the best rounds does not establish independent repeats.
+- **Paired baseline:** every candidate run (case, variant, repeat) needs a baseline run with the same known model id, host id, model parameters, and explicit task input, initial state, effective user rules, capabilities and budget. Missing or unknown essential conditions are evidence insufficiency; mismatches are detected failures. Baseline assertion failures remain in counts. Legacy `conditions_digest` is retained as historical metadata and is not used for comparison: older digests may include side, source version or incidental workspace paths.
+- **Holdout scenarios:** `--holdout` and `--baseline-holdout` contain the candidate and baseline scenario files (suffix .holdout dot json) (schema: `schema_version`, `scenario_id`, `category` in phase/authorization/evidence_invalidation/host/recovery, plus the same run/actor/model/host/trace/assertions/judge fields as results). At least 10 distinct, unexposed input pairs with at least 2 per category are required. Candidate assertions must pass with capture evidence; baseline assertion outcomes remain visible in counts as for the ordinary baseline. Exposed inputs become regressions and need fresh holdout replacements. Renaming the same input or repeating it after tuning cannot fill this gate.
 - **Loading data:** candidate results must carry a `loading` object (`total_bytes` int-or-null and `entries` of `{path, bytes}`); the comparison reports paired median loading for baseline and candidate, labeled exploratory — it can never offset a quality failure, and unknown cost or tokens are not converted.
 
 The minimum run plan implied by these gates is 65 base variants + 38 extra key-repeat runs (19 key-case variants, 3 repeats each) + 10 holdout scenarios = 113 runs per version, 226 paired across baseline and candidate; additional variants, repair regressions, and native-host runs add to that floor.
+
+### Release manifest: preserve original records
+
+Checkpoint records remain schema version 1 and require no migration. Release adds a separate UTF-8 JSON manifest, also with integer `schema_version: 1`. Do not edit an original result's source identity or condition digest to make a pair match. Each manifest entry binds the exact original result bytes by SHA-256. `side` is `candidate`, `baseline`, `holdout` (candidate holdouts), or `baseline_holdout`. `path` is a direct filename in the corresponding directory. Result and holdout declaration files must resolve inside that directory, including after symlink resolution; an outside target is insufficient input even when its bytes match the declared hash. All evidence references inside that entry resolve relative to that same directory and follow the evidence rules above. The manifest's location does not change their base.
+
+```json
+{
+  "schema_version": 1,
+  "target_candidate_source": "0123456789abcdef0123456789abcdef01234567",
+  "records": [
+    {
+      "side": "candidate",
+      "path": "AT-03-r1.result.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "conditions": {
+        "task_input": {"value": {"packet_content_sha256": "..."}, "evidence": []},
+        "initial_state": {"value": {"relative_files_and_hashes": {}}, "evidence": []},
+        "user_rules": {"value": {"effective_rules_sha256": "..."}, "evidence": []},
+        "capabilities": {"value": {"tools": ["read", "write"], "restrictions": []}, "evidence": []},
+        "budget": {"value": {"numeric_limit": "not supplied", "execution_policy": "bounded task"}, "evidence": []}
+      }
+    }
+  ],
+  "holdout_exposures": []
+}
+```
+
+This shape illustration is incomplete evidence: replace placeholders and every empty evidence list with actual resolvable capture references. `records` must bind every submitted candidate, baseline and both sides' holdout results exactly once. Missing records, unknown conditions, missing evidence, or a missing target remain insufficient. A mismatched result hash or target declaration fails. The target may be a lowercase 40-character Git SHA or 64-character source snapshot SHA-256.
+
+The five `conditions` fields form the complete comparison object; extra fields are rejected. Each has a nonempty, known, finite JSON `value` and nonempty `evidence` references. Values are compared as canonical JSON (sorted object keys, preserved list ordering and JSON types); evidence paths and formatting are not compared. Nulls and explicit unknown/unavailable/not-recorded values cannot establish a condition. An explicitly evidenced absence of a user numeric budget can be represented as a known policy, as above; it must not be invented to fill a missing record.
+
+Normalize comparable inputs before recording: omit candidate/baseline labels and tested source differences, identify fixture files relative to their logical workspace, and record the actual effective rules, tool contracts, restrictions and resource limits. Two arbitrary equal labels are not evidence of comparable conditions. Independent review must check the values against actor-visible packets, initial snapshots and effective host records, including whether normalization removed a meaningful difference. Hash validation establishes file identity, not the truth of that interpretation.
+
+### Reusing an older source
+
+An entry for a candidate or holdout whose original `subject_source.hash` differs from the target needs a separately reviewed `reuse` object:
+
+```text
+reuse = {
+  source_hash, target_hash, record_sha256,
+  claim_scope: [every assertion ID, plus "loading" when the record has loading],
+  reviewer: {id: reviewer distinct from the actor},
+  justification: dependency analysis and why these claims remain valid,
+  evidence: [capture references to the review and supporting source comparison],
+  resources: [{path: canonical bundle-relative resource,
+               source: evidence reference to original resource bytes,
+               target: evidence reference to target resource bytes}]
+}
+```
+
+All three bindings must match exactly; claim scope must cover the whole submitted record. Assertion shape is validated before reuse claims are derived, using the same checks as assertion evaluation. Malformed assertions are controlled input errors (exit 2) for both current-source and reused records. Every relevant resource needs inspectable snapshots with equal verified hashes. A changed relevant resource fails unchanged-resource reuse; it requires new execution for the affected claims. Missing review, resource snapshots or scope is insufficient. There is no force/waiver flag. The independent reviewer must establish that the listed resources cover the actual dependencies, their source/target provenance is correct, the original outcome remains valid, and no contradictory failure invalidates it. The checker cannot authenticate a reviewer identity or prove that a dependency inventory is exhaustive. A review cannot erase a declared failure or turn a repaired, changed behavior into an unchanged one.
+
+### Underlying holdout input and exposure
+
+Each holdout entry also needs `holdout: {input: <capture reference to blind input JSON>, exposure: "unexposed" | "promoted_regression" | "unknown", evidence: [capture references to sealing/exposure history]}`. The manifest must explicitly provide `holdout_exposures`, an array of `{input: <capture reference>, evidence: [capture references]}` for previously exposed/tuned inputs; these references resolve in the holdout directory. An empty array is an explicit declaration, not proof that no exposure occurred.
+
+The checker derives input identity from canonical JSON after removing only root `scenario_id`, `case_id`, `variant_id`, `run_id` and `repeat_index`. Actor-visible task content remains; changing its label, whitespace or object-key order cannot create a fresh input. Duplicate underlying inputs fail. Promoted regressions do not count toward holdout coverage, and an input found in the exposure registry cannot be claimed as unexposed. Unknown exposure or a missing packet/sealing reference is insufficient. Keep packets complete and semantically meaningful; the reviewer must inspect normalization and the complete exposure history, since the offline checker cannot discover hidden tuning or authenticate an unexposed declaration.
+
+Holdout pairing first uses matching scenario IDs, then a unique underlying input identity if the counterpart uses a different label. Each baseline counterpart can serve only one candidate. Same-label records with different underlying inputs fail; category, all five condition values, model ID, host ID and model parameters must match. Missing counterparts or unknown required conditions are insufficient. Both sides must be eligible before their pair counts toward the ten-scenario/category floor. Reclassifying an exposed input applies to its baseline and candidate records; keep their historical outcomes intact while marking the current role as regression. Baseline source hashes remain their actual tested baseline, while candidate holdouts need target-source validity or reviewed reuse.
+
+Every release side also requires model and host IDs to be nonempty strings rather than unknown placeholders, and its original source hash to be a valid lowercase Git SHA or SHA-256. Model parameters must be an object without null or unknown values at any depth; an empty object may record that no explicit parameter overrides were supplied. Empty/whitespace IDs and the case-insensitive placeholders `unknown`, `unavailable`, and `not recorded` are insufficient, even when both sides declare the same value. An unknown value on only one side is insufficient evidence, not proof of a mismatch. Checkpoint parsing remains compatible with its existing schema-1 treatment of unknown metadata.
+
+All submitted failures and unknowns remain visible, including promoted regression outcomes. Keep historical raw evidence and supersession/retry chains outside immutable originals; do not submit only successful rounds or treat copied records as new execution. Synthetic fixtures may exercise the full mechanism and receive structural exit 0, but the printed synthetic boundary still excludes them from actual model acceptance.
+
+Release output reports synthetic-bearing record counts separately for candidate, baseline and both holdout sides. These include synthetic references in each bound manifest entry, such as conditions, reuse review/resources, input and sealing evidence. It also reports unique synthetic reference identities across all submitted records and manifest material, including the exposure registry, deduplicated by side/path/hash. These are explicit provenance declarations, not authenticated origin measurements; a zero count alone does not prove host execution. Any participating synthetic material disqualifies the collection from actual model acceptance even when its structural fixture check exits 0.
 
 ## Exit codes and review boundary
 
