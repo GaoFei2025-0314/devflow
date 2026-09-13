@@ -22,6 +22,8 @@ Pre-push checklist for a Devflow release candidate. CI runs the offline part on 
 - [ ] Environment-blocked variants (e.g. browser-interface on hosts without a browser) explicitly recorded as gaps — never claimed as passed
 - [ ] Mandatory native host checks are complete, or an explicitly accepted scope change is recorded as a deferral. Desktop, CLI and plugin installation evidence are kept separate.
 
+Accepted scope amendment (2026-09-13): the user deferred Cursor native skill-read/partial-return verification for this V2 work package. Record Cursor as native-unverified, never passed. All other required checks and general partial-return behavior remain in scope; see the V2 Spec section 11.2 and host-support table.
+
 ## Privacy scan (before any push)
 
 - [ ] No private session transcripts, replay indices, credentials, or local absolute user paths in the diff

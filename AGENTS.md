@@ -13,6 +13,8 @@ Read and follow `skills/devflow/SKILL.md`. It routes in this order:
 
 Start with one short line naming the phase, selected stack, and purpose. Do not load all 33 skills by default; reuse still-valid context and complete only reads that the selected route depends on.
 
+Group independent reads or request ranges to fit the aggregate outer response capacity. Assess actual returned coverage, not nested command success; after truncation, preserve valid covered ranges and obtain only missing ranges currently required. Full selected-entry coverage and all applicable contract boundaries remain required. See [Skill Loading and Context Recovery](skills/using-devflow/references/loading-recovery.md).
+
 The router covers project explanations, log and record investigation, Spec-only and plan-only deliverables, clear low-risk changes, approved implementation, new features, debugging, review and refactoring, UI and browser work, APIs, security, performance, observability, migration, documentation, CI/CD, and delivery. Explanation and document-only work may end without a branch, commit, implementation, or artificial behavior test. Source verification is for real external API, version, or standards claims, not ordinary local code reading.
 
 ## Canonical boundaries

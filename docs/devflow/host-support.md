@@ -8,7 +8,7 @@ Evidence reviewed on 2026-09-13. A host observation covers only the recorded ver
 | Claude Code plugin installation | unverified in the inspected acceptance evidence | unverified | unverified | unverified | unverified | unverified | Subagent file reads do not prove plugin-dir discovery or native skill invocation. |
 | Codex desktop subagent host, frozen September 2026 runs | explicit file reads observed | scoped historical scenarios | native local commands observed | scoped historical scenarios | actual browser observations exist on the desktop host; source validity must be checked for each reuse | native subagents observed | Desktop evidence is scoped to the captured task, source and tool availability. It does not cover the independent CLI. |
 | Codex CLI | blocked in the recorded smoke test | unverified | unverified | unverified | unverified | unverified | The inspected CLI smoke was rejected before the target file was read. No successful native skill read is established by that record. |
-| Cursor 3.9.16 | unverified native read | unverified | unverified | unverified partial-return recovery | unverified | unverified | SKILL.md uses a compatible Markdown format; required Cursor native loading and recovery acceptance is pending. |
+| Cursor 3.9.16 | unverified native read | unverified | unverified | unverified partial-return recovery | unverified | unverified | SKILL.md uses a compatible Markdown format. The user explicitly deferred Cursor native loading and recovery acceptance for the current V2 scope on 2026-09-13; this is not a native PASS. |
 | Copilot CLI | format compatibility only | unverified | unverified | unverified | unverified | unverified | Purpose mappings in `skills/using-devflow/references/copilot-tools.md`; not natively tested. |
 | Gemini CLI | format compatibility only | unverified | unverified | unverified | unverified | unverified | Purpose mappings in `skills/using-devflow/references/gemini-tools.md`; not natively tested. |
 
@@ -22,7 +22,7 @@ Evidence reviewed on 2026-09-13. A host observation covers only the recorded ver
 
 ## Pending required acceptance
 
-Cursor's actual skill read and partial-return recovery, the applicable browser scenario, repaired critical repeats, and untouched holdout coverage remain required by the V2.0 Spec. Publishing a tag, installing matching files, or acknowledging an environment gap does not complete these checks. A scope deferral requires an explicit accepted decision and remains visible as deferred, never passed.
+The applicable browser scenario, repaired critical repeats, untouched holdout coverage and other required non-Cursor native checks remain required by the V2.0 Spec. On 2026-09-13 the user explicitly deferred Cursor's native skill read and partial-return recovery from this acceptance scope. General partial-return and recovery behavior tests remain required. Cursor stays format-compatible/native-unverified; the deferral is not a successful native observation. Publishing a tag, installing matching files, or acknowledging an environment gap does not complete the remaining checks.
 
 ## Degrading honestly
 
