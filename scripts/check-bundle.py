@@ -19,6 +19,10 @@ FRONTMATTER_NAME = re.compile(r"^name:\s*[\"']?([^\"'\r\n]+?)[\"']?\s*$")
 ROUTER_ID = "devflow"
 ROUTER_LINK = re.compile(r"\]\(\.\./([^)/\\]+)/SKILL\.md(?:#[^)\s]*)?\)")
 ENTRY_LINE_BUDGET = 310
+# Lines stopped tracking load cost once prose density rose (V1 averaged 43 bytes
+# per line, V2 averages 67), so the entry budget is also enforced in bytes —
+# what a host actually pays to read the entry.
+ENTRY_BYTE_BUDGET = 18_000
 TEMPLATE_MIRROR = "templates/project-overrides.md"
 TEMPLATE_AUTHORITATIVE = "skills/using-devflow/references/project-overrides.md"
 # Authored instruction surfaces that ship with the bundle. Their cross-links are
@@ -221,7 +225,7 @@ def validate_references(root: Path, errors: list[str]) -> int:
     return checked
 
 
-def validate(root: Path, catalog: dict[str, Any]) -> tuple[list[str], int]:
+def validate(root: Path, catalog: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
     errors: list[str] = []
     skills: list[dict[str, Any]] = catalog["skills"]
 
@@ -319,17 +323,29 @@ def validate(root: Path, catalog: dict[str, Any]) -> tuple[list[str], int]:
             f"{display}: SKILL.md must sit directly in its skill directory"
         )
 
+    entry_bytes = 0
+    largest_entry: tuple[int, str] | None = None
     for skill_id in sorted(declared_ids & actual_ids):
         entry = skills_directory / skill_id / "SKILL.md"
         try:
-            line_count = len(entry.read_text(encoding="utf-8").splitlines())
+            raw = entry.read_bytes()
+            line_count = len(raw.decode("utf-8").splitlines())
         except (OSError, UnicodeError) as error:
-            errors.append(f"skills/{skill_id}/SKILL.md: cannot count lines: {error}")
+            errors.append(f"skills/{skill_id}/SKILL.md: cannot measure entry: {error}")
             continue
+        byte_count = len(raw)
+        entry_bytes += byte_count
+        if largest_entry is None or byte_count > largest_entry[0]:
+            largest_entry = (byte_count, skill_id)
         if line_count > ENTRY_LINE_BUDGET:
             errors.append(
                 f"skills/{skill_id}/SKILL.md: {line_count} lines "
                 f"exceeds the {ENTRY_LINE_BUDGET}-line entry budget"
+            )
+        if byte_count > ENTRY_BYTE_BUDGET:
+            errors.append(
+                f"skills/{skill_id}/SKILL.md: {byte_count} bytes "
+                f"exceeds the {ENTRY_BYTE_BUDGET}-byte entry byte budget"
             )
 
     # Driven by which copies exist, never by the catalog entry this check guards:
@@ -381,7 +397,13 @@ def validate(root: Path, catalog: dict[str, Any]) -> tuple[list[str], int]:
 
     reference_count = validate_references(root, errors)
 
-    return errors, reference_count
+    statistics = {
+        "references": reference_count,
+        "entry_bytes": entry_bytes,
+        "entry_count": len(declared_ids & actual_ids),
+        "largest_entry": largest_entry,
+    }
+    return errors, statistics
 
 
 def main() -> int:
@@ -397,7 +419,7 @@ def main() -> int:
         print(f"INPUT ERROR: {error}", file=sys.stderr)
         return 2
 
-    errors, reference_count = validate(root, catalog)
+    errors, statistics = validate(root, catalog)
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
@@ -406,7 +428,18 @@ def main() -> int:
 
     print(
         f"BUNDLE CHECK PASSED: {len(catalog['skills'])} skills, "
-        f"{reference_count} references"
+        f"{statistics['references']} references"
+    )
+    largest = statistics["largest_entry"]
+    detail = (
+        f"; largest {largest[1]} at {largest[0]} bytes "
+        f"(budget {ENTRY_BYTE_BUDGET})"
+        if largest is not None
+        else ""
+    )
+    print(
+        f"ENTRY LOAD: {statistics['entry_bytes']} bytes across "
+        f"{statistics['entry_count']} entries{detail}"
     )
     return 0
 

@@ -255,6 +255,41 @@ class BundleCheckerTests(unittest.TestCase):
         self.assertIn("skills/alpha/SKILL.md", result.stdout)
         self.assertIn("exceeds the 310-line entry budget", result.stdout)
 
+    def test_dense_entry_within_the_line_budget_violates_the_byte_budget(self):
+        # Lines stopped tracking real load cost once prose density rose; the
+        # byte budget is what the line budget no longer measures.
+        self.write_skill("alpha")
+        entry = self.root / "skills" / "alpha" / "SKILL.md"
+        dense_line = "x" * 600 + "\n"
+        entry.write_text(
+            entry.read_text(encoding="utf-8") + dense_line * 40, encoding="utf-8"
+        )
+        self.write_catalog([self.catalog_skill("alpha")])
+
+        result = self.run_checker()
+
+        self.assertLess(len(entry.read_text(encoding="utf-8").splitlines()), 310)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("skills/alpha/SKILL.md", result.stdout)
+        self.assertIn("entry byte budget", result.stdout)
+
+    def test_repository_reports_entry_load_so_aggregate_drift_is_visible(self):
+        result = subprocess.run(
+            [sys.executable, str(CHECKER), "--root", str(REPOSITORY_ROOT)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("ENTRY LOAD:", result.stdout)
+        match = re.search(r"ENTRY LOAD: (\d+) bytes across (\d+) entries", result.stdout)
+        self.assertIsNotNone(match, result.stdout)
+        self.assertEqual(int(match.group(2)), 33, result.stdout)
+        self.assertGreater(int(match.group(1)), 100_000, result.stdout)
+
     def write_template_pair(self, *, identical=True, declare_mirror=True):
         self.write_skill("using-devflow")
         authoritative = (
@@ -626,6 +661,60 @@ class BundleCheckerTests(unittest.TestCase):
         match = re.search(r"(\d+) references", result.stdout)
         self.assertIsNotNone(match, result.stdout)
         self.assertGreater(int(match.group(1)), 200, result.stdout)
+
+    # The router's routing/gate summary is mirrored by hand into AGENTS.md and
+    # both README route summaries. The prose stays human, but these four facts
+    # are mechanical, and they are what actually goes stale.
+    ENTRYPOINT_DOCUMENTS = ("AGENTS.md", "README.md", "README.zh-CN.md")
+
+    def read_entrypoint(self, name):
+        return (REPOSITORY_ROOT / name).read_text(encoding="utf-8")
+
+    def test_entrypoints_agree_with_the_catalog_on_the_skill_count(self):
+        catalog = json.loads(
+            (
+                REPOSITORY_ROOT
+                / "skills"
+                / "devflow"
+                / "references"
+                / "skill-catalog.json"
+            ).read_text(encoding="utf-8")
+        )
+        count = str(len(catalog["skills"]))
+
+        for name in self.ENTRYPOINT_DOCUMENTS:
+            with self.subTest(document=name):
+                self.assertRegex(
+                    self.read_entrypoint(name),
+                    rf"\b{count}\b",
+                    f"{name} does not state the current skill count {count}",
+                )
+
+    def test_readme_route_summaries_carry_every_router_phase(self):
+        router = (
+            REPOSITORY_ROOT / "skills" / "devflow" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        phases = [
+            phase
+            for phase in ("Understand", "Specify", "Implement", "VerifyReview", "Deliver")
+            if phase in router
+        ]
+        self.assertEqual(len(phases), 5, "router no longer names all five phases")
+
+        for name in ("README.md", "README.zh-CN.md"):
+            text = self.read_entrypoint(name)
+            for phase in phases:
+                with self.subTest(document=name, phase=phase):
+                    self.assertIn(
+                        phase, text, f"{name} route summary is missing phase {phase}"
+                    )
+
+    def test_entrypoints_point_at_the_router_and_the_shared_contracts(self):
+        for name in self.ENTRYPOINT_DOCUMENTS:
+            text = self.read_entrypoint(name)
+            with self.subTest(document=name):
+                self.assertIn("skills/devflow/SKILL.md", text)
+                self.assertIn("using-devflow/references", text)
 
     def test_repository_template_mirror_is_byte_identical(self):
         authoritative = (
