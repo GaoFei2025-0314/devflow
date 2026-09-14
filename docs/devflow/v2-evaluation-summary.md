@@ -59,6 +59,39 @@ changes as an exploratory target; the measured result moves the other way. This 
 exploratory either way: it can never offset a quality failure, and it was not allowed to
 offset one here.
 
+## Where that cost sits, and how much of it is recoverable
+
+Measured on the V2.0 tree after the release, to answer whether the increase above is a
+layout problem or a content one.
+
+The mandatory read for a full implementation route — router, `using-devflow`, and the
+phase, authorization, evidence and delivery contracts — is 65,863 bytes, against 16,548
+for V1.3.1's router plus `using-devflow`. A read-only explanation route still costs 22,342
+bytes, more than V1.3.1's entire fixed entry. Of the 65,863, the two entrypoints are 38%
+and the four contracts 62%.
+
+A prototype split one contract into a normative core plus its full text, preserving every
+rule and rewording nothing in substance. The core came to 6,600 bytes against 7,916 — a
+17% cut, far below what the section sizes suggested, because the contract is dense
+normative content rather than padding: its terminal-state table alone is 40% of the file
+and is the rules themselves. Extrapolated across all four mandatory contracts, splitting
+buys roughly 10% of the mandatory read. The prototype was reverted; it is recoverable from
+the branch history if the approach is revisited.
+
+The compressible content sits in the entrypoints instead. `using-devflow`'s opening
+section is 32% of that file and re-summarizes the four contracts the reader is separately
+told to read; with Instruction Priority and the Human-in-the-Loop section that is about
+5,700 bytes of restatement. Another ~1,300 bytes are motivational prose (Skill Types,
+Common Rationalizations, User Instructions). The router's own bulk — 48% in "Choose the
+deliverable and phase" — is the routing logic and is load-bearing.
+
+**Ceiling:** restructuring without deleting rules recovers roughly 20%. That would meet
+neither the Spec's 30% reduction target nor V1.3.1's entry cost. V2.0's loading cost is
+the price of the rules V2.0 chose to add, so closing the remaining gap is a decision about
+which rules earn their tokens, not a layout change. `scripts/check-bundle.py` now reports
+total entry load on every run and enforces a per-entry byte budget alongside the line
+budget, so this figure stays visible rather than drifting silently.
+
 ## Other recorded gates
 
 - **T24** — four domain entrypoints on frozen source `6e3474f`: 54/54 assertions pass,
