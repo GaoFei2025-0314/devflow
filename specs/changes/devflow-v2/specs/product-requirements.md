@@ -11,6 +11,8 @@
 | 本次交付 | 一份完整的本地产品需求Spec |
 | 当前授权边界 | 仅编写和核对文档；不修改技能、脚本、配置或全局安装，不进行Git提交、分支切换、PR、合并或发布 |
 
+**路径约定：**仓库内路径相对仓库根书写，链接相对本文件解析。`${AUDIT_ROOT}` 指 2026-09-07 使用审计材料区，`${EVIDENCE_ROOT}` 指验收证据工作区；两者都在仓库之外，换机器时只需重新指定这两个根。
+
 本Spec定义V2.0需要实现的产品行为、范围、质量门槛与验收方法。它不规定具体代码、接口签名、文件拆分或任务执行命令；这些属于后续设计与实施计划。文档中“必须”表示候选V2.0需要满足的要求，不表示这些能力已实现。
 
 Spec评审通过表示需求基线获得认可。是否进入设计、实施或交付，仍以用户明确要求及适用授权为准；不得把“文档通过”自动解释为允许写代码、合并或更新全局安装。
@@ -60,14 +62,14 @@ Devflow是一套由AI编程助手读取、解释并执行的开发工作流技�
 
 | 来源ID | 材料 | 用途 |
 | --- | --- | --- |
-| S01 | [本机使用记录分析](/H:/myAPP/Devflow/devflow-v2-audit-20260907/01-使用记录分析.md) | 覆盖范围、统计方法、使用趋势与证据限制 |
-| S02 | [V2.0优化方案](/H:/myAPP/Devflow/devflow-v2-audit-20260907/02-V2.0优化方案.md) | 优化方向和工作包建议 |
-| S03 | [最终统计数据](/H:/myAPP/Devflow/devflow-v2-audit-20260907/codex-metrics.json)、[33技能频次](/H:/myAPP/Devflow/devflow-v2-audit-20260907/codex-skill-frequency.csv) | 数量基线 |
-| S04 | [五条案例独立核验](/H:/myAPP/Devflow/devflow-v2-audit-20260907/other-codex-cases.md) | 测试范围、说明、验收、失败门禁与缺陷同步 |
-| S05 | [静态审查](/H:/myAPP/Devflow/devflow-v2-audit-20260907/bundle-static-review.md) | 阶段、授权、证据、工具与安装规则缺陷 |
-| S06 | [33技能处置矩阵](/H:/myAPP/Devflow/devflow-v2-audit-20260907/bundle-skill-matrix.md) | 现有能力覆盖与职责边界 |
-| S07 | [行为验收建议](/H:/myAPP/Devflow/devflow-v2-audit-20260907/bundle-v2-acceptance.md) | 初始回归场景 |
-| S08 | [其他宿主调查](/H:/myAPP/Devflow/devflow-v2-audit-20260907/other-report.md)、[Claude调查](/H:/myAPP/Devflow/devflow-v2-audit-20260907/claude-report.md) | 跨宿主证据、留存及格式缺口 |
+| S01 | [本机使用记录分析](${AUDIT_ROOT}/01-使用记录分析.md) | 覆盖范围、统计方法、使用趋势与证据限制 |
+| S02 | [V2.0优化方案](${AUDIT_ROOT}/02-V2.0优化方案.md) | 优化方向和工作包建议 |
+| S03 | [最终统计数据](${AUDIT_ROOT}/codex-metrics.json)、[33技能频次](${AUDIT_ROOT}/codex-skill-frequency.csv) | 数量基线 |
+| S04 | [五条案例独立核验](${AUDIT_ROOT}/other-codex-cases.md) | 测试范围、说明、验收、失败门禁与缺陷同步 |
+| S05 | [静态审查](${AUDIT_ROOT}/bundle-static-review.md) | 阶段、授权、证据、工具与安装规则缺陷 |
+| S06 | [33技能处置矩阵](${AUDIT_ROOT}/bundle-skill-matrix.md) | 现有能力覆盖与职责边界 |
+| S07 | [行为验收建议](${AUDIT_ROOT}/bundle-v2-acceptance.md) | 初始回归场景 |
+| S08 | [其他宿主调查](${AUDIT_ROOT}/other-report.md)、[Claude调查](${AUDIT_ROOT}/claude-report.md) | 跨宿主证据、留存及格式缺口 |
 | S09 | 用户本任务及会话提供的AGENTS规则 | 仅Spec、不改代码；项目包管理、Git和授权要求 |
 
 来源为本机审计材料，路径用于本地审阅。未来公开此Spec时只保留必要的匿名摘要和可公开引用，不直接提交私人会话索引或原始日志。
