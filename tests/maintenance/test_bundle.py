@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -254,7 +255,7 @@ class BundleCheckerTests(unittest.TestCase):
         self.assertIn("skills/alpha/SKILL.md", result.stdout)
         self.assertIn("exceeds the 310-line entry budget", result.stdout)
 
-    def write_template_pair(self, *, identical=True):
+    def write_template_pair(self, *, identical=True, declare_mirror=True):
         self.write_skill("using-devflow")
         authoritative = (
             self.root / "skills" / "using-devflow" / "references" / "project-overrides.md"
@@ -267,14 +268,14 @@ class BundleCheckerTests(unittest.TestCase):
             authoritative.read_text(encoding="utf-8") if identical else "# Diverged\n",
             encoding="utf-8",
         )
+        required_resources = ["skills/using-devflow/references/project-overrides.md"]
+        if declare_mirror:
+            required_resources.append("templates/project-overrides.md")
         self.write_catalog(
             [
                 self.catalog_skill(
                     "using-devflow",
-                    required_resources=[
-                        "skills/using-devflow/references/project-overrides.md",
-                        "templates/project-overrides.md",
-                    ],
+                    required_resources=required_resources,
                 )
             ]
         )
@@ -290,6 +291,133 @@ class BundleCheckerTests(unittest.TestCase):
 
     def test_matching_template_mirror_passes(self):
         self.write_template_pair(identical=True)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_template_mirror_drift_is_rejected_when_catalog_omits_the_mirror(self):
+        # The drift guard must not be switchable by editing the data it guards.
+        self.write_template_pair(identical=False, declare_mirror=False)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("templates/project-overrides.md", result.stdout)
+        self.assertIn("template copy is out of sync", result.stdout)
+
+    def test_missing_template_mirror_is_rejected_when_catalog_omits_it(self):
+        self.write_template_pair(identical=True, declare_mirror=False)
+        (self.root / "templates" / "project-overrides.md").unlink()
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("templates/project-overrides.md", result.stdout)
+        self.assertIn("template copy is missing", result.stdout)
+
+    def test_bundle_without_either_template_copy_is_not_forced_to_carry_one(self):
+        self.write_skill("devflow")
+        self.write_catalog([self.catalog_skill("devflow")])
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def write_referencing_skill(self, body, *, support_files=()):
+        self.write_skill("devflow", support_files=support_files)
+        entry = self.root / "skills" / "devflow" / "SKILL.md"
+        entry.write_text(
+            entry.read_text(encoding="utf-8") + body, encoding="utf-8"
+        )
+        self.write_catalog([self.catalog_skill("devflow")])
+
+    def test_broken_markdown_reference_is_rejected(self):
+        self.write_referencing_skill(
+            "\nApply the [Phase Contract](references/phase-contract.md).\n"
+        )
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("skills/devflow/SKILL.md", result.stdout)
+        self.assertIn("references/phase-contract.md", result.stdout)
+        self.assertIn("reference does not resolve", result.stdout)
+
+    def test_resolvable_markdown_reference_passes(self):
+        self.write_referencing_skill(
+            "\nApply the [Phase Contract](references/phase-contract.md).\n",
+            support_files=("skills/devflow/references/phase-contract.md",),
+        )
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_broken_markdown_reference_in_root_entrypoint_is_rejected(self):
+        self.write_referencing_skill("")
+        (self.root / "AGENTS.md").write_text(
+            "See [the router](skills/devflow/MISSING.md).\n", encoding="utf-8"
+        )
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("AGENTS.md", result.stdout)
+        self.assertIn("skills/devflow/MISSING.md", result.stdout)
+
+    def test_external_anchor_and_absolute_links_are_not_resolved(self):
+        self.write_referencing_skill(
+            "\n[a](https://example.com/x.md) [b](#section) "
+            "[c](/etc/absent.md) [d](mailto:user@example.com)\n"
+        )
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_markdown_reference_escaping_the_bundle_root_is_rejected(self):
+        self.write_referencing_skill("\n[outside](../../../outside.md)\n")
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("escapes bundle root", result.stdout)
+
+    def test_broken_markdown_reference_carrying_an_anchor_is_rejected(self):
+        self.write_referencing_skill(
+            "\n[Report proof](references/evidence-contract.md#report-proof).\n"
+        )
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("references/evidence-contract.md", result.stdout)
+        self.assertIn("reference does not resolve", result.stdout)
+
+    def test_resolvable_markdown_reference_carrying_an_anchor_passes(self):
+        self.write_referencing_skill(
+            "\n[Report proof](references/evidence-contract.md#report-proof).\n",
+            support_files=("skills/devflow/references/evidence-contract.md",),
+        )
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_broken_backtick_reference_is_rejected(self):
+        self.write_referencing_skill("\nRead `references/host-contract.md` first.\n")
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("references/host-contract.md", result.stdout)
+        self.assertIn("reference does not resolve", result.stdout)
+
+    def test_generic_backtick_placeholders_are_not_resolved(self):
+        self.write_referencing_skill(
+            "\nCreate `proposal.md`, then update `CLAUDE.md` and `package.json`.\n"
+        )
 
         result = self.run_checker()
 
@@ -317,6 +445,23 @@ class BundleCheckerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("gamma", result.stdout)
         self.assertIn("is not reachable from the router", result.stdout)
+
+    def test_router_link_carrying_an_anchor_still_counts_as_reachability(self):
+        self.write_skill("devflow")
+        entry = self.root / "skills" / "devflow" / "SKILL.md"
+        entry.write_text(
+            entry.read_text(encoding="utf-8")
+            + "\n- [alpha](../alpha/SKILL.md#pick-a-mode)\n",
+            encoding="utf-8",
+        )
+        self.write_skill("alpha")
+        self.write_catalog(
+            [self.catalog_skill("devflow"), self.catalog_skill("alpha")]
+        )
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_router_link_to_uncatalogued_skill_is_rejected(self):
         self.write_router(["beta", "ghost"])
@@ -465,6 +610,22 @@ class BundleCheckerTests(unittest.TestCase):
                 resource,
                 by_id["documentation-and-adrs"]["required_resources"],
             )
+
+    def test_repository_reference_pass_reports_a_nonempty_scan(self):
+        # A reference check that silently scans nothing would pass vacuously.
+        result = subprocess.run(
+            [sys.executable, str(CHECKER), "--root", str(REPOSITORY_ROOT)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        match = re.search(r"(\d+) references", result.stdout)
+        self.assertIsNotNone(match, result.stdout)
+        self.assertGreater(int(match.group(1)), 200, result.stdout)
 
     def test_repository_template_mirror_is_byte_identical(self):
         authoritative = (

@@ -20,7 +20,6 @@ import hashlib
 import importlib.util
 import json
 import os
-import re
 import shutil
 import sys
 from pathlib import Path
@@ -38,15 +37,6 @@ DISTRIBUTION_ROOT_FILES = (
     "templates/project-overrides.md",
 )
 MANIFEST_NAME = "install-manifest.json"
-MARKDOWN_LINK = re.compile(r"\]\(([^)#\s]+)\)")
-BACKTICK_PATH = re.compile(r"`([^`\s]+\.(?:md|sh|ts|txt|yaml|json|cjs|html))`")
-BACKTICK_PLACEHOLDERS = {
-    "proposal.md", "design.md", "tasks.md", "project.md", "start-server.sh",
-    "code-reviewer.md", "SKILL.md",
-    "GEMINI.md", "AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "settings.json",
-    "package.json", ".mcp.json", "bundlesize.config.json", "plugin.json",
-    "package-lock.json", ".vscode/settings.json",
-}
 
 
 def load_bundle_checker():
@@ -80,20 +70,8 @@ def skill_owner(bundle: Path, relative: Path) -> str | None:
 
 
 def extract_references(text: str) -> list[str]:
-    references = []
-    for match in MARKDOWN_LINK.findall(text):
-        if match.startswith(("http://", "https://", "mailto:", "#", "/")):
-            continue
-        references.append(match)
-    for match in BACKTICK_PATH.findall(text):
-        if match in BACKTICK_PLACEHOLDERS or "{" in match or "<" in match:
-            continue
-        if "YYYY" in match or "/path/to/" in match:
-            continue
-        if match.endswith(".html") and "/" not in match:
-            continue
-        references.append(match)
-    return references
+    """One definition of what counts as a reference, shared with the bundle checker."""
+    return CHECK_BUNDLE.extract_references(text)
 
 
 def resolve_closure(bundle: Path, catalog: dict[str, Any], requested: list[str]) -> list[str]:

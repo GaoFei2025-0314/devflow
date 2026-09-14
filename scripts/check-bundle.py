@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the declared structure of the Devflow skill bundle."""
+"""Validate the declared structure and reference integrity of the Devflow skill bundle."""
 
 from __future__ import annotations
 
@@ -17,10 +17,27 @@ SKILL_FIELD_ORDER = ("id", "entry", "route_tags", "required_resources", "aliases
 SKILL_FIELDS = set(SKILL_FIELD_ORDER)
 FRONTMATTER_NAME = re.compile(r"^name:\s*[\"']?([^\"'\r\n]+?)[\"']?\s*$")
 ROUTER_ID = "devflow"
-ROUTER_LINK = re.compile(r"\]\(\.\./([^)/\\]+)/SKILL\.md\)")
+ROUTER_LINK = re.compile(r"\]\(\.\./([^)/\\]+)/SKILL\.md(?:#[^)\s]*)?\)")
 ENTRY_LINE_BUDGET = 310
 TEMPLATE_MIRROR = "templates/project-overrides.md"
 TEMPLATE_AUTHORITATIVE = "skills/using-devflow/references/project-overrides.md"
+# Authored instruction surfaces that ship with the bundle. Their cross-links are
+# what routes a reader to the canonical contracts, so they are resolved here.
+SCANNED_ROOT_FILES = (
+    "SKILL.md", "AGENTS.md", "README.md", "README.zh-CN.md", "CHANGELOG.md",
+)
+# Captures the path and drops an optional #fragment, so an anchored link to a
+# contract section is resolved rather than silently skipped.
+MARKDOWN_LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)\s]*)?\)")
+BACKTICK_PATH = re.compile(r"`([^`\s]+\.(?:md|sh|ts|txt|yaml|json|cjs|html))`")
+# Generic document names and artifacts the skills instruct a reader to CREATE.
+BACKTICK_PLACEHOLDERS = {
+    "proposal.md", "design.md", "tasks.md", "project.md", "start-server.sh",
+    "code-reviewer.md", "SKILL.md",
+    "GEMINI.md", "AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "settings.json",
+    "package.json", ".mcp.json", "bundlesize.config.json", "plugin.json",
+    "package-lock.json", ".vscode/settings.json",
+}
 
 
 class InputError(Exception):
@@ -132,7 +149,79 @@ def read_frontmatter_name(entry: Path, display_path: str, errors: list[str]) -> 
     return match.group(1).strip()
 
 
-def validate(root: Path, catalog: dict[str, Any]) -> list[str]:
+def extract_references(text: str) -> list[str]:
+    """Bundle-relative file references a reader would be expected to follow."""
+    references = []
+    for match in MARKDOWN_LINK.findall(text):
+        if match.startswith(("http://", "https://", "mailto:", "#", "/")):
+            continue
+        references.append(match)
+    for match in BACKTICK_PATH.findall(text):
+        if match in BACKTICK_PLACEHOLDERS or "{" in match or "<" in match:
+            continue
+        if "YYYY" in match or "/path/to/" in match:
+            continue
+        if match.endswith(".html") and "/" not in match:
+            continue
+        references.append(match)
+    return references
+
+
+def relative_display(root: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except (ValueError, OSError):
+        return path.as_posix()
+
+
+def scanned_documents(root: Path) -> list[Path]:
+    documents: list[Path] = []
+    for directory_name in ("skills", "templates"):
+        directory = root / directory_name
+        if directory.is_dir():
+            documents.extend(sorted(directory.rglob("*.md")))
+    for file_name in SCANNED_ROOT_FILES:
+        path = root / file_name
+        if path.is_file():
+            documents.append(path)
+    return documents
+
+
+def validate_references(root: Path, errors: list[str]) -> int:
+    """Resolve every bundle-relative reference; return how many were checked."""
+    root_resolved = root.resolve()
+    checked = 0
+    for path in scanned_documents(root):
+        display = relative_display(root, path)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            errors.append(f"{display}: cannot read document: {error}")
+            continue
+        for reference in extract_references(text):
+            checked += 1
+            try:
+                target = (path.parent / reference).resolve()
+            except (ValueError, OSError, RuntimeError) as error:
+                errors.append(
+                    f"{display}: invalid reference {reference!r}: {error}"
+                )
+                continue
+            try:
+                target.relative_to(root_resolved)
+            except ValueError:
+                errors.append(
+                    f"{display}: reference escapes bundle root: {reference}"
+                )
+                continue
+            if not target.exists():
+                errors.append(
+                    f"{display}: reference does not resolve: {reference}"
+                )
+    return checked
+
+
+def validate(root: Path, catalog: dict[str, Any]) -> tuple[list[str], int]:
     errors: list[str] = []
     skills: list[dict[str, Any]] = catalog["skills"]
 
@@ -243,23 +332,34 @@ def validate(root: Path, catalog: dict[str, Any]) -> list[str]:
                 f"exceeds the {ENTRY_LINE_BUDGET}-line entry budget"
             )
 
-    using_devflow_resources = {
-        skill["id"]: set(skill["required_resources"])
-        for skill in skills
-        if skill["id"] == "using-devflow"
-    }.get("using-devflow", set())
-    if {TEMPLATE_MIRROR, TEMPLATE_AUTHORITATIVE} <= using_devflow_resources:
-        mirror = root / TEMPLATE_MIRROR
-        authoritative = root / TEMPLATE_AUTHORITATIVE
-        try:
-            in_sync = mirror.read_bytes() == authoritative.read_bytes()
-        except OSError:
-            in_sync = False
-        if not in_sync:
+    # Driven by which copies exist, never by the catalog entry this check guards:
+    # dropping the mirror from required_resources must not switch the check off.
+    mirror = root / TEMPLATE_MIRROR
+    authoritative = root / TEMPLATE_AUTHORITATIVE
+    if mirror.is_file() or authoritative.is_file():
+        if not authoritative.is_file():
             errors.append(
-                f"{TEMPLATE_MIRROR}: template copy is out of sync with "
+                f"{TEMPLATE_AUTHORITATIVE}: authoritative template is missing "
+                f"while {TEMPLATE_MIRROR} still ships"
+            )
+        elif not mirror.is_file():
+            errors.append(
+                f"{TEMPLATE_MIRROR}: template copy is missing; it must mirror "
                 f"{TEMPLATE_AUTHORITATIVE}"
             )
+        else:
+            try:
+                in_sync = mirror.read_bytes() == authoritative.read_bytes()
+            except OSError as error:
+                errors.append(
+                    f"{TEMPLATE_MIRROR}: cannot compare template copies: {error}"
+                )
+                in_sync = True
+            if not in_sync:
+                errors.append(
+                    f"{TEMPLATE_MIRROR}: template copy is out of sync with "
+                    f"{TEMPLATE_AUTHORITATIVE}"
+                )
 
     router_entry = root / "skills" / ROUTER_ID / "SKILL.md"
     if ROUTER_ID in declared_ids and router_entry.is_file():
@@ -279,7 +379,9 @@ def validate(root: Path, catalog: dict[str, Any]) -> list[str]:
                 f"which is not in the catalog"
             )
 
-    return errors
+    reference_count = validate_references(root, errors)
+
+    return errors, reference_count
 
 
 def main() -> int:
@@ -295,14 +397,17 @@ def main() -> int:
         print(f"INPUT ERROR: {error}", file=sys.stderr)
         return 2
 
-    errors = validate(root, catalog)
+    errors, reference_count = validate(root, catalog)
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
         print(f"BUNDLE CHECK FAILED: {len(errors)} error(s)")
         return 1
 
-    print(f"BUNDLE CHECK PASSED: {len(catalog['skills'])} skills")
+    print(
+        f"BUNDLE CHECK PASSED: {len(catalog['skills'])} skills, "
+        f"{reference_count} references"
+    )
     return 0
 
 
