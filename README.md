@@ -8,13 +8,24 @@ Devflow is a self-contained AI development workflow skill package: one router pl
 
 ```text
 devflow/
-  SKILL.md              # entrypoint shim for single-skill-folder hosts
-  AGENTS.md             # condensed entrypoint for AGENTS.md-reading hosts (Codex)
-  .claude-plugin/       # Claude Code plugin manifest
-  scripts/check-refs.sh # reference-integrity validator (run in CI)
+  SKILL.md                # entrypoint shim for single-skill-folder hosts
+  AGENTS.md               # condensed entrypoint for AGENTS.md-reading hosts (Codex)
+  .claude-plugin/         # Claude Code plugin manifest
+  templates/              # legacy mirror of the project-overrides template
   skills/
-    devflow/            # the router — start here
-    <skill-name>/       # one directory per skill: SKILL.md + optional references/
+    devflow/              # the router — start here
+    <skill-name>/         # one directory per skill: SKILL.md + optional references/
+  scripts/
+    check-refs.sh         # maintenance entrypoint: runs every structural check
+    check-bundle.py       # catalog, structure, reference and entry-budget checks
+    check-behavior.py     # acceptance-scenario material, packets and evidence
+    install-bundle.py     # install plan / stage / verify for the three layouts
+    usage.py              # default-off local usage recording and offline reports
+  tests/
+    maintenance/          # behavior tests for the scripts above
+    behavior/cases/       # the 40 acceptance scenarios
+  docs/devflow/           # installation, host support, release checklist
+  specs/changes/          # requirement and plan documents
 ```
 
 The router (`skills/devflow/SKILL.md`) routes by **requested deliverable and phase first** (Understand / Specify / Implement / VerifyReview / Deliver), then impact and risk, then the domain surface, then the capabilities the host actually provides. Document-only and plan-only requests end as documents — no branch, commit, or implementation is implied by a plan being finished. All 33 legacy skill names remain and resolve through `skills/devflow/references/skill-catalog.json`.
@@ -74,11 +85,11 @@ Devflow's skill examples are TypeScript/web-flavored, but the rules are stack-ag
 
 ## Maintenance
 
-- Run `bash scripts/check-refs.sh` before committing skill changes — it validates frontmatter, cross-references, file sizes, catalog/summary consistency, and delegates to `python scripts/check-bundle.py`. Run `python -m unittest discover -s tests/maintenance -p 'test_*.py'` for the tooling's 142 behavior tests. CI runs all of these on every push.
+- Run `bash scripts/check-refs.sh` before committing skill changes — it validates frontmatter, backtick references, size budgets, and delegates to `python scripts/check-bundle.py`, which resolves every Markdown link and backtick path in the bundle, checks the catalog and template mirror, and reports total entry load against the per-entry line and byte budgets. Run `python -m unittest discover -s tests/maintenance -p 'test_*.py'` for the tooling's 156 behavior tests. CI runs all of these on every push.
 - Installing or switching an installation: `python scripts/install-bundle.py plan|stage|verify` plus the [installation and switch-over guide](docs/devflow/installation.md) — auditable diff, bundle-owned-only backup, explicit switch authorization, bounded recovery.
 - Optional local usage recording (`python scripts/usage.py status|enable|disable|append|export|report --store <dir>`) is **off by default**, records only whitelisted minimal events, never raw dialogue or credentials, and no workflow step depends on it.
 - **Bump `version` in `.claude-plugin/plugin.json` in any PR that changes skill content** (CI enforces this on pull requests), and add a `CHANGELOG.md` entry for the new version. Installed plugins only receive updates when the version string changes — content changes without a version bump never reach `/plugin update` users.
 - **Keep `README.md` and `README.zh-CN.md` in sync** — any edit to one must be mirrored in the other.
-- **Routing edits propagate.** Any change to routes, fast-path conditions, or gates in `skills/devflow/SKILL.md` must be mirrored in `AGENTS.md` and both READMEs' route summaries — the router is the source of truth, the other three are condensed copies.
+- **Routing edits propagate.** Any change to routes, fast-path conditions, or gates in `skills/devflow/SKILL.md` must be mirrored in `AGENTS.md` and both READMEs' route summaries — the router is the source of truth, the other three are condensed copies. The maintenance tests enforce the mechanical half of this (each entrypoint states the current skill count, names every router phase, and points at the router and the shared contracts); the prose itself is still reviewed by hand.
 - **Pruning needs evidence.** Low observed frequency alone does not justify removing a skill: without an applicable-task denominator and known applicability, record the value as unknown (the deprecation-and-migration entry defines the full evaluation).
 - **Measure skill edits.** When you change a skill, write one line in the PR about the behavior change you expect; check later whether it happened. Process without observed effect is process theater — cut it.

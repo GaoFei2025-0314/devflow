@@ -4,12 +4,14 @@
 | --- | --- |
 | 计划版本 / 日期 | 0.1 / 2026-09-07 |
 | 状态 | **全部37项任务完成（2026-09-11）**：T34 PR#11推送且5/5 CI绿；T35合并`c28e765`并同步main；T36标签`v2.0.0`已推送；T37本机全局切换完成（33技能哈希全匹配、0删除、自定义保留、恢复包在t37-global-switch/recovery） |
-| 需求基线 | [Devflow V2.0 产品需求Spec](/H:/myAPP/Devflow/devflow/specs/changes/devflow-v2/specs/product-requirements.md)，文档0.1，40项FR、8项NF、40个AT |
-| 当前仓库 | H:/myAPP/Devflow/devflow |
+| 需求基线 | [Devflow V2.0 产品需求Spec](../../../specs/changes/devflow-v2/specs/product-requirements.md)，文档0.1，40项FR、8项NF、40个AT |
+| 当前仓库 | 本仓库根目录（文中路径一律相对仓库根，不再写死某台机器的盘符）|
 | 当前代码基线 | V1.3.1，提交137e025ba7e68f53a2cdb36608a5f46a67dd0364 |
 | 本次授权 | 用户已要求以subagent执行；本地实施已授权，T34—T37仍遵循对应前置条件与动作授权 |
 | 实施范围 | T01—T33完成V2.0本地候选及验证；T34—T37为具备对应授权后执行的交付动作 |
 | 执行模式 | 按用户要求采用聚焦子代理；共享写入串行，先需求审查再质量审查 |
+
+**路径约定：**文中仓库内路径相对仓库根书写，链接相对本文件解析。仓库外的两个工作区用变量表示，不入库：`${EVIDENCE_ROOT}` 是本次验收证据工作区（原始轨迹、宿主信息、留出材料），`${AUDIT_ROOT}` 是 2026-09-07 使用审计材料区。在另一台机器上执行本计划时只需重新指定这两个根，任务内容不变；仓库内证据摘要见 [V2.0 评估摘要](../../../docs/devflow/v2-evaluation-summary.md)。
 
 **目标：**把现有技能包升级为阶段明确、授权可复用、验证有依据、交付可验收、安装可核验的V2.0，保留33个旧技能入口。
 
@@ -31,19 +33,19 @@ S表示约1—2个主要文件，M表示约3—5个主要文件；验收证据�
 
 ### 2.1 当前事实
 
-- [router](/H:/myAPP/Devflow/devflow/skills/devflow/SKILL.md)、[共享入口](/H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md)和其余技能均为Markdown；33个入口平铺在skills下。
-- 当前校验入口是[scripts/check-refs.sh](/H:/myAPP/Devflow/devflow/scripts/check-refs.sh)，检查元数据、引用、旧命名和310行入口预算；脚本内部已经调用Python。
-- 当前CI是[.github/workflows/validate.yml](/H:/myAPP/Devflow/devflow/.github/workflows/validate.yml)，包含引用检查和PR版本变更检查；没有业务构建命令或包管理锁文件。
-- [.claude-plugin/plugin.json](/H:/myAPP/Devflow/devflow/.claude-plugin/plugin.json)记录1.3.1；版本改动需要同步CHANGELOG和双语说明。
-- 现有[项目覆盖模板](/H:/myAPP/Devflow/devflow/templates/project-overrides.md)位于技能目录外。使用审计指出扁平安装会缺失该引用，计划需同时解决资源归属和安装检查。
+- [router](../../../skills/devflow/SKILL.md)、[共享入口](../../../skills/using-devflow/SKILL.md)和其余技能均为Markdown；33个入口平铺在skills下。
+- 当前校验入口是[scripts/check-refs.sh](../../../scripts/check-refs.sh)，检查元数据、引用、旧命名和310行入口预算；脚本内部已经调用Python。
+- 当前CI是[.github/workflows/validate.yml](../../../.github/workflows/validate.yml)，包含引用检查和PR版本变更检查；没有业务构建命令或包管理锁文件。
+- [.claude-plugin/plugin.json](../../../.claude-plugin/plugin.json)记录1.3.1；版本改动需要同步CHANGELOG和双语说明。
+- 现有[项目覆盖模板](../../../templates/project-overrides.md)位于技能目录外。使用审计指出扁平安装会缺失该引用，计划需同时解决资源归属和安装检查。
 - Spec为上一阶段新增的本地文档；当前规划不改变其需求或评审状态，不复扫69GB历史记录。
 
 ### 2.2 本计划采用的具体方案
 
 | 决策 | 实施选择 | 原因与约束 |
 | --- | --- | --- |
-| 公共合同位置 | H:/myAPP/Devflow/devflow/skills/using-devflow/references/下的phase-contract.md、authorization-contract.md、evidence-contract.md、delivery-contract.md、host-contract.md、loading-recovery.md | 公共能力随using-devflow安装；避免全局技能隐式依赖仓库外模板 |
-| 路由与技能身份 | 新增H:/myAPP/Devflow/devflow/skills/devflow/references/skill-catalog.json | 只保存33规范ID、来源相对路径、路由标签、必需依赖和别名，不复制授权/验证正文，不保存个人安装路径或易过期自哈希 |
+| 公共合同位置 | skills/using-devflow/references/下的phase-contract.md、authorization-contract.md、evidence-contract.md、delivery-contract.md、host-contract.md、loading-recovery.md | 公共能力随using-devflow安装；避免全局技能隐式依赖仓库外模板 |
+| 路由与技能身份 | 新增skills/devflow/references/skill-catalog.json | 只保存33规范ID、来源相对路径、路由标签、必需依赖和别名，不复制授权/验证正文，不保存个人安装路径或易过期自哈希 |
 | 入口摘要 | router保留简短人类可读决策；AGENTS、根入口和README引用同一规则，并用目录/标签一致性检查及行为回放防漂移 | 静态检查只证明结构一致，不能声称自动理解并证明所有自然语言无冲突 |
 | 模板兼容 | using-devflow/references/project-overrides.md为模板权威来源；原templates/project-overrides.md保留同步副本 | 模板正文不依赖所在目录的相对链接；检查副本内容一致，不能手工维护两套政策 |
 | 维护工具 | Python标准库、unittest；Bash入口继续可用 | 沿用现有技术边界，不为本项目添加pnpm/npm工程或新外部依赖 |
@@ -51,13 +53,13 @@ S表示约1—2个主要文件，M表示约3—5个主要文件；验收证据�
 | 使用记录 | 显式启用的本地JSONL最小事件；离线导入/报告 | 默认关闭；不后台抓取会话，不改变宿主自己的日志设置 |
 | 安装工具 | 生成差异计划、在新目录暂存、验证；全局切换按手册和适用授权执行 | V2.0不需要通用管理员安装器，不提供无约束覆盖/清理命令 |
 | 兼容策略 | 保留33个旧入口，通过公共引用合并重复控制职责 | 不依据低频删除能力，不合并成一个需要每次全文加载的大文件 |
-| 证据存储 | 建议使用H:/myAPP/Devflow/devflow-v2-evidence下独立目录 | 原始回放、宿主信息、私人来源与留出材料不默认进入仓库或PR |
+| 证据存储 | 建议使用${EVIDENCE_ROOT}下独立目录 | 原始回放、宿主信息、私人来源与留出材料不默认进入仓库或PR |
 
 以上是可执行的设计选择。实现中可以调整局部文件拆分，但若改变公开行为、权限边界、安装形态、记录默认值或支持范围，应先更新对应需求/设计并取得适用决定。
 
 ### 2.3 拟新增工具的命令合同
 
-以下新工具和参数**尚不存在**，由对应任务实现。所有示例在H:/myAPP/Devflow/devflow执行；Unix环境使用python3，Windows使用已核实的python。无需在本次规划阶段运行。
+以下新工具和参数**尚不存在**，由对应任务实现。所有示例在仓库根目录执行；Unix环境使用python3，Windows使用已核实的python。无需在本次规划阶段运行。
 
 | 编号 | 命令 | 预期结果 / 创建任务 |
 | --- | --- | --- |
@@ -65,14 +67,14 @@ S表示约1—2个主要文件，M表示约3—5个主要文件；验收证据�
 | C02 | `python scripts/check-bundle.py --root .` | 只读检查目录、引用、规范ID、模板、摘要与版本字段，输出逐项结果；T02建立、T25完善 |
 | C03 | `python -m unittest discover -s tests/maintenance -p 'test_*.py'` | 运行维护工具的行为测试；全部通过退出0，各工具任务同步补充测试 |
 | C04 | `python scripts/check-behavior.py validate --cases tests/behavior/cases` | 校验40个基础场景及变体的字段、编号和需求映射；T03 |
-| C05 | `python scripts/check-behavior.py prepare --cases tests/behavior/cases --ids AT-03,AT-24 --out H:/myAPP/Devflow/devflow-v2-evidence/input-packets` | 向新目录输出仅含任务事实/能力的输入包；预期答案不发给被测执行者；T03 |
-| C06 | `python scripts/check-behavior.py verify --cases tests/behavior/cases --results H:/myAPP/Devflow/devflow-v2-evidence/candidate --profile checkpoint` | 对提供的实际轨迹和判定检查完整性；缺证据返回非0，不宣称已执行模型任务；T03 |
-| C07 | `python scripts/check-behavior.py verify --cases tests/behavior/cases --results H:/myAPP/Devflow/devflow-v2-evidence/candidate --baseline H:/myAPP/Devflow/devflow-v2-evidence/baseline --holdout H:/myAPP/Devflow/devflow-v2-evidence/holdout --profile release` | 检查全部变体、关键重复、留出、可比条件及质量门槛；T30完善，T31执行 |
+| C05 | `python scripts/check-behavior.py prepare --cases tests/behavior/cases --ids AT-03,AT-24 --out ${EVIDENCE_ROOT}/input-packets` | 向新目录输出仅含任务事实/能力的输入包；预期答案不发给被测执行者；T03 |
+| C06 | `python scripts/check-behavior.py verify --cases tests/behavior/cases --results ${EVIDENCE_ROOT}/candidate --profile checkpoint` | 对提供的实际轨迹和判定检查完整性；缺证据返回非0，不宣称已执行模型任务；T03 |
+| C07 | `python scripts/check-behavior.py verify --cases tests/behavior/cases --results ${EVIDENCE_ROOT}/candidate --baseline ${EVIDENCE_ROOT}/baseline --holdout ${EVIDENCE_ROOT}/holdout --profile release` | 检查全部变体、关键重复、留出、可比条件及质量门槛；T30完善，T31执行 |
 | C08 | `python scripts/install-bundle.py plan --bundle . --target C:/Users/Administrator/.codex/skills` | 只读列出版本、必需资源、差异/冲突与恢复范围；不写目标；T26 |
-| C09 | `python scripts/install-bundle.py stage --bundle . --layout full --dest H:/myAPP/Devflow/devflow-v2-evidence/staged-full` | 仅在不存在的新目标目录暂存候选，不覆盖现有目录；T26 |
-| C10 | `python scripts/install-bundle.py verify --bundle . --install-root H:/myAPP/Devflow/devflow-v2-evidence/staged-full` | 面向实际暂存布局验证入口/引用/依赖及哈希；T26 |
-| C11 | `python scripts/usage.py status --store H:/myAPP/Devflow/devflow-v2-evidence/usage` | 未初始化/未启用显示关闭且不创建存储；T28 |
-| C12 | `python scripts/usage.py report --store H:/myAPP/Devflow/devflow-v2-evidence/usage --out H:/myAPP/Devflow/devflow-v2-evidence/usage-report.json` | 显式生成本地统计，分母/未知/单位齐全；T29 |
+| C09 | `python scripts/install-bundle.py stage --bundle . --layout full --dest ${EVIDENCE_ROOT}/staged-full` | 仅在不存在的新目标目录暂存候选，不覆盖现有目录；T26 |
+| C10 | `python scripts/install-bundle.py verify --bundle . --install-root ${EVIDENCE_ROOT}/staged-full` | 面向实际暂存布局验证入口/引用/依赖及哈希；T26 |
+| C11 | `python scripts/usage.py status --store ${EVIDENCE_ROOT}/usage` | 未初始化/未启用显示关闭且不创建存储；T28 |
+| C12 | `python scripts/usage.py report --store ${EVIDENCE_ROOT}/usage --out ${EVIDENCE_ROOT}/usage-report.json` | 显式生成本地统计，分母/未知/单位齐全；T29 |
 
 新工具共用结果约定：0为当前命令范围通过，1为发现需求/检查失败，2为输入、环境或证据不足；既有Bash入口和unittest保留其原有退出约定。没有行为轨迹时，C04通过只能叫“场景材料有效”，不能叫“40场景通过”。新输出路径已存在时默认拒绝覆盖，执行者选择新运行目录；不提供自动删除旧结果的快捷路径。
 
@@ -95,9 +97,9 @@ S表示约1—2个主要文件，M表示约3—5个主要文件；验收证据�
 
 默认按任务号执行。W01必须先完成；W02的公共合同稳定后，W03—W08中无共享写入的局部核验可以交错开展，但各任务列出的依赖仍然有效。W11等待W01—W10全部完成，W12等待本地候选验收。
 
-**W05执行顺序澄清（2026-09-08）：**T13先完成其合同实现、独立规格/质量审查和适用局部验证，以该已审查产物供T14集成；T13仍为“共同验收待完成”。T14实现及审查后，在同一冻结版本上验证AT-13、AT-14两变体、AT-15、AT-26；全部通过前两项任务均不标完成。此项解决入口消费者位于T14导致的验证依赖环，不改需求、断言、文件归属或后续门槛。依据与完整规则见[执行顺序记录](H:/myAPP/Devflow/devflow-v2-evidence/t13-t14-integration-sequence.md)。
+**W05执行顺序澄清（2026-09-08）：**T13先完成其合同实现、独立规格/质量审查和适用局部验证，以该已审查产物供T14集成；T13仍为“共同验收待完成”。T14实现及审查后，在同一冻结版本上验证AT-13、AT-14两变体、AT-15、AT-26；全部通过前两项任务均不标完成。此项解决入口消费者位于T14导致的验证依赖环，不改需求、断言、文件归属或后续门槛。依据与完整规则见[执行顺序记录](${EVIDENCE_ROOT}/t13-t14-integration-sequence.md)。
 
-**W06/W07执行顺序澄清（2026-09-08）：**T16先完成公共宿主合同实现、独立规格/质量审查及适用局部验证，以已审查产物供T17—T19按依赖顺序集成；T16的共同能力验收保持待完成。T17、T18各自原有验收不免除；T19集成后逐项核对T16要求的AT-13—AT-18全部变体及T19的AT-39，保留各证据的真实版本和范围，缺失项不标通过。T32的必需原生证据仍是后续独立门槛。完整依据见[执行顺序记录](H:/myAPP/Devflow/devflow-v2-evidence/t16-t19-integration-sequence.md)。
+**W06/W07执行顺序澄清（2026-09-08）：**T16先完成公共宿主合同实现、独立规格/质量审查及适用局部验证，以已审查产物供T17—T19按依赖顺序集成；T16的共同能力验收保持待完成。T17、T18各自原有验收不免除；T19集成后逐项核对T16要求的AT-13—AT-18全部变体及T19的AT-39，保留各证据的真实版本和范围，缺失项不标通过。T32的必需原生证据仍是后续独立门槛。完整依据见[执行顺序记录](${EVIDENCE_ROOT}/t16-t19-integration-sequence.md)。
 
 ```mermaid
 flowchart LR
@@ -132,7 +134,7 @@ flowchart LR
 
 **依赖：**无；执行前需用户明确要求实施。**规模：**S。**需求：**FR-10、FR-36、FR-39。
 
-**文件/产物：**本地H:/myAPP/Devflow/devflow-v2-evidence/baseline-manifest.json；本变更目录下的Spec与计划仅按已批准范围纳入未来实施分支。
+**文件/产物：**本地${EVIDENCE_ROOT}/baseline-manifest.json；本变更目录下的Spec与计划仅按已批准范围纳入未来实施分支。
 
 - [x] 核对当前Spec/计划和未提交工作，保留其完整副本及校验值；在实施开始时按项目政策更新main，再建立建议分支refactor/devflow-v2。已有同名分支先核对归属，不覆盖或删除。
 - [x] 将1.3.1固定提交的技能、根入口、模板和现有检查材料导出到独立基线目录；记录SHA、33入口哈希、依赖文件、工具版本和本次生效的用户规则。
@@ -144,7 +146,7 @@ flowchart LR
 
 **依赖：**T01。**规模：**M。**需求：**FR-11、FR-22、FR-37、FR-38。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/devflow/references/skill-catalog.json；新增H:/myAPP/Devflow/devflow/scripts/check-bundle.py；新增H:/myAPP/Devflow/devflow/tests/maintenance/test_bundle.py。
+**文件：**新增skills/devflow/references/skill-catalog.json；新增scripts/check-bundle.py；新增tests/maintenance/test_bundle.py。
 
 - [x] 从现有33目录生成规范清单，字段限定为id、entry、route_tags、required_resources、aliases；路径相对bundle根，不写本机个人目录，不保存易过期的文件自哈希。
 - [x] 编写并运行四类失败测试：名称/目录不一致、缺必需资源、两个ID冲突、别名循环；使用最小合成目录，不要求复制私人项目。
@@ -156,7 +158,7 @@ flowchart LR
 
 **依赖：**T01、T02。**规模：**M，场景材料按下列组分批建档。**需求：**FR-14、FR-34、FR-36、FR-37。
 
-**主要文件：**新增H:/myAPP/Devflow/devflow/tests/behavior/README.md、H:/myAPP/Devflow/devflow/scripts/check-behavior.py、H:/myAPP/Devflow/devflow/tests/maintenance/test_behavior.py。场景数据位于H:/myAPP/Devflow/devflow/tests/behavior/cases/，分组见第6节。
+**主要文件：**新增tests/behavior/README.md、scripts/check-behavior.py、tests/maintenance/test_behavior.py。场景数据位于tests/behavior/cases/，分组见第6节。
 
 - [x] 为全部AT建立输入、变体、允许能力、应有/禁止动作、断言ID和需求映射；按三批完成路由/验证/协作、宿主/交付/身份、统计/安装/验收材料，每批独立核对编号。
 - [x] 定义run_id、case_id、variant_id、重复序号、被测来源、模型/参数、宿主、条件摘要、实际动作、产物引用和逐断言判定；pass/fail/unknown分开，每个pass需证据定位。
@@ -179,7 +181,7 @@ T03的后续依赖必须等待四个子任务全部完成；各领域任务后�
 
 **依赖：**T03。**规模：**S。**需求：**FR-01、FR-03、FR-04、FR-09、FR-17、FR-40。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/using-devflow/references/phase-contract.md；修改H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md。
+**文件：**新增skills/using-devflow/references/phase-contract.md；修改skills/using-devflow/SKILL.md。
 
 - [x] 写出Understand、Specify、Implement、VerifyReview、Deliver各自输入与合法终态；明确阶段不授予动作权限，分析可以仅在会话内交付。
 - [x] 写出新消息的四种处理：补充约束、询问进度、明确替换、明确取消；保留当前目标、已有决策和独立可继续任务。
@@ -191,7 +193,7 @@ T03的后续依赖必须等待四个子任务全部完成；各领域任务后�
 
 **依赖：**T04。**规模：**S。**需求：**FR-06、FR-07、FR-08、FR-09。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/using-devflow/references/authorization-contract.md；修改H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md。
+**文件：**新增skills/using-devflow/references/authorization-contract.md；修改skills/using-devflow/SKILL.md。
 
 - [x] 移除技能高于system/developer的错误声明；按真实宿主层级处理用户规则与技能默认值，日志、网页及代理输出不能产生新授权。
 - [x] 定义动作、目标/环境、范围、授权来源、限制和失效条件；同范围有效批准复用，变化或来源不足只阻塞相应动作。
@@ -205,7 +207,7 @@ T03的后续依赖必须等待四个子任务全部完成；各领域任务后�
 
 **依赖：**T04、T05。**规模：**S。**需求：**FR-08、FR-10、FR-11、FR-17。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/using-devflow/references/delivery-contract.md；修改H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md。
+**文件：**新增skills/using-devflow/references/delivery-contract.md；修改skills/using-devflow/SKILL.md。
 
 - [x] 分开本地修改、提交、工作包完成、push/PR、合并、部署、安装和清理；说明各自需要匹配的政策、证据和授权。
 - [x] 将本用户V1本地main、V2工作分支、完成后PR、展示条件自动合并、风险合并批准写成项目政策适配示例，通用默认不硬编码个人规则。
@@ -213,13 +215,13 @@ T03的后续依赖必须等待四个子任务全部完成；各领域任务后�
 
 **验证/完成：**AT-03、AT-20—AT-25和AT-37的规则回放符合Spec；此时仅建立公共合同，T22—T24负责领域入口消除冲突。
 
-Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765682b90; independent SPEC and QUALITY PASS. Frozen-source T06 full checkpoint: 13 actual episodes, 60 original assertions PASS, 0 FAIL/UNKNOWN; selected C06 exit 0. See H:/myAPP/Devflow/devflow-v2-evidence/candidate-t06-full13-semantic-review.md and candidate-t06-full13-c06.txt. This completes T06 only; later domain reconciliation and final release repeats/holdouts remain required.
+Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765682b90; independent SPEC and QUALITY PASS. Frozen-source T06 full checkpoint: 13 actual episodes, 60 original assertions PASS, 0 FAIL/UNKNOWN; selected C06 exit 0. See ${EVIDENCE_ROOT}/candidate-t06-full13-semantic-review.md and candidate-t06-full13-c06.txt. This completes T06 only; later domain reconciliation and final release repeats/holdouts remain required.
 
 ### T07 · 重写主路由并接入两个根入口
 
 **依赖：**T02、T04、T05、T06。**规模：**M。**需求：**FR-01、FR-02、FR-05、FR-11、FR-23、FR-40。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/devflow/SKILL.md、H:/myAPP/Devflow/devflow/SKILL.md、H:/myAPP/Devflow/devflow/AGENTS.md、H:/myAPP/Devflow/devflow/skills/devflow/references/skill-catalog.json。
+**文件：**修改skills/devflow/SKILL.md、SKILL.md、AGENTS.md、skills/devflow/references/skill-catalog.json。
 
 - [x] 将路由顺序改为交付物/阶段→影响与风险→所需领域→实际能力；增加项目解释、日志分析、仅Spec、仅计划入口。
 - [x] 对小而清晰的任务保留快速路线；行为变化需要证明，高影响或根因不清升级，不能以文件数量单独决定路线。
@@ -227,13 +229,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**C02及AT-01、AT-03、AT-06、AT-07、AT-28、AT-35通过；从根入口和直接router进入均不越阶段。README最终同步在T32完成，本地中间状态不公开交付。
 
-**执行证据：**本地提交 `f442b39b8b7832daf4f40ae808d81aee18bfb1a5`；独立 SPEC、QUALITY 审查通过。7 个原始场景 36 项断言通过，两个根入口补充场景各 5 项通过，三组 C06 均退出 0。证据见工作区外 [主路由场景报告](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t07-semantic-review.md) 及两个根入口报告；部分读取限制保留，补充场景不计为发布所需重复实验。
+**执行证据：**本地提交 `f442b39b8b7832daf4f40ae808d81aee18bfb1a5`；独立 SPEC、QUALITY 审查通过。7 个原始场景 36 项断言通过，两个根入口补充场景各 5 项通过，三组 C06 均退出 0。证据见工作区外 [主路由场景报告](${EVIDENCE_ROOT}/candidate-t07-semantic-review.md) 及两个根入口报告；部分读取限制保留，补充场景不计为发布所需重复实验。
 
 ### T08 · 让需求澄清与规格可独立交付
 
 **依赖：**T07。**规模：**M。**需求：**FR-03、FR-04、FR-25。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/brainstorming/SKILL.md、H:/myAPP/Devflow/devflow/skills/spec-workspace/SKILL.md、H:/myAPP/Devflow/devflow/skills/spec-driven-development/SKILL.md。
+**文件：**修改skills/brainstorming/SKILL.md、skills/spec-workspace/SKILL.md、skills/spec-driven-development/SKILL.md。
 
 - [x] 删除默认建worktree、提交设计或立即实施的控制步骤，改为遵循当前交付物和公共授权合同。
 - [x] 澄清仅针对未确定且有实质影响的事项；已有设计和用户答案复用，单文档Spec与复杂工作区都可合法结束。
@@ -241,13 +243,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-03、AT-04、AT-06通过；同一输入分别要求一份Spec和跨会话规格工作区，均交付其请求形式。
 
-**执行证据：**本地提交 `bb53f3cf8864a54d78d62c82994c144e9bd40154`；独立 SPEC、QUALITY 审查通过。4 个原始场景的 20 项断言通过，C06 退出 0；持久规格目录补充场景 5 项通过。见 [规格场景报告](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t08-semantic-review.md) 与 [规格目录补充报告](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t08-workspace-semantic-review.md)。环境迁移、读取范围及传输可见性限制保留；补充场景不计为发布重复实验。
+**执行证据：**本地提交 `bb53f3cf8864a54d78d62c82994c144e9bd40154`；独立 SPEC、QUALITY 审查通过。4 个原始场景的 20 项断言通过，C06 退出 0；持久规格目录补充场景 5 项通过。见 [规格场景报告](${EVIDENCE_ROOT}/candidate-t08-semantic-review.md) 与 [规格目录补充报告](${EVIDENCE_ROOT}/candidate-t08-workspace-semantic-review.md)。环境迁移、读取范围及传输可见性限制保留；补充场景不计为发布重复实验。
 
 ### T09 · 让计划技能按范围拆解而不自动实施
 
 **依赖：**T08。**规模：**S。**需求：**FR-03、FR-04、FR-09、FR-24、FR-25。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/planning-and-task-breakdown/SKILL.md、H:/myAPP/Devflow/devflow/skills/writing-plans/SKILL.md。
+**文件：**修改skills/planning-and-task-breakdown/SKILL.md、skills/writing-plans/SKILL.md。
 
 - [x] 明确验收任务表与零上下文详细交接的两种用途，共用阶段和授权规则，不强制两份计划或机械完整代码。
 - [x] 每项任务给出依赖、文件范围、证明方法和完成条件；未知项只阻塞必要依赖，已批准决策不重新设计。
@@ -255,13 +257,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-03—AT-05通过；清楚任务可执行、局部未知可定位、文档交付没有额外Git动作。
 
-实施与验收证据：[独立场景审查](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t09-semantic-review.md)、[完整性核对](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t09-integrity.json)、[C06结果](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t09-c06.txt)。本地提交 0c3f961e0a8115ef649c077904ea925ee9d85bbf；四个原始场景 20 PASS，无 FAIL/UNKNOWN。仅为当前任务范围验收，最终版本评估仍待后续阶段。
+实施与验收证据：[独立场景审查](${EVIDENCE_ROOT}/candidate-t09-semantic-review.md)、[完整性核对](${EVIDENCE_ROOT}/candidate-t09-integrity.json)、[C06结果](${EVIDENCE_ROOT}/candidate-t09-c06.txt)。本地提交 0c3f961e0a8115ef649c077904ea925ee9d85bbf；四个原始场景 20 PASS，无 FAIL/UNKNOWN。仅为当前任务范围验收，最终版本评估仍待后续阶段。
 
 ### T10 · 建立证据有效性与异步结果合同
 
 **依赖：**T03、T04、T05。**规模：**S。**需求：**FR-12、FR-14、FR-15、FR-16、FR-17。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/using-devflow/references/evidence-contract.md；修改H:/myAPP/Devflow/devflow/skills/verification-before-completion/SKILL.md。
+**文件：**新增skills/using-devflow/references/evidence-contract.md；修改skills/verification-before-completion/SKILL.md。
 
 - [x] 定义验证范围、相关状态、命令/操作、环境、时间、结果和证据引用，区分未执行、运行中、通过、失败、未知和不适用。
 - [x] 用相关代码、未提交/未追踪输入、依赖、配置、数据与外部状态判断复用和失效；不采用按消息重新验证或仅看HEAD的规则。
@@ -275,7 +277,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T07、T10。**规模：**S。**需求：**FR-05、FR-12、FR-13、FR-16。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/test-driven-development/SKILL.md、H:/myAPP/Devflow/devflow/skills/systematic-debugging/SKILL.md。
+**文件：**修改skills/test-driven-development/SKILL.md、skills/systematic-debugging/SKILL.md。
 
 - [x] 保留行为回归的有效红绿证据；已有准确测试直接复用，环境失败不能当行为失败，纯静态文案不强写镜像测试。
 - [x] 调试保留复现→假设→根因→最小修复，用户仅要求定位时停止在根因交付；必要检查按实际影响选择。
@@ -283,13 +285,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-07—AT-12、AT-34、AT-37通过；用户要求克制测试时仍有必要回归，已有有效测试不被复制。
 
-实施与验收证据：[新七项场景审查](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t11-proof-repair3-semantic-review.md)、[C06结果](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t11-proof-repair3-c06.txt)、[独立影响范围核对](H:/myAPP/Devflow/devflow-v2-evidence/t11-proof-repair3-impact-reconciliation.md)。最新本地提交 f7964a2158a50ac5eb35664407b740815c57d026；七项新复测 33 PASS，另外八项原始场景的 43 PASS 保留原 repair2 版本身份。较早 75 PASS/1 FAIL 和 62 PASS/2 FAIL 记录完整保留；这不替代最终 T31/T33 全版本评估。
+实施与验收证据：[新七项场景审查](${EVIDENCE_ROOT}/candidate-t11-proof-repair3-semantic-review.md)、[C06结果](${EVIDENCE_ROOT}/candidate-t11-proof-repair3-c06.txt)、[独立影响范围核对](${EVIDENCE_ROOT}/t11-proof-repair3-impact-reconciliation.md)。最新本地提交 f7964a2158a50ac5eb35664407b740815c57d026；七项新复测 33 PASS，另外八项原始场景的 43 PASS 保留原 repair2 版本身份。较早 75 PASS/1 FAIL 和 62 PASS/2 FAIL 记录完整保留；这不替代最终 T31/T33 全版本评估。
 
 ### T12 · 统一会话执行与增量完成规则
 
 **依赖：**T06、T09、T10、T11。**规模：**M。**需求：**FR-04、FR-07、FR-09、FR-15、FR-17、FR-25。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/incremental-implementation/SKILL.md、H:/myAPP/Devflow/devflow/skills/incremental-implementation/references/definition-of-done.md、H:/myAPP/Devflow/devflow/skills/executing-plans/SKILL.md。
+**文件：**修改skills/incremental-implementation/SKILL.md、skills/incremental-implementation/references/definition-of-done.md、skills/executing-plans/SKILL.md。
 
 - [x] executing-plans保留会话执行入口，引用同一任务状态、证据和工作包完成规则；不与增量执行分别维护审批清单。
 - [x] 按依赖推进全部已授权工作；单项阻塞不停止独立项，进度提问后继续，内部增量不提前开PR。
@@ -297,13 +299,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-05、AT-10、AT-13、AT-21、AT-26通过；会话执行与后续代理模式共享同一工作包终态。
 
-**实施验收记录（2026-09-08）：**本地提交277f192d4aa478616c5bb5230b54395146e59d96；独立规格与质量审查通过；六个原始场景33项断言全部通过，C06 exit 0。此前两轮失败保留，完整发布验证仍待T31/T33。见[独立行为审查](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t12-comparison-repair3-semantic-review.md)。
+**实施验收记录（2026-09-08）：**本地提交277f192d4aa478616c5bb5230b54395146e59d96；独立规格与质量审查通过；六个原始场景33项断言全部通过，C06 exit 0。此前两轮失败保留，完整发布验证仍待T31/T33。见[独立行为审查](${EVIDENCE_ROOT}/candidate-t12-comparison-repair3-semantic-review.md)。
 
 ### T13 · 聚焦代理的输入、权限和返回合同
 
 **依赖：**T05、T10、T12。**规模：**M。**需求：**FR-21、FR-24、FR-31、FR-32。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/subagent-driven-development/SKILL.md、H:/myAPP/Devflow/devflow/skills/subagent-driven-development/implementer-prompt.md、H:/myAPP/Devflow/devflow/skills/subagent-driven-development/spec-reviewer-prompt.md、H:/myAPP/Devflow/devflow/skills/subagent-driven-development/code-quality-reviewer-prompt.md。
+**文件：**修改skills/subagent-driven-development/SKILL.md、skills/subagent-driven-development/implementer-prompt.md、skills/subagent-driven-development/spec-reviewer-prompt.md、skills/subagent-driven-development/code-quality-reviewer-prompt.md。
 
 - [x] 分派前检查独立性、实际能力、允许范围、成本限制和共享写入冲突；有代理工具并不自动要求代理执行。
 - [x] 提示模板包含目标、范围、来源、必要上下文、验收、允许/禁止动作和返回证据；聚焦执行者不重启全局需求访谈或重复路由。
@@ -311,13 +313,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-13—AT-15、AT-26通过；无代理、禁止代理和紧耦合任务都能正确降级，子代理不能创造授权。回放中记录实际传入上下文与返回证据。
 
-**实施验收记录（2026-09-08）：**共同冻结提交02c0215c4567298ce02ad85068a37082243849d0；独立规格与质量审查通过。五个原始场景32项断言全部通过，C06 exit 0；原生调查按已声明的转录证据等级具备可比资格。此前31/32与30/32两轮结果保留；关联聚焦代理正文的实际加载未观察到，单独记录为诊断限制。本检查点不代表最终发布验收。见[共同检查点处置](H:/myAPP/Devflow/devflow-v2-evidence/t13-t14-route-repair2-controller-disposition.md)。
+**实施验收记录（2026-09-08）：**共同冻结提交02c0215c4567298ce02ad85068a37082243849d0；独立规格与质量审查通过。五个原始场景32项断言全部通过，C06 exit 0；原生调查按已声明的转录证据等级具备可比资格。此前31/32与30/32两轮结果保留；关联聚焦代理正文的实际加载未观察到，单独记录为诊断限制。本检查点不代表最终发布验收。见[共同检查点处置](${EVIDENCE_ROOT}/t13-t14-route-repair2-controller-disposition.md)。
 
 ### T14 · 统一独立调查与审查请求/反馈
 
 **依赖：**T05、T12、T13。**规模：**M。**需求：**FR-09、FR-21、FR-31、FR-32。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/dispatching-parallel-agents/SKILL.md、H:/myAPP/Devflow/devflow/skills/requesting-code-review/SKILL.md、H:/myAPP/Devflow/devflow/skills/receiving-code-review/SKILL.md。
+**文件：**修改skills/dispatching-parallel-agents/SKILL.md、skills/requesting-code-review/SKILL.md、skills/receiving-code-review/SKILL.md。
 
 - [x] 独立调查明确事实源、写入边界和归集方式；同一文件/接口争用改为串行，不将“独立调查”外推为任意并行实现。
 - [x] 审查请求包含目标、差异基线、已验证状态和待核实风险，复用统一审查标准，不额外强加重复审查层。
@@ -325,13 +327,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-14、AT-15、AT-26通过；6项反馈中2项未知的输入不会导致全部停止或盲目修复。
 
-**实施验收记录（2026-09-08）：**共同冻结提交02c0215c4567298ce02ad85068a37082243849d0；独立规格与质量审查通过。五个原始场景32项断言全部通过，C06 exit 0；原生调查按已声明的转录证据等级具备可比资格。此前31/32与30/32两轮结果保留；关联聚焦代理正文的实际加载未观察到，单独记录为诊断限制。本检查点不代表最终发布验收。见[共同检查点处置](H:/myAPP/Devflow/devflow-v2-evidence/t13-t14-route-repair2-controller-disposition.md)。
+**实施验收记录（2026-09-08）：**共同冻结提交02c0215c4567298ce02ad85068a37082243849d0；独立规格与质量审查通过。五个原始场景32项断言全部通过，C06 exit 0；原生调查按已声明的转录证据等级具备可比资格。此前31/32与30/32两轮结果保留；关联聚焦代理正文的实际加载未观察到，单独记录为诊断限制。本检查点不代表最终发布验收。见[共同检查点处置](${EVIDENCE_ROOT}/t13-t14-route-repair2-controller-disposition.md)。
 
 ### T15 · 统一质量审查与行为保持简化
 
 **依赖：**T10、T14。**规模：**M。**需求：**FR-01、FR-12、FR-15、FR-21、FR-25。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/code-review-and-quality/SKILL.md、H:/myAPP/Devflow/devflow/skills/code-review-and-quality/references/review-playbook.md、H:/myAPP/Devflow/devflow/skills/code-simplification/SKILL.md。
+**文件：**修改skills/code-review-and-quality/SKILL.md、skills/code-review-and-quality/references/review-playbook.md、skills/code-simplification/SKILL.md。
 
 - [x] 保留正确性、安全、性能、可维护性和需求符合性判断，明确严重性、定位、影响和修正方向；风格偏好与阻断缺陷分开。
 - [x] 统一引用有效证据、自审/独立审查说明及局部阻塞规则；移除与公共合同冲突的强制重跑、固定尺寸或审批条款。
@@ -339,13 +341,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-01、AT-10、AT-23、AT-26通过；抽查“仅审查”“批准简化”“要求独立审查但能力不足”三种输入，结果与实际范围相符。
 
-**实施验收记录（2026-09-08）：**提交d587bf013fa7c3230c61725fdddb321509990049，独立规格与质量审查通过。六个原始场景32项断言全部通过，C06 exit 0；另行预声明的三种范围抽查均通过。有缺陷的只读样例与审查不可用样例仍各有2/4测试失败，必需独立审查门槛仍未满足；这些事实支持行为判断，不被改写为样例已就绪。本地检查点不代表发布或全宿主支持。见[检查点处置](H:/myAPP/Devflow/devflow-v2-evidence/t15-controller-disposition.md)。
+**实施验收记录（2026-09-08）：**提交d587bf013fa7c3230c61725fdddb321509990049，独立规格与质量审查通过。六个原始场景32项断言全部通过，C06 exit 0；另行预声明的三种范围抽查均通过。有缺陷的只读样例与审查不可用样例仍各有2/4测试失败，必需独立审查门槛仍未满足；这些事实支持行为判断，不被改写为样例已就绪。本地检查点不代表发布或全宿主支持。见[检查点处置](${EVIDENCE_ROOT}/t15-controller-disposition.md)。
 
 ### T16 · 建立真实宿主能力与降级合同
 
 **依赖：**T05、T07、T13。**规模：**M。**需求：**FR-26、FR-28、FR-30、FR-31。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/using-devflow/references/host-contract.md；修改H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md、H:/myAPP/Devflow/devflow/skills/using-devflow/references/codex-tools.md、H:/myAPP/Devflow/devflow/skills/using-devflow/references/copilot-tools.md、H:/myAPP/Devflow/devflow/skills/using-devflow/references/gemini-tools.md。
+**文件：**新增skills/using-devflow/references/host-contract.md；修改skills/using-devflow/SKILL.md、skills/using-devflow/references/codex-tools.md、skills/using-devflow/references/copilot-tools.md、skills/using-devflow/references/gemini-tools.md。
 
 - [x] 规定先读取宿主当前工具与参数说明，再选择文件、Shell、浏览器和协作能力；静态映射只做用途提示，不保证API名称存在。
 - [x] 明确能力缺失时可用替代、证据限制和合法结束条件；不能为了示例自动安装插件、改认证或添加新集成。
@@ -355,13 +357,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **实施记录（2026-09-08）：**五个文件经修复后通过独立规格与质量审查，提交f110ae4cf3505377dd2d20320f7d012650425773。该已审查合同供T17—T19使用；按事先记录的依赖顺序，AT-13—AT-18联合能力验收仍待T19，三项完成勾选保留待定，原生宿主证据仍归T32。
 
-**本地检查点处置（2026-09-09）：**本地能力检查点覆盖10变体48原始断言；保留分组原版本、受控条件和T32最终原生义务。 额外路径场景第1项读取证据未建立、浏览器截图最终交付等限制保留；不宣称全部技能遵循、全版本通过或发布。完整依据见[联合处置](H:/myAPP/Devflow/devflow-v2-evidence/t16-t19-selected-checkpoint-controller-disposition.md)。
+**本地检查点处置（2026-09-09）：**本地能力检查点覆盖10变体48原始断言；保留分组原版本、受控条件和T32最终原生义务。 额外路径场景第1项读取证据未建立、浏览器截图最终交付等限制保留；不宣称全部技能遵循、全版本通过或发布。完整依据见[联合处置](${EVIDENCE_ROOT}/t16-t19-selected-checkpoint-controller-disposition.md)。
 
 ### T17 · 加载身份、上下文复用与压缩恢复
 
 **依赖：**T02、T07、T10、T16。**规模：**M。**需求：**FR-22、FR-23、FR-24、FR-26。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/using-devflow/references/loading-recovery.md；修改H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md、H:/myAPP/Devflow/devflow/skills/source-driven-development/SKILL.md。
+**文件：**新增skills/using-devflow/references/loading-recovery.md；修改skills/using-devflow/SKILL.md、skills/source-driven-development/SKILL.md。
 
 - [x] 定义规范ID、实际来源、可得哈希、已返回章节与部分/完整/复用状态；规范清单与当前文件状态结合，不用当前哈希填补历史未知。
 - [x] 恢复摘要保留交付物、阶段、授权来源、技能身份、有效证据和未完成依赖；来源/约束变化或压缩丢失时按需补读，不仅按时间间隔判断冗余。
@@ -369,13 +371,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-01、AT-27—AT-29、AT-40通过；80/97行不会称全文，55.5秒内压缩后的合理补读不会判浪费，异步请求有续接结果。
 
-**实施验收记录（2026-09-08）：**提交dee3c83a35563b213742940d83ae88ec0777bb67，独立规格与质量审查通过。九个原始场景41项断言全部通过，C06 exit 0；99个源文件与归档一致，369条投影记录可从原始捕获一致再生，405项已有文件保持原值。原有命令失败、部分返回及历史身份未知均保留。本检查点不代表发布或全宿主支持。见[T17验收处置](H:/myAPP/Devflow/devflow-v2-evidence/t17-controller-disposition.md)。
+**实施验收记录（2026-09-08）：**提交dee3c83a35563b213742940d83ae88ec0777bb67，独立规格与质量审查通过。九个原始场景41项断言全部通过，C06 exit 0；99个源文件与归档一致，369条投影记录可从原始捕获一致再生，405项已有文件保持原值。原有命令失败、部分返回及历史身份未知均保留。本检查点不代表发布或全宿主支持。见[T17验收处置](${EVIDENCE_ROOT}/t17-controller-disposition.md)。
 
 ### T18 · 项目命令与可随技能安装的覆盖模板
 
 **依赖：**T06、T16、T17。**规模：**M。**需求：**FR-10、FR-25、FR-27、FR-29。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/using-devflow/references/project-commands.md、H:/myAPP/Devflow/devflow/skills/using-devflow/references/project-overrides.md；修改H:/myAPP/Devflow/devflow/templates/project-overrides.md和H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md。
+**文件：**新增skills/using-devflow/references/project-commands.md、skills/using-devflow/references/project-overrides.md；修改templates/project-overrides.md和skills/using-devflow/SKILL.md。
 
 - [x] 写明项目规则、锁文件、packageManager和真实脚本的选择顺序；冲突先调查，无明确约定时才用用户偏好，非JS项目不用Web示例。
 - [x] 将模板权威内容放入using-devflow内部，包含命令、阶段、工作包交付和动作授权覆盖项；内容不依赖模板所在目录的相对链接。
@@ -383,13 +385,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-18所有锁文件/偏好/冲突变体通过；两份模板一致，复制using-devflow及声明依赖后不再需要仓库外模板。
 
-**实施验收记录（2026-09-08）：**提交 d922a0b8e96679e8b2d7a64296fa25ec7862ac5d，独立规格与质量审查通过；4个原始场景16项断言全部通过，C06 exit 0。24文件独立复制及模板镜像通过，170个既有文件保持原值。保留协议偏差、未观察到新命令指南加载及历史未知，不代表安装器或完整发布验收。见[T18验收处置](H:/myAPP/Devflow/devflow-v2-evidence/t18-controller-disposition.md)。
+**实施验收记录（2026-09-08）：**提交 d922a0b8e96679e8b2d7a64296fa25ec7862ac5d，独立规格与质量审查通过；4个原始场景16项断言全部通过，C06 exit 0。24文件独立复制及模板镜像通过，170个既有文件保持原值。保留协议偏差、未观察到新命令指南加载及历史未知，不代表安装器或完整发布验收。见[T18验收处置](${EVIDENCE_ROOT}/t18-controller-disposition.md)。
 
 ### T19 · UI工程、视觉方向与实际浏览器验收
 
 **依赖：**T10、T16、T18。**规模：**M。**需求：**FR-12、FR-18、FR-20、FR-26、FR-28。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/frontend-design/SKILL.md、H:/myAPP/Devflow/devflow/skills/frontend-ui-engineering/SKILL.md、H:/myAPP/Devflow/devflow/skills/browser-testing-with-devtools/SKILL.md。
+**文件：**修改skills/frontend-design/SKILL.md、skills/frontend-ui-engineering/SKILL.md、skills/browser-testing-with-devtools/SKILL.md。
 
 - [x] 视觉方向优先采用项目设计系统和用户已选方案，重大变更明确方向，小展示改动不强制重新设计全站。
 - [x] 工程验收包含相关布局、响应式、交互和可访问性；功能通过、视觉通过和用户满意分别记录。
@@ -397,13 +399,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-16、AT-17、AT-39通过；能用其他实际浏览器接口完成适用验证，也能在无浏览器时诚实保留待验收状态。
 
-**本地检查点处置（2026-09-09）：**AT16/AT17/AT39共3变体13原始断言已有有效观察；新浏览器候选9原始断言及其事先声明的观察条件通过。 额外路径场景第1项读取证据未建立、浏览器截图最终交付等限制保留；不宣称全部技能遵循、全版本通过或发布。完整依据见[联合处置](H:/myAPP/Devflow/devflow-v2-evidence/t16-t19-selected-checkpoint-controller-disposition.md)。
+**本地检查点处置（2026-09-09）：**AT16/AT17/AT39共3变体13原始断言已有有效观察；新浏览器候选9原始断言及其事先声明的观察条件通过。 额外路径场景第1项读取证据未建立、浏览器截图最终交付等限制保留；不宣称全部技能遵循、全版本通过或发布。完整依据见[联合处置](${EVIDENCE_ROOT}/t16-t19-selected-checkpoint-controller-disposition.md)。
 
 ### T20 · 定义用户可执行的验收与交付说明
 
 **依赖：**T04、T06、T10、T19。**规模：**S。**需求：**FR-17、FR-18、FR-40。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/documentation-and-adrs/references/user-acceptance.md；修改H:/myAPP/Devflow/devflow/skills/documentation-and-adrs/SKILL.md。
+**文件：**新增skills/documentation-and-adrs/references/user-acceptance.md；修改skills/documentation-and-adrs/SKILL.md。
 
 - [x] 提供版本/环境、前置条件、入口、步骤、预期、异常、占位与未完成范围的验收模板，用短示例解释字段。
 - [x] 定义最终说明必须自包含、解释主要检查目的、区别工程检查与人工验收；普通进度更新不倾倒内部清单。
@@ -411,13 +413,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-35、AT-36、AT-39通过；从最终交付材料本身能够完成验收，不依赖翻找此前对话。
 
-**本地检查点处置（2026-09-09）：**3变体13原始断言通过，AT36最终指南可直接执行。AT39最终回复缺截图及44/46px表述差异保留至整体审查，不宣称所有指令遵循或全版本发布。依据见[T20处置](H:/myAPP/Devflow/devflow-v2-evidence/t20-controller-disposition.md)。
+**本地检查点处置（2026-09-09）：**3变体13原始断言通过，AT36最终指南可直接执行。AT39最终回复缺截图及44/46px表述差异保留至整体审查，不宣称所有指令遵循或全版本发布。依据见[T20处置](${EVIDENCE_ROOT}/t20-controller-disposition.md)。
 
 ### T21 · 缺陷主记录与派生验收清单同步
 
 **依赖：**T10、T20。**规模：**S。**需求：**FR-18、FR-19、FR-40。
 
-**文件：**新增H:/myAPP/Devflow/devflow/skills/documentation-and-adrs/references/defect-records.md；修改H:/myAPP/Devflow/devflow/skills/documentation-and-adrs/SKILL.md。
+**文件：**新增skills/documentation-and-adrs/references/defect-records.md；修改skills/documentation-and-adrs/SKILL.md。
 
 - [x] 定义稳定缺陷ID、复现、预期/实际、影响、状态、版本和验证证据，优先采用项目现有台账。
 - [x] 派生清单引用同一ID，交付前核对相关状态与更新时间；不需要第二套台账时不强建新系统。
@@ -425,13 +427,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-38通过；合成“主台账已有、体验清单遗漏”案例不会重复编号或被错误说成完全漏记。
 
-**本地检查点处置（2026-09-09）：**AT38单场景4条原始断言通过，主台账、既有条目和稳定ID得到保留。历史同步时间与缺失修复记录的表述边界保留至整体审查；不计入T31发布重复。依据见[T21处置](H:/myAPP/Devflow/devflow-v2-evidence/t21-controller-disposition.md)。
+**本地检查点处置（2026-09-09）：**AT38单场景4条原始断言通过，主台账、既有条目和稳定ID得到保留。历史同步时间与缺失修复记录的表述边界保留至整体审查；不计入T31发布重复。依据见[T21处置](${EVIDENCE_ROOT}/t21-controller-disposition.md)。
 
 ### T22 · Git版本、工作包PR和分支保留
 
 **依赖：**T06、T12、T15、T18。**规模：**M。**需求：**FR-07、FR-08、FR-10、FR-17。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/git-workflow-and-versioning/SKILL.md、H:/myAPP/Devflow/devflow/skills/finishing-a-development-branch/SKILL.md、H:/myAPP/Devflow/devflow/skills/using-git-worktrees/SKILL.md。
+**文件：**修改skills/git-workflow-and-versioning/SKILL.md、skills/finishing-a-development-branch/SKILL.md、skills/using-git-worktrees/SKILL.md。
 
 - [x] 三个入口统一引用交付合同；保留项目V1/V2差异，不为纯方案创建分支/worktree，已有有效环境先核对并复用。
 - [x] PR时点以完整约定工作包、审查和必需验证为准；展示低风险合并需满足全部政策条件，逻辑/依赖/不确定风险不能混入。
@@ -443,7 +445,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T06、T10、T18、T22。**规模：**M。**需求：**FR-02、FR-08、FR-10、FR-12、FR-16、FR-38、FR-39。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/shipping-and-launch/SKILL.md、H:/myAPP/Devflow/devflow/skills/ci-cd-and-automation/SKILL.md、H:/myAPP/Devflow/devflow/skills/deprecation-and-migration/SKILL.md。
+**文件：**修改skills/shipping-and-launch/SKILL.md、skills/ci-cd-and-automation/SKILL.md、skills/deprecation-and-migration/SKILL.md。
 
 - [x] 发布保留准备、恢复范围和运行验证；合并批准不代替部署/公开发布批准，同范围已有批准可复用。
 - [x] CI检查使用项目实际命令，失败保留并阻断必要结论；内部增量不被包装成完整可发布工作包。
@@ -455,9 +457,9 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T05、T10、T15、T17、T23。**规模：**M。**需求：**FR-02、FR-08、FR-12、FR-21、FR-25、FR-35、FR-38。
 
-**文件：**修改H:/myAPP/Devflow/devflow/skills/api-and-interface-design/SKILL.md、H:/myAPP/Devflow/devflow/skills/security-and-hardening/SKILL.md、H:/myAPP/Devflow/devflow/skills/performance-optimization/SKILL.md、H:/myAPP/Devflow/devflow/skills/observability-and-instrumentation/SKILL.md。
+**文件：**修改skills/api-and-interface-design/SKILL.md、skills/security-and-hardening/SKILL.md、skills/performance-optimization/SKILL.md、skills/observability-and-instrumentation/SKILL.md。
 
-**当前执行状态（2026-09-10）：**四个领域入口实现、窄化的外层合并返回恢复说明、独立规格审查和质量审查已完成。固定前瞻来源为 `candidate-t24-loading-v1`（提交 `6e3474f38fd17f2780d62afc6e09f0545fea217b`）。**原始12变体评估已终判并封存：54/54断言 PASS、0 FAIL、0 UNKNOWN；C06冻结检查器 checkpoint 档案验证退出0（validate 与 verify 均0，pass=54/fail=0/unknown=0）；12条intake链路全部复核（571条trace记录重新哈希）；输出封存已写入** [integrity封存文件](H:/myAPP/Devflow/devflow-v2-evidence/candidate-t24-loading-original-integrity.json)。因Codex额度耗尽，第8—16项按 [host条件修订v1](H:/myAPP/Devflow/devflow-v2-evidence/t24-loading-host-amendment-v1.md) 转Claude Code子代理宿主（转录记录模型glm-5.3、请求sonnet），混合宿主限制已在终判中如实披露；旧来源原始检查点52 PASS/2 FAIL与旧SECURITY补充加载失败作为历史事实保留，不做因果或可比性声明。第8项Codex空投递线程作废记录于 [episode08派发失败记录](H:/myAPP/Devflow/devflow-v2-evidence/t24-loading-episode08-dispatch-failure.md)。**待完成：**四个领域补充场景的独立判定进行中；其后根控制器复核处置并决定T24勾选。T31配对回归仍为独立门槛。
+**当前执行状态（2026-09-10）：**四个领域入口实现、窄化的外层合并返回恢复说明、独立规格审查和质量审查已完成。固定前瞻来源为 `candidate-t24-loading-v1`（提交 `6e3474f38fd17f2780d62afc6e09f0545fea217b`）。**原始12变体评估已终判并封存：54/54断言 PASS、0 FAIL、0 UNKNOWN；C06冻结检查器 checkpoint 档案验证退出0（validate 与 verify 均0，pass=54/fail=0/unknown=0）；12条intake链路全部复核（571条trace记录重新哈希）；输出封存已写入** [integrity封存文件](${EVIDENCE_ROOT}/candidate-t24-loading-original-integrity.json)。因Codex额度耗尽，第8—16项按 [host条件修订v1](${EVIDENCE_ROOT}/t24-loading-host-amendment-v1.md) 转Claude Code子代理宿主（转录记录模型glm-5.3、请求sonnet），混合宿主限制已在终判中如实披露；旧来源原始检查点52 PASS/2 FAIL与旧SECURITY补充加载失败作为历史事实保留，不做因果或可比性声明。第8项Codex空投递线程作废记录于 [episode08派发失败记录](${EVIDENCE_ROOT}/t24-loading-episode08-dispatch-failure.md)。**待完成：**四个领域补充场景的独立判定进行中；其后根控制器复核处置并决定T24勾选。T31配对回归仍为独立门槛。
 
 - [x] API入口保留输入输出、错误语义和兼容；仅设计不自动改代码；安全入口保留威胁、防护和供应链判断，授权引用公共合同。
 - [x] 性能保留先测量、定位瓶颈、比较相同任务与回归；观测保留日志/指标/追踪及敏感字段边界，不变为默认持续监控。
@@ -465,13 +467,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-03、AT-11、AT-23、AT-30、AT-31及AT-34的相关断言通过；另用四个领域适用输入各做一次路由与保留能力检查，记录为补充场景，不替代基础AT。
 
-实施验收记录（2026-09-10）：领域实现及静态SPEC/QUALITY审查完成于冻结提交 `6e3474f38fd17f2780d62afc6e09f0545fea217b`。固定前瞻评估 `candidate-t24-loading-v1`：原始12变体终判 **54/54断言 PASS、0 FAIL、0 UNKNOWN**，C06冻结检查器checkpoint档案验证退出0，输出封存经一次根方事故（verify_intakes.py写副作用覆盖封存，内容文件哈希证明未变，干净重封存并保留事故记录）后重新通过校验；四个领域补充场景独立判定 **API/OBSERVABILITY/PERFORMANCE/SECURITY 全PASS**（SECURITY本次证据满足加载门，历史FAIL保留、非治愈声明）。混合宿主（1—7 Codex gpt-5.6-sol；8—16 Claude Code glm-5.3，按host条件修订v1）如实披露，不做跨宿主可比性或因果声明。完整依据见 [根控制器处置](H:/myAPP/Devflow/devflow-v2-evidence/t24-loading-controller-disposition.md)。T31全版本配对回归仍为独立门槛。
+实施验收记录（2026-09-10）：领域实现及静态SPEC/QUALITY审查完成于冻结提交 `6e3474f38fd17f2780d62afc6e09f0545fea217b`。固定前瞻评估 `candidate-t24-loading-v1`：原始12变体终判 **54/54断言 PASS、0 FAIL、0 UNKNOWN**，C06冻结检查器checkpoint档案验证退出0，输出封存经一次根方事故（verify_intakes.py写副作用覆盖封存，内容文件哈希证明未变，干净重封存并保留事故记录）后重新通过校验；四个领域补充场景独立判定 **API/OBSERVABILITY/PERFORMANCE/SECURITY 全PASS**（SECURITY本次证据满足加载门，历史FAIL保留、非治愈声明）。混合宿主（1—7 Codex gpt-5.6-sol；8—16 Claude Code glm-5.3，按host条件修订v1）如实披露，不做跨宿主可比性或因果声明。完整依据见 [根控制器处置](${EVIDENCE_ROOT}/t24-loading-controller-disposition.md)。T31全版本配对回归仍为独立门槛。
 
 ### T25 · 完成33入口及公共依赖的一致性检查
 
 **依赖：**T07、T09、T15、T18、T21、T24。**规模：**M。**需求：**FR-11、FR-22、FR-25、FR-37、FR-38。
 
-**文件：**修改H:/myAPP/Devflow/devflow/devflow/skills/devflow/references/skill-catalog.json、H:/myAPP/Devflow/devflow/scripts/check-bundle.py、H:/myAPP/Devflow/devflow/tests/maintenance/test_bundle.py、H:/myAPP/Devflow/devflow/scripts/check-refs.sh。
+**文件：**修改devflow/skills/devflow/references/skill-catalog.json、scripts/check-bundle.py、tests/maintenance/test_bundle.py、scripts/check-refs.sh。
 
 - [x] 逐个核对第7节33技能归属，补齐真实依赖和旧名解析；检查路径、别名循环、重复规范ID、模板副本和路由标签漂移。
 - [x] 将Bash入口接入同一Python检查，保留已有元数据、命名与入口体积约束；计划/案例里的生成路径不能当生产断链，真正必需引用不能被宽泛跳过。
@@ -485,7 +487,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T18、T25。**规模：**M。**需求：**FR-08、FR-29、FR-37、FR-38、FR-39。
 
-**文件：**新增H:/myAPP/Devflow/devflow/scripts/install-bundle.py、H:/myAPP/Devflow/devflow/tests/maintenance/test_install.py；更新H:/myAPP/Devflow/devflow/tests/behavior/cases/distribution.json。
+**文件：**新增scripts/install-bundle.py、tests/maintenance/test_install.py；更新tests/behavior/cases/distribution.json。
 
 - [x] 实现C08的只读清单，记录目标内容、版本/可得哈希、计划资源、冲突和未知来源；不得在plan中写入或创建目标。
 - [x] 实现C09暂存：full复制完整分发依赖；single加`--skill`解析依赖闭包；symlink使用实际符号链接并验证目标存在。dest必须是不存在的新目录，拒绝覆盖、路径逃逸和循环；权限不足如实失败，不自动提权。
@@ -499,7 +501,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T05、T26。**规模：**S。**需求：**FR-07、FR-08、FR-29、FR-30、FR-39。
 
-**文件：**新增H:/myAPP/Devflow/devflow/docs/devflow/installation.md；补充H:/myAPP/Devflow/devflow/tests/maintenance/test_install.py的冲突/恢复验证。
+**文件：**新增docs/devflow/installation.md；补充tests/maintenance/test_install.py的冲突/恢复验证。
 
 - [x] 手册明确安装前清单、候选验证、可审差异、现有文件备份范围、对应授权、切换后核验和失败恢复顺序；其他来源和自定义内容必须保留。
 - [x] 在一次性模拟目标中演练“旧版有效→候选有效→获准切换失败→有限恢复”，逐项比对恢复前后入口、依赖和自定义内容；不操作真实全局目录。
@@ -507,13 +509,13 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**AT-33权限/恢复变体通过；失败候选不被称可用，既有自定义内容没有消失。真实切换留到T37。
 
-实施验收记录（2026-09-10）：本地提交 `2bc5f82`+`420d283`（修正一次手册内反引号路径断链，C01曾短暂退出1并已修复）；演练以真实33技能bundle（c14cf32）执行并记录于 [安装切换演练结果](H:/myAPP/Devflow/devflow-v2-evidence/t27-installation-drill/drill-result.json)：41条owned路径备份、中断切换被verify以退出1定位（skills/api-and-interface-design/SKILL.md）、有界恢复后verify退出0、user-config.json与personal-notes自定义内容逐字节保留；73项维护测试全过、C01—C04退出0。演练为机制验证，真实版本切换语义留待T37真实操作。
+实施验收记录（2026-09-10）：本地提交 `2bc5f82`+`420d283`（修正一次手册内反引号路径断链，C01曾短暂退出1并已修复）；演练以真实33技能bundle（c14cf32）执行并记录于 [安装切换演练结果](${EVIDENCE_ROOT}/t27-installation-drill/drill-result.json)：41条owned路径备份、中断切换被verify以退出1定位（skills/api-and-interface-design/SKILL.md）、有界恢复后verify退出0、user-config.json与personal-notes自定义内容逐字节保留；73项维护测试全过、C01—C04退出0。演练为机制验证，真实版本切换语义留待T37真实操作。
 
 ### T28 · 实现默认关闭的本地最小事件记录
 
 **依赖：**T05、T10、T17、T21。**规模：**M。**需求：**FR-33、FR-34。
 
-**文件：**新增H:/myAPP/Devflow/devflow/scripts/usage.py、H:/myAPP/Devflow/devflow/tests/maintenance/test_usage.py、H:/myAPP/Devflow/devflow/skills/using-devflow/references/local-recording.md；修改H:/myAPP/Devflow/devflow/skills/using-devflow/SKILL.md。
+**文件：**新增scripts/usage.py、tests/maintenance/test_usage.py、skills/using-devflow/references/local-recording.md；修改skills/using-devflow/SKILL.md。
 
 - [x] 定义最小事件协议：schema_version、event_id、task_id、parent_task_id、turn_id、时间、事件类别、规范技能ID/来源、计量值与单位、状态、未知原因；授权记录只保存动作类别/适用状态和证据标识，不复制原始授权对话。
 - [x] 实现status、enable、disable、append、export：每条命令显式传`--store`，append接收`--input`规范JSONL，export接收`--out`；默认/关闭状态不采集，status不创建目录，disable保留旧记录，已有导出目标不静默覆盖。
@@ -527,7 +529,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T03、T28。**规模：**M。**需求：**FR-33、FR-34、FR-35。
 
-**文件：**修改H:/myAPP/Devflow/devflow/scripts/usage.py、H:/myAPP/Devflow/devflow/skills/using-devflow/references/local-recording.md；新增H:/myAPP/Devflow/devflow/tests/maintenance/test_usage_report.py；更新H:/myAPP/Devflow/devflow/tests/behavior/cases/observability.json。
+**文件：**修改scripts/usage.py、skills/using-devflow/references/local-recording.md；新增tests/maintenance/test_usage_report.py；更新tests/behavior/cases/observability.json。
 
 - [x] 实现C12的按任务/主代理/子代理分组和事件层级统计；按明确事件身份/来源去重，不按相似标题或短时间直接合并。相同ID但内容冲突单列错误，不任选一份。
 - [x] 分开目录注入、选择、请求、部分/全文返回、复用、遵循和结果；没有正文结果、无历史哈希、无适用机会和无法解析来源均按Spec记录未知或不适用。
@@ -541,7 +543,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T03、T25、T27、T29。**规模：**M。**需求：**FR-14、FR-35、FR-36、FR-37。
 
-**文件：**修改H:/myAPP/Devflow/devflow/scripts/check-behavior.py、H:/myAPP/Devflow/devflow/tests/maintenance/test_behavior.py、H:/myAPP/Devflow/devflow/tests/behavior/README.md。
+**文件：**修改scripts/check-behavior.py、tests/maintenance/test_behavior.py、tests/behavior/README.md。
 
 - [x] 实现C07：40个AT及全部变体、10个关键AT每变体至少3次、至少10个留出场景；每个pass有实际动作/产物证据，unknown、缺运行、漏变体和禁止动作均阻断发布核验。
 - [x] 留出覆盖阶段、授权、验证失效、宿主和恢复，每类至少2个；维护在独立本地材料区，不用于日常调优；用于修复后转回归并补新留出。结果判定独立核对实际轨迹，不只接受被测者自报。
@@ -555,7 +557,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T01—T30全部完成。**规模：**M，按五类任务分批执行。**需求：**全部FR、全部NF。
 
-**产物：**H:/myAPP/Devflow/devflow-v2-evidence/baseline/、H:/myAPP/Devflow/devflow-v2-evidence/candidate/、H:/myAPP/Devflow/devflow-v2-evidence/holdout/和H:/myAPP/Devflow/devflow-v2-evidence/comparison.md，均为本地实际结果，不复制私人历史会话。
+**产物：**${EVIDENCE_ROOT}/baseline/、${EVIDENCE_ROOT}/candidate/、${EVIDENCE_ROOT}/holdout/和${EVIDENCE_ROOT}/comparison.md，均为本地实际结果，不复制私人历史会话。
 
 - [x] 固定被测来源和运行条件，先运行C01—C04；按第6节分组，用相同任务对V1.3.1和候选运行基础/关键重复与留出。对现有预算外的付费调用先准备具体运行清单供决定。
 - [x] 收集实际动作、材料和判定，敏感动作使用替身；失败保留并归回所属任务修正。基线失败如实记录，候选必须满足Spec，不能因“比基线好”接受授权错误。
@@ -563,16 +565,16 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**全部要求的行为场景有证据且候选通过；与基线可比，完整交付不退化。这里形成全范围回归结果，T32后T33还须核对最终候选是否发生使证据失效的变化。
 
-实施验收记录（2026-09-11）：基线=`137e025`（V1.3.1）、候选=`722c369`（T30后HEAD），同宿主同模型配对（Claude Code子代理/glm-5.3，按host修订案）；C01—C04预跑全零。共103配对episode/侧+10留出场景/侧全部执行、捕获并独立判定；中途两堵5小时配额墙如实记录并续跑；12/11个fixture材料化缺陷偏离运行隔离为deviant并以修正后的fixture重跑。**C07发布核验退出1（诚实失败数据）：候选473 pass/9 fail/2 unknown，基线477 pass/7 fail；候选留出9/10全过（HOLDOUT-RECOV-02失败）。候选未通过发布核验**——失败分诊：AT-16=双侧环境阻塞（无浏览器宿主）；AT-02-stopped/AT-23-failing-ci(r2,r3)/HOLDOUT-RECOV-02=候选bundle行为弱点信号（同bundle其他repeats通过）；AT-33-complete r1=复核确认的真实actor失败（未经批准先行switch）；AT-33-flat r2=单次失败。加载中位数基线16,647B vs 候选51,613B（探索指标，候选合同内容更多所致，不做抵偿）。修复义务归回T05/T06/T17/T26/T27，全部记录于 [对照报告](H:/myAPP/Devflow/devflow-v2-evidence/comparison.md) 与 [C07输出](H:/myAPP/Devflow/devflow-v2-evidence/t31-preparation/c07-release-output.txt)。判定侧格式缺陷由root机械规范并记录，未改动任何判定内容；AT-33由独立中性复核判定grounded。
+实施验收记录（2026-09-11）：基线=`137e025`（V1.3.1）、候选=`722c369`（T30后HEAD），同宿主同模型配对（Claude Code子代理/glm-5.3，按host修订案）；C01—C04预跑全零。共103配对episode/侧+10留出场景/侧全部执行、捕获并独立判定；中途两堵5小时配额墙如实记录并续跑；12/11个fixture材料化缺陷偏离运行隔离为deviant并以修正后的fixture重跑。**C07发布核验退出1（诚实失败数据）：候选473 pass/9 fail/2 unknown，基线477 pass/7 fail；候选留出9/10全过（HOLDOUT-RECOV-02失败）。候选未通过发布核验**——失败分诊：AT-16=双侧环境阻塞（无浏览器宿主）；AT-02-stopped/AT-23-failing-ci(r2,r3)/HOLDOUT-RECOV-02=候选bundle行为弱点信号（同bundle其他repeats通过）；AT-33-complete r1=复核确认的真实actor失败（未经批准先行switch）；AT-33-flat r2=单次失败。加载中位数基线16,647B vs 候选51,613B（探索指标，候选合同内容更多所致，不做抵偿）。修复义务归回T05/T06/T17/T26/T27，全部记录于 [对照报告](${EVIDENCE_ROOT}/comparison.md) 与 [C07输出](${EVIDENCE_ROOT}/t31-preparation/c07-release-output.txt)。判定侧格式缺陷由root机械规范并记录，未改动任何判定内容；AT-33由独立中性复核判定grounded。
 
-**修复闭环（同日）：**四个有界产品修复（`b58489d`交付/阶段/加载/安装合同 + `30b54e4`观测身份单元）各自引用其失败episode；受影响episode在修复来源上重跑并独立重判：AT-02-r3候选全PASS（基线同场景E01失败）、AT-23-r4全PASS、AT-33两种布局r4全PASS、HOLDOUT-RECOV-02-r2全PASS。最终聚合（[C07最终输出](H:/myAPP/Devflow/devflow-v2-evidence/t31-preparation/c07-release-output-r3.txt)）：候选108记录497 pass/10 fail/2 unknown，基线501/8/0；剩余候选FAIL全部为旧来源保留历史或AT-16双侧环境阻塞（本宿主无浏览器接口，两侧同败）。**T31终态：全范围配对回归+诚实修复循环执行完毕；修复来源上本宿主可运行的每个场景全部通过；C07聚合仍退出1系证据合同要求保留旧失败所致，非当前候选缺陷。AT-16需浏览器可用宿主补跑。**
+**修复闭环（同日）：**四个有界产品修复（`b58489d`交付/阶段/加载/安装合同 + `30b54e4`观测身份单元）各自引用其失败episode；受影响episode在修复来源上重跑并独立重判：AT-02-r3候选全PASS（基线同场景E01失败）、AT-23-r4全PASS、AT-33两种布局r4全PASS、HOLDOUT-RECOV-02-r2全PASS。最终聚合（[C07最终输出](${EVIDENCE_ROOT}/t31-preparation/c07-release-output-r3.txt)）：候选108记录497 pass/10 fail/2 unknown，基线501/8/0；剩余候选FAIL全部为旧来源保留历史或AT-16双侧环境阻塞（本宿主无浏览器接口，两侧同败）。**T31终态：全范围配对回归+诚实修复循环执行完毕；修复来源上本宿主可运行的每个场景全部通过；C07聚合仍退出1系证据合同要求保留旧失败所致，非当前候选缺陷。AT-16需浏览器可用宿主补跑。**
 
 ### T32 · 原生宿主验证、版本及双语使用说明
 
 **依赖：**T16、T19、T27、T31。**规模：**M。
 **需求：**FR-18、FR-29、FR-30、FR-37、FR-38、FR-39、FR-40。
 
-**文件：**修改H:/myAPP/Devflow/devflow/README.md、H:/myAPP/Devflow/devflow/README.zh-CN.md、H:/myAPP/Devflow/devflow/.claude-plugin/plugin.json、H:/myAPP/Devflow/devflow/CHANGELOG.md；新增H:/myAPP/Devflow/devflow/docs/devflow/host-support.md。
+**文件：**修改README.md、README.zh-CN.md、.claude-plugin/plugin.json、CHANGELOG.md；新增docs/devflow/host-support.md。
 
 - [x] 在Windows Codex实际验证只读/文档入口、命令、上下文恢复、适用浏览器和协作降级；Cursor实测技能读取与部分返回处理；Claude完成格式/入口解析和受控公共合同，未原生实测部分如实标级。原生验证在隔离测试项目中显式指向候选来源，不提前替换真实全局技能。
 - [x] 双语说明同步范围、路由、授权、三种安装方式、33旧入口、默认关闭记录及验证方法；本地候选版本准备为2.0.0并写明变化和限制，这不等于创建标签或公开发布。
@@ -586,7 +588,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **依赖：**T31、T32。**规模：**M。**需求：**FR-11、FR-14、FR-21、FR-36、FR-37；全部NF。
 
-**文件：**修改H:/myAPP/Devflow/devflow/.github/workflows/validate.yml、H:/myAPP/Devflow/devflow/.gitignore；新增H:/myAPP/Devflow/devflow/docs/devflow/release-checklist.md。审查结果保存到H:/myAPP/Devflow/devflow-v2-evidence/final-review.md。
+**文件：**修改.github/workflows/validate.yml、.gitignore；新增docs/devflow/release-checklist.md。审查结果保存到${EVIDENCE_ROOT}/final-review.md。
 
 - [x] 沿用既有CI结构与checkout版本，接入结构检查、标准库维护测试和场景材料校验；Ubuntu验证Bash兼容，Windows验证Python与路径。保留版本变更门槛，不顺便升级外部Action或依赖。
 - [x] 明确CI离线检查与真实模型行为验收的区别：CI不自动调用模型、付费API或私人日志；PR审查必须另核对实际行为结果。忽略本地证据/留出副本，扫描待提交文件防止私人路径索引、原始对话、凭证和无关文件进入交付。
@@ -594,7 +596,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 **验证/完成：**最终本地候选无未解决阻断项，结构/安装/维护测试/行为/必需原生证据齐全；本地审查清单可审。远端CI结果须等T34推送后取得，不能在此宣称已通过远端CI。
 
-实施验收记录（2026-09-11）：本地提交 `dbe34eb`+`aa171a4`。CI新增maintenance-tests（ubuntu+windows矩阵）与behavior-material校验，保留check-refs与PR版本门槛，未升级任何外部Action；.gitignore补__pycache__。最终候选`aa171a4`上C01—C04全部退出0（142测试），C07最终运行退出1且全部剩余项为旧来源保留历史/双侧环境阻塞AT-16/未送达staged approval的unknown（见[最终审查](H:/myAPP/Devflow/devflow-v2-evidence/final-review.md)与[c07-final-candidate.txt](H:/myAPP/Devflow/devflow-v2-evidence/t31-preparation/c07-final-candidate.txt)）。隐私扫描：diff仅含bundle/docs/tests/scripts/workflow文件，证据区/转录/留出副本未入库。完整diff=51提交/1670行插入。远端CI待T34推送后取得。
+实施验收记录（2026-09-11）：本地提交 `dbe34eb`+`aa171a4`。CI新增maintenance-tests（ubuntu+windows矩阵）与behavior-material校验，保留check-refs与PR版本门槛，未升级任何外部Action；.gitignore补__pycache__。最终候选`aa171a4`上C01—C04全部退出0（142测试），C07最终运行退出1且全部剩余项为旧来源保留历史/双侧环境阻塞AT-16/未送达staged approval的unknown（见[最终审查](${EVIDENCE_ROOT}/final-review.md)与[c07-final-candidate.txt](${EVIDENCE_ROOT}/t31-preparation/c07-final-candidate.txt)）。隐私扫描：diff仅含bundle/docs/tests/scripts/workflow文件，证据区/转录/留出副本未入库。完整diff=51提交/1670行插入。远端CI待T34推送后取得。
 
 ### T34 · 完整V2.0工作包推送与PR
 
@@ -644,7 +646,7 @@ Execution evidence (2026-09-08): local commit 61575db52850d3fd32891602b6abfb6765
 
 下表的文件均为T03拟创建，后续任务只维护所属组，不另起一套相同AT。场景及变体的预期行为以Spec第9节为准。
 
-| 文件（根目录H:/myAPP/Devflow/devflow/tests/behavior/cases/） | AT编号 | 主要维护任务 |
+| 文件（根目录tests/behavior/cases/） | AT编号 | 主要维护任务 |
 | --- | --- | --- |
 | routing.json | AT-01、AT-03、AT-04、AT-05、AT-06、AT-07、AT-35 | T04、T07—T09、T12 |
 | verification.json | AT-08、AT-09、AT-10、AT-11、AT-12、AT-34、AT-37 | T10—T12 |

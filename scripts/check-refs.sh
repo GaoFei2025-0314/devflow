@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Reference-integrity validator for the Devflow skill bundle.
-# Checks: frontmatter presence + name/dir match, resolvable file references,
-# no leftover third-party namespaces, SKILL.md size budget, and the
-# catalog/structure checks in scripts/check-bundle.py.
+# Checks: frontmatter presence + name/dir match, resolvable backtick references
+# across every Markdown file, no leftover third-party namespaces, SKILL.md size
+# budget, and the catalog/structure/link checks in scripts/check-bundle.py —
+# which resolves the Markdown links that carry the shared-contract references.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FAIL=0
@@ -46,7 +47,7 @@ else
   echo OK
 fi
 
-echo "== 3. Backtick file references resolve =="
+echo "== 3. Backtick file references resolve (all Markdown, bundle-wide) =="
 "$PY" - "$ROOT" <<'EOF'
 import os, re, sys
 ROOT = sys.argv[1]
@@ -98,7 +99,7 @@ while IFS= read -r f; do
   if [ "$n" -gt 310 ]; then echo "TOO LONG ($n lines): $f"; FAIL=1; fi
 done < <(find "$ROOT/skills" -name SKILL.md)
 
-echo "== 5. Bundle catalog and structure checks =="
+echo "== 5. Bundle catalog, structure, and Markdown-link resolution =="
 if "$PY" "$ROOT/scripts/check-bundle.py" --root "$ROOT"; then
   :
 else
