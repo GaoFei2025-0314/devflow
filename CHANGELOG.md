@@ -4,6 +4,7 @@ All notable changes to the Devflow plugin. Versions follow the `version` field i
 
 ## 2.0.1 (unreleased)
 
+- Satisfy the dispatched-subagent shared-contract obligation with complete retained coverage under unchanged conditions: reread a named contract only when missing, partial, truncated, invalidated, or newly relevant — a new turn, handoff, or unchanged conditions alone does not justify rereading (AT-28 diagnosis repair; complete-read and missing-range recovery obligations unchanged).
 - Clarify aggregate-response coverage and selective loading recovery to address avoidable truncated batches and redundant full rereads, while preserving complete selected-skill reads and applicable contract boundaries. No measured saving is claimed.
 - Bind release verification to explicit comparable task/state/rules/capability/budget evidence and a target candidate source. Older-source reuse requires a reviewed, hash-bound validity record; renamed or exposed holdout inputs cannot fill untouched coverage. Existing schema-1 checkpoint records remain readable.
 - Remove the Unix `cp` dependency from the installation regression test and exclude only Claude's nested worktree area from reference scans, retaining checks for real bundle and project content.
