@@ -84,13 +84,13 @@ PR material should let a reviewer assess the final change without conversational
 - API and data impact;
 - known residual risks and accepted deferrals.
 
-Push and PR creation require the applicable action grant. Required CI, review, and branch protection remain gates after the PR exists and cannot be bypassed by local integration.
+Before push or PR creation, apply the Shared Delivery Contract's check-to-action mapping to the effective rules and actual results. A general action grant does not waive a failed, pending, or unobserved check that policy requires before push/PR; keep complete reviewable material local until that gate passes or an explicit applicable timing exception exists. Required merge CI, review, and branch protection remain gates after the PR exists and cannot be bypassed by local integration.
 
 ## Merge Policy
 
 Apply the actual project policy to the exact reviewable PR. Passing CI establishes evidence; it does not create merge authorization.
 
-Some projects grant standing merge authorization for presentation-only changes. Use it only when every stated condition holds, including narrow and reversible scope, presentation-only behavior, all required checks and browser evidence, and no logic, state, persistence, auth, security, privacy, API, database, dependency, configuration, infrastructure, payment, monitoring, integration, secret, generated-artifact, unrelated-change, or unresolved-review impact. If any condition fails or risk is uncertain, prepare the reviewable PR and wait for authorization for that concrete merge.
+Some projects grant standing merge authorization for presentation-only changes. Use it only when every stated condition holds, including narrow and reversible scope, presentation-only behavior, all required checks and browser evidence, and no logic, state, persistence, auth, security, privacy, API, database, dependency, configuration, infrastructure, payment, monitoring, integration, secret, generated-artifact, unrelated-change, or unresolved-review impact. If any condition fails or risk is uncertain, prepare reviewable material, perform only delivery steps whose own gates pass, and wait for authorization for the concrete merge.
 
 Never bypass required CI or branch protection. History rewrites, force-pushes, direct pushes to a default branch, and branch deletion require matching authorization under the shared contract and project policy.
 

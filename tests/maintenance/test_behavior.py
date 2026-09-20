@@ -1,5 +1,9 @@
 import copy
+import argparse
+import contextlib
 import hashlib
+import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -526,8 +530,10 @@ class ReleaseProfileTests(BehaviorCheckerTests):
         super().setUp()
         self.baseline = self.root / "baseline"
         self.holdout = self.root / "holdout"
+        self.baseline_holdout = self.root / "baseline-holdout"
         self.baseline.mkdir()
         self.holdout.mkdir()
+        self.baseline_holdout.mkdir()
 
     def release_record(self, case_number, repeat_index, *, trace_name=None):
         case_id = f"AT-{case_number:02d}"
@@ -592,13 +598,626 @@ class ReleaseProfileTests(BehaviorCheckerTests):
             (self.holdout / f"holdout-{index:02d}.holdout.json").write_text(
                 json.dumps(scenario), encoding="utf-8"
             )
+            baseline_scenario = copy.deepcopy(scenario)
+            baseline_scenario["subject_source"] = {"version": "1.3.1", "hash": "b" * 40}
+            baseline_scenario["run_id"] = "baseline-holdout-unit"
+            (self.baseline_holdout / f"holdout-{index:02d}.holdout.json").write_text(
+                json.dumps(baseline_scenario), encoding="utf-8"
+            )
+        (self.baseline_holdout / "trace.txt").write_bytes(trace.read_bytes())
 
     def release_verify(self):
+        self.write_release_manifest()
+        return self.release_verify_existing_manifest()
+
+    def release_verify_existing_manifest(self):
         return self.run_checker(
             "verify", "--cases", self.cases, "--results", self.results,
             "--baseline", self.baseline, "--holdout", self.holdout,
-            "--profile", "release",
+            "--baseline-holdout", self.baseline_holdout,
+            "--profile", "release", "--target-candidate-source", "a" * 40,
+            "--release-manifest", self.root / "release-manifest.json",
         )
+
+    def write_release_manifest(self):
+        entries = []
+        for side, directory, suffix in (
+            ("candidate", self.results, "*.result.json"),
+            ("baseline", self.baseline, "*.result.json"),
+            ("holdout", self.holdout, "*.holdout.json"),
+            ("baseline_holdout", self.baseline_holdout, "*.holdout.json"),
+        ):
+            for path in sorted(directory.glob(suffix)):
+                record = json.loads(path.read_text(encoding="utf-8"))
+                values = {
+                    "task_input": {"request": record.get("case_id", record.get("scenario_id"))},
+                    "initial_state": {"files": []},
+                    "user_rules": {"phase": "evaluation"},
+                    "capabilities": {"tools": ["read", "write"]},
+                    "budget": {"turns": 5, "tokens": 1000},
+                }
+                entry = {
+                    "side": side, "path": path.name, "sha256": self.sha256(path),
+                    "conditions": {
+                        field: {"value": value, "evidence": [copy.deepcopy(record["trace"])]}
+                        for field, value in values.items()
+                    },
+                }
+                if side in ("holdout", "baseline_holdout"):
+                    packet = directory / (path.stem + ".packet.json")
+                    packet.write_text(json.dumps({"scenario_id": record["scenario_id"],
+                                                  "when": "Unique input " + record["scenario_id"]}),
+                                      encoding="utf-8")
+                    entry["holdout"] = {
+                        "input": {"path": packet.name, "sha256": self.sha256(packet),
+                                  "provenance": "synthetic_unit_fixture"},
+                        "exposure": "unexposed", "evidence": [copy.deepcopy(record["trace"])],
+                    }
+                entries.append(entry)
+        manifest = {"schema_version": 1, "target_candidate_source": "a" * 40,
+                    "records": entries, "holdout_exposures": []}
+        self.save_manifest(manifest)
+        return manifest
+
+    def save_manifest(self, manifest):
+        (self.root / "release-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    def protocol_verify(self, *, target="a" * 40, manifest=True, baseline_holdout=True):
+        # Direct invocation establishes RED for the missing gate, rather than an
+        # argparse error for options that the old checker does not yet recognize.
+        spec = importlib.util.spec_from_file_location("behavior_protocol_test", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        arguments = argparse.Namespace(
+            ids=None, cases=str(self.cases), results=str(self.results),
+            baseline=str(self.baseline), holdout=str(self.holdout), profile="release",
+            baseline_holdout=str(self.baseline_holdout) if baseline_holdout else None,
+            target_candidate_source=target,
+            release_manifest=str(self.root / "release-manifest.json") if manifest else None,
+        )
+        stream = io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            try:
+                code = module.verify_release_command(arguments)
+            except module.InputError as error:
+                print(error)
+                code = 2
+        return code, stream.getvalue()
+
+    def test_release_requires_baseline_holdout_evidence(self):
+        self.write_release_fixture()
+        self.write_release_manifest()
+        code, output = self.protocol_verify(baseline_holdout=False)
+        self.assertEqual(code, 2, output)
+        self.assertIn("--baseline-holdout", output)
+
+    @staticmethod
+    def relabel_fixture_capture_references(value, provenance="host_capture"):
+        # Deliberate declaration-only mechanism probe; never actual host evidence.
+        if isinstance(value, dict):
+            if "provenance" in value:
+                value["provenance"] = provenance
+            for item in value.values():
+                ReleaseProfileTests.relabel_fixture_capture_references(item, provenance)
+        elif isinstance(value, list):
+            for item in value:
+                ReleaseProfileTests.relabel_fixture_capture_references(item, provenance)
+
+    def host_labeled_fixture(self):
+        self.write_release_fixture()
+        for directory in (self.results, self.baseline, self.holdout, self.baseline_holdout):
+            for path in directory.glob("*.json"):
+                record = json.loads(path.read_text(encoding="utf-8"))
+                self.relabel_fixture_capture_references(record)
+                path.write_text(json.dumps(record), encoding="utf-8")
+        manifest = self.write_release_manifest()
+        self.relabel_fixture_capture_references(manifest)
+        self.save_manifest(manifest)
+        return manifest
+
+    def test_release_manifest_only_synthetic_is_reported(self):
+        manifest = self.host_labeled_fixture()
+        entry = next(e for e in manifest["records"] if e["side"] == "candidate")
+        entry["conditions"]["budget"]["evidence"][0]["provenance"] = "synthetic_unit_fixture"
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+        self.assertIn("candidate records=60 (pass=120 fail=0 unknown=0; synthetic=1)", output)
+        self.assertIn("synthetic evidence references=1", output)
+
+    def test_release_missing_baseline_holdout_counterpart_is_insufficient(self):
+        self.write_release_fixture()
+        (self.baseline_holdout / "holdout-00.holdout.json").unlink()
+        self.write_release_manifest()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 2, output)
+        self.assertIn("missing baseline holdout counterpart for holdout-00", output)
+
+    def test_release_holdout_comparable_conditions_are_paired(self):
+        self.write_release_fixture()
+        for field in ("task_input", "initial_state", "user_rules", "capabilities", "budget"):
+            with self.subTest(field=field):
+                manifest = self.write_release_manifest()
+                entry = next(e for e in manifest["records"] if e["side"] == "baseline_holdout")
+                entry["conditions"][field]["value"] = {"different": True}
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 1, output)
+                self.assertIn("baseline holdout conditions do not match", output)
+                self.assertIn(field, output)
+
+    def test_release_holdout_model_host_and_parameters_are_paired(self):
+        self.write_release_fixture()
+        path = self.baseline_holdout / "holdout-00.holdout.json"
+        original = json.loads(path.read_text(encoding="utf-8"))
+        for field, subfield, value in (("model", "id", "other-model"), ("host", "id", "other-host"),
+                                       ("model", "parameters", {"temperature": 0.5})):
+            with self.subTest(field=field, subfield=subfield):
+                record = copy.deepcopy(original)
+                record[field][subfield] = value
+                path.write_text(json.dumps(record), encoding="utf-8")
+                self.write_release_manifest()
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 1, output)
+                self.assertIn(f"{field}.{subfield}", output)
+
+    def test_release_holdout_unknown_condition_is_insufficient(self):
+        self.write_release_fixture()
+        manifest = self.write_release_manifest()
+        entry = next(e for e in manifest["records"] if e["side"] == "baseline_holdout")
+        entry["conditions"]["initial_state"]["value"] = None
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 2, output)
+        self.assertIn("initial_state", output)
+
+    def test_release_holdout_matching_unknown_identity_is_insufficient(self):
+        self.write_release_fixture()
+        paths = [directory / "holdout-00.holdout.json"
+                 for directory in (self.holdout, self.baseline_holdout)]
+        originals = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+        for field in ("model", "host"):
+            for value in ("", "   ", "unknown", "UNAVAILABLE"):
+                with self.subTest(field=field, value=value):
+                    for path, original in zip(paths, originals):
+                        record = copy.deepcopy(original)
+                        record[field]["id"] = value
+                        path.write_text(json.dumps(record), encoding="utf-8")
+                    self.write_release_manifest()
+                    code, output = self.protocol_verify()
+                    self.assertEqual(code, 2, output)
+                    self.assertIn(f"{field}.id", output)
+
+    def test_release_holdout_matching_unknown_parameters_are_insufficient(self):
+        self.write_release_fixture()
+        for directory in (self.holdout, self.baseline_holdout):
+            path = directory / "holdout-00.holdout.json"
+            record = json.loads(path.read_text(encoding="utf-8"))
+            record["model"]["parameters"] = {"temperature": None}
+            path.write_text(json.dumps(record), encoding="utf-8")
+        self.write_release_manifest()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 2, output)
+        self.assertIn("model.parameters", output)
+
+    def test_release_baseline_holdout_source_hash_must_be_valid(self):
+        self.write_release_fixture()
+        path = self.baseline_holdout / "holdout-00.holdout.json"
+        original = json.loads(path.read_text(encoding="utf-8"))
+        for value in ("", "unknown", "a" * 39, "b" * 63, "G" * 40, 123):
+            with self.subTest(value=value):
+                record = copy.deepcopy(original)
+                record["subject_source"]["hash"] = value
+                path.write_text(json.dumps(record), encoding="utf-8")
+                self.write_release_manifest()
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 2, output)
+                self.assertIn("subject_source.hash", output)
+
+    def test_release_unilateral_unknown_holdout_metadata_is_insufficient_not_mismatch(self):
+        self.write_release_fixture()
+        path = self.baseline_holdout / "holdout-00.holdout.json"
+        original = json.loads(path.read_text(encoding="utf-8"))
+        for field, value in (("id", "unknown"), ("parameters", {"temperature": None})):
+            with self.subTest(field=field):
+                record = copy.deepcopy(original)
+                record["model"][field] = value
+                path.write_text(json.dumps(record), encoding="utf-8")
+                self.write_release_manifest()
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 2, output)
+                self.assertNotIn("baseline holdout conditions do not match", output)
+
+    def test_release_empty_model_parameter_object_remains_supported(self):
+        self.write_release_fixture()
+        for directory in (self.holdout, self.baseline_holdout):
+            path = directory / "holdout-00.holdout.json"
+            record = json.loads(path.read_text(encoding="utf-8"))
+            record["model"]["parameters"] = {}
+            path.write_text(json.dumps(record), encoding="utf-8")
+        self.write_release_manifest()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+
+    def test_checkpoint_unknown_parameter_values_remain_readable(self):
+        self.write_cases()
+        record = self.result_record()
+        record["model"]["parameters"] = {"temperature": None}
+        self.write_result(record)
+        result = self.verify()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_release_holdout_same_label_with_different_input_fails(self):
+        self.write_release_fixture()
+        manifest = self.write_release_manifest()
+        entry = next(e for e in manifest["records"] if e["side"] == "baseline_holdout")
+        packet = self.baseline_holdout / entry["holdout"]["input"]["path"]
+        packet.write_text(json.dumps({"when": "Actually different actor input"}), encoding="utf-8")
+        entry["holdout"]["input"]["sha256"] = self.sha256(packet)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("underlying input", output)
+
+    def test_release_unique_input_can_pair_with_different_scenario_label(self):
+        self.write_release_fixture()
+        manifest = self.write_release_manifest()
+        entry = next(e for e in manifest["records"] if e["side"] == "baseline_holdout")
+        path = self.baseline_holdout / entry["path"]
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["scenario_id"] = "baseline-label"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        entry["sha256"] = self.sha256(path)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+        self.assertIn("holdout scenarios=10", output)
+
+    def test_release_holdout_baseline_failures_are_preserved_in_counts(self):
+        self.write_release_fixture()
+        path = self.baseline_holdout / "holdout-00.holdout.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["assertions"][0]["status"] = "fail"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        self.write_release_manifest()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+        self.assertIn("baseline_holdout records=10 (pass=9 fail=1 unknown=0; synthetic=10)", output)
+
+    def test_release_synthetic_in_each_manifest_evidence_surface_is_reported(self):
+        for surface in ("condition", "input", "exposure"):
+            with self.subTest(surface=surface):
+                manifest = self.host_labeled_fixture()
+                entry = next(e for e in manifest["records"] if e["side"] == "baseline_holdout")
+                reference = {
+                    "condition": entry["conditions"]["budget"]["evidence"][0],
+                    "input": entry["holdout"]["input"],
+                    "exposure": entry["holdout"]["evidence"][0],
+                }[surface]
+                reference["provenance"] = "synthetic_unit_fixture"
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 0, output)
+                self.assertIn("baseline_holdout records=10 (pass=10 fail=0 unknown=0; synthetic=1)", output)
+                self.assertIn("synthetic evidence references=1", output)
+
+    def test_release_raw_holdout_only_synthetic_is_reported(self):
+        manifest = self.host_labeled_fixture()
+        entry = next(e for e in manifest["records"] if e["side"] == "holdout")
+        path = self.holdout / entry["path"]
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["trace"]["provenance"] = "synthetic_unit_fixture"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        entry["sha256"] = self.sha256(path)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+        self.assertIn("holdout records=10 (pass=10 fail=0 unknown=0; synthetic=1)", output)
+        self.assertIn("synthetic evidence references=1", output)
+
+    def test_release_raw_baseline_only_synthetic_is_reported(self):
+        manifest = self.host_labeled_fixture()
+        entry = next(e for e in manifest["records"] if e["side"] == "baseline")
+        path = self.baseline / entry["path"]
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["trace"]["provenance"] = "synthetic_unit_fixture"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        entry["sha256"] = self.sha256(path)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+        self.assertIn("baseline records=60 (pass=120 fail=0 unknown=0; synthetic=1)", output)
+        self.assertIn("synthetic evidence references=1", output)
+
+    def test_release_exposure_registry_only_synthetic_is_reported(self):
+        manifest = self.host_labeled_fixture()
+        packet = self.holdout / "historical-exposed.packet.json"
+        packet.write_text(json.dumps({"when": "Historical tuned input, outside current holdouts"}), encoding="utf-8")
+        manifest["holdout_exposures"] = [{
+            "input": {"path": packet.name, "sha256": self.sha256(packet), "provenance": "host_capture"},
+            "evidence": [{"path": "trace.txt", "sha256": self.sha256(self.holdout / "trace.txt"),
+                          "provenance": "synthetic_unit_fixture"}],
+        }]
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+        self.assertIn("synthetic evidence references=1", output)
+        self.assertIn("manifest synthetic evidence references=1", output)
+
+    def test_release_explicit_protocol_passes_despite_legacy_digest_differences(self):
+        self.write_release_fixture()
+        path = self.baseline / "case-10-r1.result.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["conditions_digest"] = "d" * 64
+        path.write_text(json.dumps(record), encoding="utf-8")
+        self.write_release_manifest()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+
+    def test_release_protocol_rejects_each_comparable_condition_mismatch(self):
+        self.write_release_fixture()
+        for field in ("task_input", "initial_state", "user_rules", "capabilities", "budget"):
+            with self.subTest(field=field):
+                manifest = self.write_release_manifest()
+                entry = next(e for e in manifest["records"]
+                             if e["side"] == "baseline" and e["path"] == "case-10-r1.result.json")
+                entry["conditions"][field]["value"] = {"different": True}
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 1, output)
+                self.assertIn(field, output)
+
+    def test_release_protocol_missing_or_unknown_conditions_are_insufficient(self):
+        self.write_release_fixture()
+        for value in (None, {}, {"value": {"tokens": None}, "evidence": []}):
+            with self.subTest(value=value):
+                manifest = self.write_release_manifest()
+                manifest["records"][0]["conditions"]["budget"] = value
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 2, output)
+                self.assertIn("budget", output)
+
+    def test_release_protocol_requires_target_and_manifest(self):
+        self.write_release_fixture()
+        self.write_release_manifest()
+        for target, manifest in ((None, True), ("a" * 40, False)):
+            with self.subTest(target=target, manifest=manifest):
+                code, output = self.protocol_verify(target=target, manifest=manifest)
+                self.assertEqual(code, 2, output)
+
+    def test_release_old_source_cannot_supply_key_repeats_without_reviewed_reuse(self):
+        self.write_release_fixture()
+        path = self.results / "case-03-r3.result.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["subject_source"]["hash"] = "c" * 40
+        path.write_text(json.dumps(record), encoding="utf-8")
+        self.write_release_manifest()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 2, output)
+        self.assertIn("reuse", output)
+        self.assertIn("found 2", output)
+
+    def test_release_manifest_binds_original_result_bytes(self):
+        self.write_release_fixture()
+        self.write_release_manifest()
+        with (self.results / "case-10-r1.result.json").open("a", encoding="utf-8") as stream:
+            stream.write("\n")
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("record hash mismatch", output)
+
+    def test_release_renamed_duplicate_holdout_input_fails(self):
+        self.write_release_fixture()
+        manifest = self.write_release_manifest()
+        entries = [e for e in manifest["records"] if e["side"] == "holdout"]
+        original = json.loads((self.holdout / entries[0]["holdout"]["input"]["path"]).read_text())
+        original["scenario_id"] = "renamed-r2"
+        target = self.holdout / entries[1]["holdout"]["input"]["path"]
+        target.write_text(json.dumps(original, indent=2), encoding="utf-8")
+        entries[1]["holdout"]["input"]["sha256"] = self.sha256(target)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("duplicate underlying holdout input", output)
+
+    def test_release_promoted_regression_does_not_fill_holdout_coverage(self):
+        self.write_release_fixture()
+        manifest = self.write_release_manifest()
+        entry = next(e for e in manifest["records"] if e["side"] == "holdout")
+        entry["holdout"]["exposure"] = "promoted_regression"
+        baseline_entry = next(e for e in manifest["records"]
+                              if e["side"] == "baseline_holdout" and e["path"] == entry["path"])
+        baseline_entry["holdout"]["exposure"] = "promoted_regression"
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 2, output)
+        self.assertIn("holdout has 9 scenario(s)", output)
+
+    def test_release_exposure_registry_rejects_relabeled_untouched_holdout(self):
+        self.write_release_fixture()
+        manifest = self.write_release_manifest()
+        entry = next(e for e in manifest["records"] if e["side"] == "holdout")
+        manifest["holdout_exposures"] = [{"input": entry["holdout"]["input"],
+                                         "evidence": entry["holdout"]["evidence"]}]
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("exposed input cannot be an unexposed holdout", output)
+
+    def reviewed_reuse_fixture(self):
+        self.write_release_fixture()
+        path = self.results / "case-03-r3.result.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["subject_source"]["hash"] = "c" * 40
+        path.write_text(json.dumps(record), encoding="utf-8")
+        manifest = self.write_release_manifest()
+        entry = next(e for e in manifest["records"]
+                     if e["side"] == "candidate" and e["path"] == path.name)
+        resources = []
+        for side in ("source", "target"):
+            resource = self.results / (side + "-router.md")
+            resource.write_text("Identical relevant router instructions.\n", encoding="utf-8")
+            resources.append({"path": resource.name, "sha256": self.sha256(resource),
+                              "provenance": "synthetic_unit_fixture"})
+        entry["reuse"] = {
+            "source_hash": "c" * 40, "target_hash": "a" * 40,
+            "record_sha256": self.sha256(path),
+            "claim_scope": [a["id"] for a in record["assertions"]] + ["loading"],
+            "reviewer": {"id": "reviewer-unit"},
+            "justification": "Synthetic dependency review: only this unchanged router affects these claims.",
+            "evidence": [copy.deepcopy(record["trace"])],
+            "resources": [{"path": "skills/devflow/SKILL.md",
+                           "source": resources[0], "target": resources[1]}],
+        }
+        self.save_manifest(manifest)
+        return manifest, entry
+
+    def test_release_reviewed_unchanged_resources_allow_bound_old_source_reuse(self):
+        self.reviewed_reuse_fixture()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+
+    def test_release_reuse_only_synthetic_is_reported(self):
+        for surface in ("review", "resource"):
+            with self.subTest(surface=surface):
+                manifest, reused_entry = self.reviewed_reuse_fixture()
+                directories = {"candidate": self.results, "baseline": self.baseline,
+                               "holdout": self.holdout, "baseline_holdout": self.baseline_holdout}
+                for entry in manifest["records"]:
+                    path = directories[entry["side"]] / entry["path"]
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                    self.relabel_fixture_capture_references(record)
+                    path.write_text(json.dumps(record), encoding="utf-8")
+                    entry["sha256"] = self.sha256(path)
+                    if "reuse" in entry:
+                        entry["reuse"]["record_sha256"] = entry["sha256"]
+                self.relabel_fixture_capture_references(manifest)
+                reference = (reused_entry["reuse"]["evidence"][0] if surface == "review"
+                             else reused_entry["reuse"]["resources"][0]["source"])
+                reference["provenance"] = "synthetic_unit_fixture"
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 0, output)
+                self.assertIn("candidate records=60 (pass=120 fail=0 unknown=0; synthetic=1)", output)
+                self.assertIn("synthetic evidence references=1", output)
+
+    def test_release_reuse_cannot_waive_a_changed_relevant_resource(self):
+        manifest, entry = self.reviewed_reuse_fixture()
+        target = self.results / "target-router.md"
+        target.write_text("Changed authorization behavior.\n", encoding="utf-8")
+        entry["reuse"]["resources"][0]["target"]["sha256"] = self.sha256(target)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("changed relevant resource", output)
+
+    def test_release_reuse_requires_complete_claim_scope_and_record_binding(self):
+        for field, value in (("claim_scope", ["AT-03-A01"]), ("record_sha256", "d" * 64),
+                             ("target_hash", "e" * 40), ("resources", [])):
+            with self.subTest(field=field):
+                manifest, entry = self.reviewed_reuse_fixture()
+                entry["reuse"][field] = value
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 2, output)
+                self.assertIn(field, output)
+
+    def test_release_malformed_assertions_have_consistent_controlled_errors(self):
+        for malformed in ({"status": "pass", "evidence": []}, None,
+                          {"id": [], "status": "pass", "evidence": []}):
+            for source in ("old", "target"):
+                with self.subTest(malformed=malformed, source=source):
+                    manifest, entry = self.reviewed_reuse_fixture()
+                    path = self.results / entry["path"]
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                    record["assertions"][0] = malformed
+                    if source == "target":
+                        record["subject_source"]["hash"] = "a" * 40
+                    path.write_text(json.dumps(record), encoding="utf-8")
+                    entry["sha256"] = entry["reuse"]["record_sha256"] = self.sha256(path)
+                    self.save_manifest(manifest)
+                    result = self.release_verify_existing_manifest()
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertIn("INPUT ERROR:", result.stderr)
+                    self.assertIn("assertions[0]", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+
+    def test_release_holdout_declaration_symlinks_cannot_escape_either_side(self):
+        self.write_release_fixture()
+        for directory in (self.holdout, self.baseline_holdout):
+            with self.subTest(side=directory.name):
+                self.write_release_manifest()
+                declared = directory / "holdout-00.holdout.json"
+                outside = self.root / (directory.name + "-outside-record.json")
+                contents = declared.read_bytes()
+                outside.write_bytes(contents)
+                declared.unlink()
+                try:
+                    declared.symlink_to(outside)
+                    self.assertTrue(declared.is_symlink())
+                    self.assertFalse(declared.resolve().is_relative_to(directory.resolve()))
+                    result = self.release_verify_existing_manifest()
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertIn("holdout file escapes holdout directory", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+                finally:
+                    if declared.is_symlink():
+                        declared.unlink()
+                    declared.write_bytes(contents)
+
+    def test_release_holdout_declaration_symlink_inside_side_remains_supported(self):
+        self.write_release_fixture()
+        self.write_release_manifest()
+        declared = self.baseline_holdout / "holdout-00.holdout.json"
+        inside = self.baseline_holdout / "archive" / "original-record.data"
+        inside.parent.mkdir()
+        inside.write_bytes(declared.read_bytes())
+        declared.unlink()
+        declared.symlink_to(inside)
+        self.assertTrue(declared.is_symlink())
+        self.assertTrue(declared.resolve().is_relative_to(self.baseline_holdout.resolve()))
+        result = self.release_verify_existing_manifest()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_release_reuse_preserves_old_source_declared_failure(self):
+        manifest, entry = self.reviewed_reuse_fixture()
+        path = self.results / entry["path"]
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["assertions"][0]["status"] = "fail"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        entry["sha256"] = entry["reuse"]["record_sha256"] = self.sha256(path)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("status is fail", output)
+
+    def test_release_condition_capture_missing_or_tampered_blocks_material(self):
+        self.write_release_fixture()
+        for key, value, expected in (("path", "missing.json", 2), ("sha256", "f" * 64, 1)):
+            with self.subTest(key=key):
+                manifest = self.write_release_manifest()
+                manifest["records"][0]["conditions"]["budget"]["evidence"][0][key] = value
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, expected, output)
+
+    def test_release_opaque_schema1_remains_checkpoint_readable(self):
+        self.write_cases()
+        self.write_result(self.result_record())
+        result = self.verify()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_release_incomparable_pairs_do_not_supply_loading_comparison(self):
+        self.write_release_fixture()
+        manifest = self.write_release_manifest()
+        for entry in manifest["records"]:
+            if entry["side"] == "baseline":
+                entry["conditions"]["budget"]["value"] = {"tokens": 2000}
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("COMPARISON: paired runs=0", output)
 
     def test_release_passes_with_complete_fixture(self):
         self.write_release_fixture()
@@ -608,6 +1227,7 @@ class ReleaseProfileTests(BehaviorCheckerTests):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("RELEASE MATERIAL VERIFIED", result.stdout)
         self.assertIn("holdout scenarios=10", result.stdout)
+        self.assertIn("AT comparable pairs=60; holdout comparable unexposed pairs=10", result.stdout)
         self.assertIn("COMPARISON", result.stdout)
 
     def test_release_missing_key_repeat_is_insufficient(self):

@@ -2,6 +2,17 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
+## 2.0.1 (unreleased)
+
+- Satisfy the dispatched-subagent shared-contract obligation with complete retained coverage under unchanged conditions: reread a named contract only when missing, partial, truncated, invalidated, or newly relevant — a new turn, handoff, or unchanged conditions alone does not justify rereading (AT-28 diagnosis repair; complete-read and missing-range recovery obligations unchanged).
+- Clarify aggregate-response coverage and selective loading recovery to address avoidable truncated batches and redundant full rereads, while preserving complete selected-skill reads and applicable contract boundaries. No measured saving is claimed.
+- Bind release verification to explicit comparable task/state/rules/capability/budget evidence and a target candidate source. Older-source reuse requires a reviewed, hash-bound validity record; renamed or exposed holdout inputs cannot fill untouched coverage. Existing schema-1 checkpoint records remain readable.
+- Remove the Unix `cp` dependency from the installation regression test and exclude only Claude's nested worktree area from reference scans, retaining checks for real bundle and project content.
+- Correct the failing-CI delivery rubric to honor effective project gates for push/PR timing while still requiring complete reviewable preparation and preserving CI and merge prohibitions. Earlier judgments remain bound to their original rubric.
+- Resolve required checks against the project's push/PR timing gate before execution. A general delivery grant does not waive missing or failed pre-PR checks; explicitly permitted early review remains available within its scope, and blocked delivery still produces complete local review material.
+- Correct host support attribution, distinguish Codex desktop from CLI and Claude subagent execution from plugin installation, and reopen incomplete V2.0 acceptance gates. Prior release and installation events remain recorded; they do not establish missing acceptance evidence.
+- Corrected judgments and actual behavioral/native revalidation are tracked separately from offline tests. This local patch does not claim that the original V2.0 acceptance is complete or that a new release/global installation has occurred.
+
 ## 2.0.0
 
 - **Deliverable-first routing** (`skills/devflow/SKILL.md`): the router now routes by requested deliverable and phase → impact/risk → domain → actual host capability, replacing keyword-first matching. Understand/Specify/Implement/VerifyReview/Deliver each have explicit legal end states; document-only and plan-only requests end there without Git or implementation actions.

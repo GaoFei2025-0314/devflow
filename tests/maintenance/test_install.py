@@ -306,10 +306,7 @@ class InstallToolTests(unittest.TestCase):
 
         copied = self.work / "masquerade"
         copied.mkdir()
-        subprocess.run(
-            ["cp", "-r", str(staged_skill) + "/", str(copied / "using-devflow")],
-            check=True,
-        )
+        shutil.copytree(staged_skill, copied / "using-devflow", symlinks=False)
         staged_skill.unlink()
         shutil.copytree(copied / "using-devflow", destination / "skills" / "using-devflow")
         plain_copy = self.verify(destination)

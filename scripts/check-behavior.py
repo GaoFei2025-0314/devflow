@@ -46,6 +46,9 @@ def parse_arguments() -> argparse.Namespace:
     verify_parser.add_argument("--ids", help="comma-separated AT IDs")
     verify_parser.add_argument("--baseline", help="baseline results directory (release profile)")
     verify_parser.add_argument("--holdout", help="holdout scenarios directory (release profile)")
+    verify_parser.add_argument("--baseline-holdout", help="paired baseline holdout directory (release profile)")
+    verify_parser.add_argument("--target-candidate-source", help="target Git SHA or source SHA-256 (release)")
+    verify_parser.add_argument("--release-manifest", help="bound comparison, reuse and holdout metadata JSON")
     return parser.parse_args()
 
 
@@ -497,6 +500,229 @@ REQUIRED_KEY_REPEATS = 3
 HOLDOUT_CATEGORIES = ("phase", "authorization", "evidence_invalidation", "host", "recovery")
 MIN_HOLDOUT_SCENARIOS = 10
 MIN_HOLDOUT_PER_CATEGORY = 2
+COMPARABLE_FIELDS = ("task_input", "initial_state", "user_rules", "capabilities", "budget")
+INPUT_LABELS = {"scenario_id", "case_id", "variant_id", "run_id", "repeat_index"}
+
+
+def canonical_json(value: Any) -> str:
+    try:
+        return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    except (TypeError, ValueError) as error:
+        raise InputError(f"comparison value is not finite JSON: {error}") from error
+
+
+def contains_unknown(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip().lower() in {"", "unknown", "unavailable", "not recorded"}
+    if isinstance(value, dict):
+        return any(contains_unknown(item) for item in value.values())
+    if isinstance(value, list):
+        return any(contains_unknown(item) for item in value)
+    return False
+
+
+def release_metadata(record):
+    """Return known comparison metadata; unknown values cannot prove a mismatch."""
+    model_id, host_id = record["model"].get("id"), record["host"].get("id")
+    parameters = record["model"].get("parameters")
+    if (not isinstance(model_id, str) or contains_unknown(model_id)
+            or not isinstance(host_id, str) or contains_unknown(host_id)
+            or not isinstance(parameters, dict) or contains_unknown(parameters)):
+        return None
+    return {"model.id": model_id, "host.id": host_id, "model.parameters": parameters}
+
+
+def check_capture_list(raw, location, directory, detected, insufficient) -> bool:
+    """Require valid inspectable capture references, not declarations or self-report."""
+    before = (len(detected), len(insufficient))
+    if not isinstance(raw, list) or not raw:
+        insufficient.append(f"{location}: non-empty capture evidence is required")
+        return False
+    for index, reference in enumerate(raw):
+        provenance = check_evidence_reference(
+            reference, f"{location}[{index}]", directory, detected, insufficient
+        )
+        if provenance not in CAPTURE_PROVENANCE:
+            insufficient.append(f"{location}[{index}]: independent capture evidence is required")
+        if isinstance(reference, dict) and str(reference.get("path", "")).endswith(".holdout.json"):
+            insufficient.append(f"{location}[{index}]: a holdout declaration cannot be its own evidence")
+    return before == (len(detected), len(insufficient))
+
+
+def synthetic_reference_keys(value: Any) -> set[str]:
+    """Collect unique declared synthetic references, including manifest evidence.
+
+    These are provenance declarations, not authenticated capture classifications.
+    Repeated uses of the same local path/hash are one reference identity.
+    """
+    found = set()
+    if isinstance(value, dict):
+        if (value.get("provenance") == "synthetic_unit_fixture"
+                and isinstance(value.get("path"), str) and isinstance(value.get("sha256"), str)):
+            found.add(canonical_json({"path": value["path"], "sha256": value["sha256"]}))
+        for item in value.values():
+            found.update(synthetic_reference_keys(item))
+    elif isinstance(value, list):
+        for item in value:
+            found.update(synthetic_reference_keys(item))
+    return found
+
+
+def load_release_manifest(arguments, detected, insufficient):
+    target = getattr(arguments, "target_candidate_source", None)
+    path = getattr(arguments, "release_manifest", None)
+    if not isinstance(target, str) or not SOURCE_HASH.fullmatch(target):
+        raise InputError("release requires --target-candidate-source with a lowercase Git SHA or SHA-256")
+    if not path:
+        raise InputError("release requires --release-manifest with explicit comparison and holdout evidence")
+    manifest = require_object(read_json(Path(path), "release manifest"), "release manifest")
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
+        raise InputError("release manifest.schema_version must be the integer 1")
+    if manifest.get("target_candidate_source") != target:
+        detected.append("release manifest target_candidate_source does not match explicit target")
+    records = manifest.get("records")
+    if not isinstance(records, list):
+        raise InputError("release manifest.records must be an array")
+    entries = {}
+    for index, raw in enumerate(records):
+        entry = require_object(raw, f"release manifest.records[{index}]")
+        side, filename = entry.get("side"), entry.get("path")
+        if side not in ("candidate", "baseline", "holdout", "baseline_holdout"):
+            raise InputError(f"release manifest.records[{index}].side is invalid")
+        if (not isinstance(filename, str) or not filename or Path(filename).name != filename
+                or "/" in filename or "\\" in filename or ":" in filename):
+            raise InputError(f"release manifest.records[{index}].path must be a direct result filename")
+        if not isinstance(entry.get("sha256"), str) or not SHA256.fullmatch(entry["sha256"]):
+            raise InputError(f"release manifest.records[{index}].sha256 must identify the original record bytes")
+        key = (side, filename)
+        if key in entries:
+            detected.append(f"release manifest: duplicate binding for {side} {filename}")
+        entries[key] = entry
+    exposures = manifest.get("holdout_exposures")
+    if not isinstance(exposures, list):
+        insufficient.append("release manifest.holdout_exposures must explicitly list exposed inputs (or [])")
+        exposures = []
+    return target, entries, exposures
+
+
+def validate_assertion_shape(raw_assertion: Any, location: str) -> dict[str, Any]:
+    assertion = require_object(raw_assertion, location)
+    require_nonempty_string(required_field(assertion, "id", location), f"{location}.id")
+    status = required_field(assertion, "status", location)
+    if not isinstance(status, str) or status not in ("pass", "fail", "unknown"):
+        raise InputError(f"{location}.status must be pass, fail, or unknown")
+    if not isinstance(required_field(assertion, "evidence", location), list):
+        raise InputError(f"{location}.evidence must be an array")
+    return assertion
+
+
+def check_reuse(reuse, record, entry, target, identity, directory, detected, insufficient):
+    before = (len(detected), len(insufficient))
+    if not isinstance(reuse, dict):
+        insufficient.append(f"{identity}: old or unknown candidate source requires reviewed reuse")
+        return False
+    bindings = {"source_hash": record["subject_source"].get("hash"),
+                "target_hash": target, "record_sha256": entry["sha256"]}
+    for field, expected in bindings.items():
+        if expected is None or reuse.get(field) != expected:
+            insufficient.append(f"{identity}.reuse.{field}: exact source/target/record binding is required")
+    claims = {
+        validate_assertion_shape(item, f"{identity}.assertions[{index}]")["id"]
+        for index, item in enumerate(record["assertions"])
+    }
+    if "loading" in record:
+        claims.add("loading")
+    scope = reuse.get("claim_scope")
+    if not isinstance(scope, list) or any(not isinstance(x, str) for x in scope) or set(scope) != claims:
+        insufficient.append(f"{identity}.reuse.claim_scope: must cover every assertion and loading claim")
+    reviewer = reuse.get("reviewer")
+    if (not isinstance(reviewer, dict) or not isinstance(reviewer.get("id"), str)
+            or not reviewer["id"].strip() or reviewer["id"] == record["actor"]["id"]):
+        insufficient.append(f"{identity}.reuse.reviewer: an identified reviewer distinct from actor is required")
+    if not isinstance(reuse.get("justification"), str) or not reuse["justification"].strip():
+        insufficient.append(f"{identity}.reuse.justification: dependency and claim validity reasoning is required")
+    check_capture_list(reuse.get("evidence"), f"{identity}.reuse.evidence", directory, detected, insufficient)
+    resources = reuse.get("resources")
+    if not isinstance(resources, list) or not resources:
+        insufficient.append(f"{identity}.reuse.resources: relevant source and target resource snapshots are required")
+        resources = []
+    seen = set()
+    for index, resource in enumerate(resources):
+        location = f"{identity}.reuse.resources[{index}]"
+        if not isinstance(resource, dict):
+            insufficient.append(f"{location}: resource must be an object")
+            continue
+        path = resource.get("path")
+        if (not isinstance(path, str) or not path or Path(path).is_absolute()
+                or ".." in Path(path).parts or "\\" in path or ":" in path):
+            insufficient.append(f"{location}: canonical bundle-relative resource path is required")
+        elif path in seen:
+            detected.append(f"{location}: duplicate reuse resource {path}")
+        seen.add(str(path))
+        for side in ("source", "target"):
+            check_capture_list([resource.get(side)], f"{location}.{side}", directory, detected, insufficient)
+        source, destination = resource.get("source"), resource.get("target")
+        if isinstance(source, dict) and isinstance(destination, dict) and source.get("sha256") != destination.get("sha256"):
+            detected.append(f"{location}: changed relevant resource cannot support unchanged-source reuse")
+    return before == (len(detected), len(insufficient))
+
+
+def check_release_binding(entry, record, filename, side, directory, target, detected, insufficient):
+    identity = f"{side} {filename}"
+    before = (len(detected), len(insufficient))
+    if entry is None:
+        insufficient.append(f"{identity}: missing release manifest binding")
+        return None, False
+    if hashlib.sha256((directory / filename).read_bytes()).hexdigest() != entry["sha256"]:
+        detected.append(f"{identity}: release manifest record hash mismatch")
+    conditions = entry.get("conditions")
+    values = {}
+    if not isinstance(conditions, dict):
+        insufficient.append(f"{identity}: explicit comparable conditions are required")
+        conditions = {}
+    if set(conditions) - set(COMPARABLE_FIELDS):
+        detected.append(f"{identity}: conditions include fields outside the canonical comparison contract")
+    for field in COMPARABLE_FIELDS:
+        item = conditions.get(field)
+        location = f"{identity}.conditions.{field}"
+        if (not isinstance(item, dict) or "value" not in item or contains_unknown(item["value"])
+                or item["value"] == {} or item["value"] == []):
+            insufficient.append(f"{location}: a known explicit comparison value is required")
+            continue
+        values[field] = canonical_json(item["value"])
+        check_capture_list(item.get("evidence"), f"{location}.evidence", directory, detected, insufficient)
+    for field in ("model", "host"):
+        value = record[field].get("id")
+        if not isinstance(value, str) or contains_unknown(value):
+            insufficient.append(f"{identity}.{field}.id: a non-empty known identity is required for release")
+    source_hash = record["subject_source"].get("hash")
+    if not isinstance(source_hash, str) or not SOURCE_HASH.fullmatch(source_hash):
+        insufficient.append(f"{identity}.subject_source.hash: a lowercase Git SHA or SHA-256 is required")
+    parameters = record["model"].get("parameters")
+    if not isinstance(parameters, dict) or contains_unknown(parameters):
+        insufficient.append(f"{identity}.model.parameters: an object without unknown values is required")
+    source_valid = True
+    if side in ("candidate", "holdout") and record["subject_source"].get("hash") != target:
+        source_valid = check_reuse(entry.get("reuse"), record, entry, target, identity,
+                                   directory, detected, insufficient)
+    valid = before == (len(detected), len(insufficient))
+    return values if valid else None, source_valid and valid
+
+
+def holdout_input_identity(raw, location, directory, detected, insufficient):
+    if not check_capture_list([raw], location, directory, detected, insufficient):
+        return None
+    value = read_json(directory / raw["path"], location)
+    if not isinstance(value, dict):
+        insufficient.append(f"{location}: blind input must be a JSON object")
+        return None
+    payload = {key: item for key, item in value.items() if key not in INPUT_LABELS}
+    if not payload:
+        insufficient.append(f"{location}: underlying input contains only identity labels")
+        return None
+    return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
 def validate_loading(raw: Any, location: str) -> dict[str, Any]:
@@ -558,13 +784,23 @@ def validate_holdout_shape(record: Any, location: str) -> dict[str, Any]:
 def load_holdout(directory: Path) -> list[tuple[str, dict[str, Any]]]:
     if not directory.is_dir():
         raise InputError(f"holdout path is not a directory: {directory}")
-    paths = sorted(directory.glob("*.holdout.json"))
+    try:
+        root = directory.resolve()
+        paths = sorted(directory.glob("*.holdout.json"), key=lambda path: path.name)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise InputError(f"cannot enumerate holdout directory {directory}: {error}") from error
     if not paths:
         raise InputError(f"holdout directory contains no *.holdout.json files: {directory}")
-    return [
-        (path.name, validate_holdout_shape(read_json(path, path.name), path.name))
-        for path in paths
-    ]
+    scenarios = []
+    for path in paths:
+        try:
+            path.resolve().relative_to(root)
+        except ValueError as error:
+            raise InputError(f"holdout file escapes holdout directory: {path.name}") from error
+        except (OSError, RuntimeError) as error:
+            raise InputError(f"invalid holdout file path {path.name!r}: {error}") from error
+        scenarios.append((path.name, validate_holdout_shape(read_json(path, path.name), path.name)))
+    return scenarios
 
 
 def walk_result_assertions(
@@ -598,16 +834,8 @@ def walk_result_assertions(
     seen_assertions: set[str] = set()
     for index, raw_assertion in enumerate(result["assertions"]):
         location = f"{identity}.assertions[{index}]"
-        assertion = require_object(raw_assertion, location)
-        assertion_id = require_nonempty_string(
-            required_field(assertion, "id", location), f"{location}.id"
-        )
-        status = required_field(assertion, "status", location)
-        if not isinstance(status, str) or status not in status_counts:
-            raise InputError(f"{location}.status must be pass, fail, or unknown")
-        evidence = required_field(assertion, "evidence", location)
-        if not isinstance(evidence, list):
-            raise InputError(f"{location}.evidence must be an array")
+        assertion = validate_assertion_shape(raw_assertion, location)
+        assertion_id, status, evidence = assertion["id"], assertion["status"], assertion["evidence"]
         status_counts[status] += 1
         if assertion_id in seen_assertions:
             detected.append(f"{identity}: duplicate assertion '{assertion_id}'")
@@ -640,7 +868,9 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
     if arguments.ids:
         raise InputError("the release profile verifies the full scope; --ids is not accepted")
     missing = [
-        f"--{field}" for field in ("baseline", "holdout") if not getattr(arguments, field)
+        "--" + field.replace("_", "-")
+        for field in ("baseline", "holdout", "baseline_holdout")
+        if not getattr(arguments, field, None)
     ]
     if missing:
         raise InputError(
@@ -659,6 +889,7 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
     baseline_directory = Path(arguments.baseline)
     baseline_items = load_results(baseline_directory)
     holdout_items = load_holdout(Path(arguments.holdout))
+    baseline_holdout_items = load_holdout(Path(arguments.baseline_holdout))
 
     expected_variants: dict[tuple[str, str], set[str]] = {}
     for case in selected:
@@ -671,6 +902,19 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
 
     detected: list[str] = []
     insufficient: list[str] = []
+    target_source, release_entries, exposures = load_release_manifest(arguments, detected, insufficient)
+    comparable = {"candidate": {}, "baseline": {}}
+    valid_candidate_keys = set()
+    used_bindings = set()
+    synthetic_references = set()
+    manifest_synthetic_references = set()
+
+    def record_synthetic(side, record, entry):
+        raw_keys = synthetic_reference_keys(record)
+        manifest_keys = synthetic_reference_keys(entry)
+        synthetic_references.update((side, key) for key in raw_keys | manifest_keys)
+        manifest_synthetic_references.update((side, key) for key in manifest_keys)
+        return bool(raw_keys | manifest_keys)
 
     def process_side(items, directory, *, strict, run_label):
         status_counts = {"pass": 0, "fail": 0, "unknown": 0}
@@ -695,6 +939,15 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
                 detected.append(f"{identity}: duplicate case/variant/repeat result")
             seen.add(key)
             runs[key] = result
+            binding_key = (run_label, filename)
+            used_bindings.add(binding_key)
+            values, source_valid = check_release_binding(
+                release_entries.get(binding_key), result, filename, run_label, directory,
+                target_source, detected, insufficient,
+            )
+            comparable[run_label][key] = values
+            if run_label == "candidate" and source_valid:
+                valid_candidate_keys.add(key)
             if result["judge"]["id"] == result["actor"]["id"]:
                 insufficient.append(f"{identity}: judge identity must be distinct from actor identity")
             source_unknown = (
@@ -705,13 +958,13 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
             host_unknown = result["host"]["id"] is None
             if (source_unknown or model_unknown or host_unknown) and not result["evidence_limits"]:
                 insufficient.append(f"{identity}: unknown source/model/host requires evidence_limits")
-            synthetic += int(
-                walk_result_assertions(
-                    result, identity, expected_variants.get(variant_key, set()),
-                    directory, detected, insufficient,
-                    strict_statuses=strict, status_counts=status_counts,
-                )
+            raw_synthetic = walk_result_assertions(
+                result, identity, expected_variants.get(variant_key, set()),
+                directory, detected, insufficient,
+                strict_statuses=strict, status_counts=status_counts,
             )
+            synthetic += int(record_synthetic(run_label, result, release_entries.get(binding_key))
+                             or raw_synthetic)
             if strict:
                 if "loading" not in result:
                     insufficient.append(f"{identity}: release results require loading data")
@@ -725,7 +978,7 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
     candidate_counts, candidate_runs, candidate_synthetic, candidate_run_ids, variants_seen = (
         process_side(candidate_items, results_directory, strict=True, run_label="candidate")
     )
-    baseline_counts, baseline_runs, _, baseline_run_ids, _ = process_side(
+    baseline_counts, baseline_runs, baseline_synthetic, baseline_run_ids, _ = process_side(
         baseline_items, baseline_directory, strict=False, run_label="baseline"
     )
 
@@ -738,7 +991,9 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
         insufficient.append(f"missing candidate result for {case_id}/{variant_id}")
 
     repeats_by_variant: dict[tuple[str, str], set[int]] = {}
-    for case_id, variant_id, repeat_index in candidate_runs:
+    for case_id, variant_id in expected_variants:
+        repeats_by_variant[(case_id, variant_id)] = set()
+    for case_id, variant_id, repeat_index in valid_candidate_keys:
         repeats_by_variant.setdefault((case_id, variant_id), set()).add(repeat_index)
     for (case_id, variant_id), repeats in sorted(repeats_by_variant.items()):
         if case_id in KEY_RELEASE_CASES and len(repeats) < REQUIRED_KEY_REPEATS:
@@ -747,6 +1002,7 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
                 f"found {len(repeats)}"
             )
 
+    valid_pair_keys = set()
     for key, candidate_result in sorted(candidate_runs.items()):
         baseline_result = baseline_runs.get(key)
         case_id, variant_id, repeat_index = key
@@ -755,31 +1011,151 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
                 f"missing baseline run for {case_id}/{variant_id} repeat {repeat_index}"
             )
             continue
-        if (
-            baseline_result["model"]["id"] != candidate_result["model"]["id"]
-            or baseline_result["host"]["id"] != candidate_result["host"]["id"]
-            or baseline_result["model"]["parameters"] != candidate_result["model"]["parameters"]
-        ):
+        baseline_metadata, candidate_metadata = release_metadata(baseline_result), release_metadata(candidate_result)
+        metadata_known = baseline_metadata is not None and candidate_metadata is not None
+        metadata_match = metadata_known and canonical_json(baseline_metadata) == canonical_json(candidate_metadata)
+        if metadata_known and not metadata_match:
             detected.append(
                 f"{key[0]}/{key[1]} repeat {repeat_index}: baseline conditions do not match "
                 "candidate (model, host, or parameters differ)"
             )
+        candidate_conditions = comparable["candidate"].get(key)
+        baseline_conditions = comparable["baseline"].get(key)
+        if candidate_conditions is not None and baseline_conditions is not None:
+            differing = [field for field in COMPARABLE_FIELDS
+                         if candidate_conditions[field] != baseline_conditions[field]]
+            if differing:
+                detected.append(f"{case_id}/{variant_id} repeat {repeat_index}: baseline conditions "
+                                f"do not match candidate ({', '.join(differing)})")
+            elif metadata_match and key in valid_candidate_keys:
+                valid_pair_keys.add(key)
 
     category_counts: dict[str, int] = {}
-    scenario_ids: set[str] = set()
-    for filename, scenario in holdout_items:
-        identity = f"holdout {filename} ({scenario['scenario_id']})"
-        if scenario["scenario_id"] in scenario_ids:
-            detected.append(f"{identity}: duplicate scenario_id '{scenario['scenario_id']}'")
-        scenario_ids.add(scenario["scenario_id"])
-        category_counts[scenario["category"]] = category_counts.get(scenario["category"], 0) + 1
-        if scenario["judge"]["id"] == scenario["actor"]["id"]:
-            insufficient.append(f"{identity}: judge identity must be distinct from actor identity")
-        holdout_counts = {"pass": 0, "fail": 0, "unknown": 0}
-        walk_result_assertions(
-            scenario, identity, set(), Path(arguments.holdout),
-            detected, insufficient, strict_statuses=True, status_counts=holdout_counts,
-        )
+    exposed_ids = set()
+    holdout_directory = Path(arguments.holdout)
+    holdout_sides = (
+        ("holdout", holdout_items, holdout_directory),
+        ("baseline_holdout", baseline_holdout_items, Path(arguments.baseline_holdout)),
+    )
+    exposure_synthetic = synthetic_reference_keys(exposures)
+    synthetic_references.update(("holdout", key) for key in exposure_synthetic)
+    manifest_synthetic_references.update(("holdout", key) for key in exposure_synthetic)
+    for index, exposure in enumerate(exposures):
+        location = f"holdout_exposures[{index}]"
+        if not isinstance(exposure, dict):
+            insufficient.append(f"{location}: exposure must be an object")
+            continue
+        input_id = holdout_input_identity(exposure.get("input"), f"{location}.input",
+                                          holdout_directory, detected, insufficient)
+        check_capture_list(exposure.get("evidence"), f"{location}.evidence", holdout_directory,
+                           detected, insufficient)
+        if input_id:
+            exposed_ids.add(input_id)
+    # Read all promoted identities before counting, regardless of filename order.
+    for side, items, directory in holdout_sides:
+        for filename, scenario in items:
+            entry = release_entries.get((side, filename), {})
+            holdout = entry.get("holdout")
+            if isinstance(holdout, dict) and holdout.get("exposure") == "promoted_regression":
+                input_id = holdout_input_identity(holdout.get("input"), f"{side} {filename}.holdout.input",
+                                                  directory, detected, insufficient)
+                if input_id:
+                    exposed_ids.add(input_id)
+
+    holdout_runs, holdout_statistics = {}, {}
+    for side, items, directory in holdout_sides:
+        runs, input_ids, run_ids = {}, set(), set()
+        counts = {"pass": 0, "fail": 0, "unknown": 0}
+        synthetic = 0
+        for filename, scenario in items:
+            scenario_id = scenario["scenario_id"]
+            identity = f"{side} {filename} ({scenario_id})"
+            if scenario_id in runs:
+                detected.append(f"{identity}: duplicate scenario_id '{scenario_id}'")
+            run_ids.add(scenario["run_id"])
+            binding_key = (side, filename)
+            used_bindings.add(binding_key)
+            entry = release_entries.get(binding_key)
+            values, source_valid = check_release_binding(entry, scenario, filename, side, directory,
+                                                         target_source, detected, insufficient)
+            holdout = entry.get("holdout") if entry else None
+            input_id, eligible = None, False
+            if not isinstance(holdout, dict):
+                insufficient.append(f"{identity}: holdout input identity and exposure evidence are required")
+            else:
+                input_id = holdout_input_identity(holdout.get("input"), f"{identity}.input",
+                                                  directory, detected, insufficient)
+                exposure_valid = check_capture_list(holdout.get("evidence"), f"{identity}.exposure.evidence",
+                                                    directory, detected, insufficient)
+                duplicate = input_id is not None and input_id in input_ids
+                if duplicate:
+                    detected.append(f"{identity}: duplicate underlying holdout input")
+                if input_id:
+                    input_ids.add(input_id)
+                status = holdout.get("exposure")
+                if status not in ("unexposed", "promoted_regression"):
+                    insufficient.append(f"{identity}: holdout exposure is unknown or missing")
+                if input_id in exposed_ids and status == "unexposed":
+                    detected.append(f"{identity}: exposed input cannot be an unexposed holdout")
+                eligible = bool(source_valid and exposure_valid and input_id and not duplicate
+                                and status == "unexposed" and input_id not in exposed_ids)
+            if scenario["judge"]["id"] == scenario["actor"]["id"]:
+                insufficient.append(f"{identity}: judge identity must be distinct from actor identity")
+            if not isinstance(scenario["model"].get("parameters"), dict):
+                insufficient.append(f"{identity}: model parameters are required for holdout pairing")
+                eligible = False
+            raw_synthetic = walk_result_assertions(
+                scenario, identity, set(), directory, detected, insufficient,
+                strict_statuses=side == "holdout", status_counts=counts,
+            )
+            synthetic += int(record_synthetic(side, scenario, entry) or raw_synthetic)
+            runs[scenario_id] = {"record": scenario, "input_id": input_id,
+                                 "conditions": values, "eligible": eligible}
+        if len(run_ids) > 1:
+            detected.append(f"{side} results directory contains multiple run_id values")
+        holdout_runs[side] = runs
+        holdout_statistics[side] = {"counts": counts, "synthetic": synthetic, "records": len(items)}
+
+    baseline_used = set()
+    for scenario_id, candidate in holdout_runs["holdout"].items():
+        baseline_id = scenario_id
+        baseline = holdout_runs["baseline_holdout"].get(baseline_id)
+        if baseline is None and candidate["input_id"] is not None:
+            matches = [(key, item) for key, item in holdout_runs["baseline_holdout"].items()
+                       if item["input_id"] == candidate["input_id"]]
+            if len(matches) == 1:
+                baseline_id, baseline = matches[0]
+        if baseline is None:
+            insufficient.append(f"missing baseline holdout counterpart for {scenario_id}")
+            continue
+        if baseline_id in baseline_used:
+            detected.append(f"{scenario_id}: baseline holdout counterpart is reused by another scenario")
+        baseline_used.add(baseline_id)
+        different = []
+        if candidate["input_id"] is not None and baseline["input_id"] is not None:
+            if candidate["input_id"] != baseline["input_id"]:
+                different.append("underlying input")
+        if candidate["record"]["category"] != baseline["record"]["category"]:
+            different.append("category")
+        for field in COMPARABLE_FIELDS:
+            if candidate["conditions"] is not None and baseline["conditions"] is not None:
+                if candidate["conditions"][field] != baseline["conditions"][field]:
+                    different.append(field)
+        left, right = release_metadata(candidate["record"]), release_metadata(baseline["record"])
+        if left is not None and right is not None:
+            for field in left:
+                if canonical_json(left[field]) != canonical_json(right[field]):
+                    different.append(field)
+        if different:
+            detected.append(f"{scenario_id}: baseline holdout conditions do not match candidate "
+                            f"({', '.join(different)})")
+        elif candidate["eligible"] and baseline["eligible"]:
+            category = candidate["record"]["category"]
+            category_counts[category] = category_counts.get(category, 0) + 1
+    for scenario_id in sorted(set(holdout_runs["baseline_holdout"]) - baseline_used):
+        insufficient.append(f"missing candidate holdout counterpart for {scenario_id}")
+    for side, filename in sorted(set(release_entries) - used_bindings):
+        insufficient.append(f"release manifest binding has no submitted record: {side} {filename}")
     if sum(category_counts.values()) < MIN_HOLDOUT_SCENARIOS:
         insufficient.append(
             f"holdout has {sum(category_counts.values())} scenario(s), requires {MIN_HOLDOUT_SCENARIOS}"
@@ -794,6 +1170,8 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
 
     paired_loading = []
     for key, candidate_result in candidate_runs.items():
+        if key not in valid_pair_keys:
+            continue
         baseline_result = baseline_runs.get(key)
         if baseline_result is None or "loading" not in baseline_result:
             continue
@@ -825,12 +1203,22 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
         f"unknown={candidate_counts['unknown']}; synthetic={candidate_synthetic}); "
         f"baseline records={len(baseline_items)} "
         f"(pass={baseline_counts['pass']} fail={baseline_counts['fail']} "
-        f"unknown={baseline_counts['unknown']})"
+        f"unknown={baseline_counts['unknown']}; synthetic={baseline_synthetic})"
     )
+    for side, statistics in holdout_statistics.items():
+        counts = statistics["counts"]
+        print(f"{side} records={statistics['records']} (pass={counts['pass']} fail={counts['fail']} "
+              f"unknown={counts['unknown']}; synthetic={statistics['synthetic']})")
+    print(f"PROVENANCE DECLARATIONS: synthetic evidence references={len(synthetic_references)}; "
+          f"manifest synthetic evidence references={len(manifest_synthetic_references)} "
+          "(unique side/path/hash identities; any synthetic material is excluded from actual model acceptance)")
     print(
         f"holdout scenarios={sum(category_counts.values())} categories="
         + ",".join(f"{category}:{category_counts.get(category, 0)}" for category in HOLDOUT_CATEGORIES)
     )
+    print(f"PAIRED COVERAGE: AT comparable pairs={len(valid_pair_keys)}; "
+          f"holdout comparable unexposed pairs={sum(category_counts.values())} "
+          "(assertion outcomes remain separate)")
     print(
         "COMPARISON: paired runs=" + str(len(paired_loading))
         + "; median loading baseline="
@@ -845,9 +1233,11 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
     for error in insufficient:
         print(f"INSUFFICIENT: {error}")
     print(
-        "BOUNDARY: this checker verifies material shape, scope, hashes, repeats, pairing, "
-        "holdout coverage, and resolvable references; it does not authenticate semantic "
-        "truth, which an independent reviewer (agent or human) must inspect"
+        "BOUNDARY: this checker verifies material shape, scope, hashes, target-source bindings, "
+        "repeats, explicit comparison values, holdout input/exposure coverage and references; "
+        "it cannot authenticate capture truth, complete attempt/exposure history or a reuse "
+        "dependency review. An independent reviewer must inspect these. Synthetic fixtures "
+        "are mechanism tests, never actual model or release acceptance evidence"
     )
     if detected:
         print(f"RELEASE FAILED: {len(detected)} detected failure(s)")

@@ -18,7 +18,9 @@ When analyzing external or agent-produced material, keep conclusions within the 
 3. **Domain:** add only the engineering guidance needed for the affected surface.
 4. **Actual capabilities:** select an execution, review, browser, or subagent workflow only when the host provides it. Use the fallback in [using-devflow](../using-devflow/SKILL.md) when a selected capability is unavailable.
 
-Do not load all skills. Metadata discovery is enough until a route selects a skill. Read each selected `SKILL.md` completely before depending on it, continue a truncated read until the needed rules are available, and reuse still-valid rules already present in context.
+Do not load all skills. Metadata discovery is enough until a route selects a skill. Read each selected `SKILL.md` completely before depending on it, and reuse still-valid rules already present in context.
+
+Group independent reads or request ranges to fit the aggregate outer response capacity. Assess actual returned coverage, not nested command success; after truncation, preserve valid covered ranges and obtain only missing ranges currently required. Full selected-entry coverage and all applicable contract boundaries remain required. See [Skill Loading and Context Recovery](../using-devflow/references/loading-recovery.md).
 
 Before a state change, apply the canonical [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) and the authorization gate above. Before selecting or reporting checks, apply the canonical [Evidence Contract](../using-devflow/references/evidence-contract.md). Before a Git, installation, release, or other delivery step, apply the canonical [Delivery Contract](../using-devflow/references/delivery-contract.md). These contracts remain the sources of truth; route selection never supplies authority or evidence.
 

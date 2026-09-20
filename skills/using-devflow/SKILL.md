@@ -4,7 +4,7 @@ description: Explains how to find, invoke, and prioritize the Devflow skills, in
 ---
 
 <SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, do not reroute the assignment or load unrelated skills. You must still read and apply the shared [Phase and Delivery Contract](references/phase-contract.md), [Authorization and Trust Contract](references/authorization-contract.md), and [Delivery Contract](references/delivery-contract.md); their scope, authorization, evidence, action, and completion boundaries apply to the assigned task.
+If you were dispatched as a subagent to execute a specific task, do not reroute the assignment or load unrelated skills. You must still read and apply the shared [Phase and Delivery Contract](references/phase-contract.md), [Authorization and Trust Contract](references/authorization-contract.md), and [Delivery Contract](references/delivery-contract.md); their scope, authorization, evidence, action, and completion boundaries apply to the assigned task. This obligation is satisfied by complete retained coverage when the retained source identity, task phase, constraints, and relevant rules are unchanged. Read a named contract only when its content is missing, partial or truncated in the outer return, invalidated, or newly relevant; a new turn, handoff, subagent role, or unchanged conditions alone does not justify rereading. For any entry or contract without that retained coverage, read the selected entry completely and recover only missing ranges after aggregate truncation.
 </SUBAGENT-STOP>
 
 # Using Devflow
