@@ -8,13 +8,24 @@ Devflow 是一个自包含的 AI 开发工作流技能包：一个路由器加�
 
 ```text
 devflow/
-  SKILL.md              # 单技能文件夹模式宿主的入口垫片
-  AGENTS.md             # 读取 AGENTS.md 的宿主（Codex）的精简入口
-  .claude-plugin/       # Claude Code 插件清单
-  scripts/check-refs.sh # 引用完整性校验器（CI 中运行）
+  SKILL.md                # 单技能文件夹模式宿主的入口垫片
+  AGENTS.md               # 读取 AGENTS.md 的宿主（Codex）的精简入口
+  .claude-plugin/         # Claude Code 插件清单
+  templates/              # 项目覆盖模板的旧版镜像副本
   skills/
-    devflow/            # 路由器——从这里开始
-    <技能名>/            # 每个技能一个目录：SKILL.md + 可选的 references/
+    devflow/              # 路由器——从这里开始
+    <技能名>/              # 每个技能一个目录：SKILL.md + 可选的 references/
+  scripts/
+    check-refs.sh         # 维护入口：运行全部结构检查
+    check-bundle.py       # 目录、结构、引用解析与入口预算检查
+    check-behavior.py     # 验收场景材料、输入包与证据校验
+    install-bundle.py     # 三种布局的安装计划 / 暂存 / 验证
+    usage.py              # 默认关闭的本地使用记录与离线报告
+  tests/
+    maintenance/          # 上述脚本的行为测试
+    behavior/cases/       # 40 个验收场景
+  docs/devflow/           # 安装、宿主支持、发布检查单
+  specs/changes/          # 需求与计划文档
 ```
 
 路由器（`skills/devflow/SKILL.md`）按**请求的交付物与阶段**（Understand / Specify / Implement / VerifyReview / Deliver）优先路由，其次看影响与风险、领域面，最后看宿主实际提供的能力。仅要文档或仅要计划的请求以文档合法结束——计划完成不隐含建分支、提交或实施。33 个旧技能名全部保留，通过 `skills/devflow/references/skill-catalog.json` 解析到规范入口。
@@ -52,8 +63,6 @@ ln -s /path/to/devflow/skills/test-driven-development ~/.codex/skills/test-drive
 
 各宿主的支持等级与已原生验证的范围见[宿主支持表](docs/devflow/host-support.md)。
 
-2.0.0 标签已发布，但完整 V2.0 验收仍未完成：原生宿主覆盖及部分最终行为证据需要补齐。支持表列明这些限制；版本已发布或离线 CI 通过不能代替相应验收结果。
-
 ## 使用
 
 在开发任务开始前，让助手使用 Devflow：
@@ -76,11 +85,11 @@ Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关
 
 ## 维护
 
-- 提交技能改动前运行 `bash scripts/check-refs.sh`——它校验 frontmatter、交叉引用、文件体积、目录/摘要一致性，并委托给 `python scripts/check-bundle.py`。再跑 `python -m unittest discover -s tests/maintenance -p 'test_*.py'` 执行维护工具测试，命令会报告当前数量。CI 执行这些离线检查，不执行或判定真实模型行为。
+- 提交技能改动前运行 `bash scripts/check-refs.sh`——它校验 frontmatter、反引号引用、体积预算，并委托给 `python scripts/check-bundle.py`：后者解析包内每一条 Markdown 链接与反引号路径、检查目录与模板镜像、并按每入口的行数与字节双预算报出总入口加载量。再跑 `python -m unittest discover -s tests/maintenance -p 'test_*.py'`，即工具链的 156 项行为测试。CI 在每次 push 时运行以上全部检查。
 - 安装或切换安装：`python scripts/install-bundle.py plan|stage|verify` 配合[安装与切换指南](docs/devflow/installation.md)——可审差异、仅限 bundle 自有路径的备份、显式切换授权、有界恢复。
 - 可选的本地使用记录（`python scripts/usage.py status|enable|disable|append|export|report --store <目录>`）**默认关闭**，只记录白名单内的最小事件，绝不记录原始对话或凭证，任何工作流步骤都不依赖它。
 - **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查），并在 `CHANGELOG.md` 中为新版本补一条记录。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
 - **保持 `README.md` 与 `README.zh-CN.md` 同步**——改任何一份都要镜像到另一份。
-- **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。
+- **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。维护测试已覆盖其中可机械核对的部分（每个入口文档都声明当前技能数、包含路由器定义的全部阶段名、并指向路由器与公共合同目录）；正文措辞仍靠人工复核。
 - **修剪需要证据。** 单纯低频不能成为删除技能的理由：没有适用任务分母、适用性不明时，价值记为未知（deprecation-and-migration 入口定义了完整评估）。
 - **度量技能改动。** 每次改技能时，在 PR 里写一句预期的行为变化；之后回头看是否发生。没有可观察效果的流程就是流程剧场——砍掉它。
