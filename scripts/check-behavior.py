@@ -489,8 +489,9 @@ def check_evidence_reference(
     if not is_file:
         insufficient.append(f"{location}: referenced evidence file is missing: {path_value}")
         return provenance
-    if resolved.name.endswith(".result.json"):
-        insufficient.append(f"{location}: a result declaration cannot be its own evidence: {path_value}")
+    declaration_suffixes = (".result.json", ".holdout.json")
+    if any(path.name.lower().endswith(declaration_suffixes) for path in (declared, resolved)):
+        insufficient.append(f"{location}: a result or holdout declaration cannot serve as capture evidence: {path_value}")
         return provenance
     try:
         actual_digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
@@ -556,8 +557,6 @@ def check_capture_list(raw, location, directory, detected, insufficient) -> bool
         )
         if provenance not in CAPTURE_PROVENANCE:
             insufficient.append(f"{location}[{index}]: independent capture evidence is required")
-        if isinstance(reference, dict) and str(reference.get("path", "")).endswith(".holdout.json"):
-            insufficient.append(f"{location}[{index}]: a holdout declaration cannot be its own evidence")
     return before == (len(detected), len(insufficient))
 
 

@@ -469,6 +469,26 @@ class BehaviorCheckerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("evidence hash mismatch", result.stdout)
 
+    def test_checkpoint_rejects_holdout_declarations_as_capture(self):
+        self.write_cases()
+        declaration = self.results / "other.holdout.json"
+        declaration.write_text('{"assertions": [{"status": "pass"}]}', encoding="utf-8")
+        reference = {"path": declaration.name, "sha256": self.sha256(declaration),
+                     "provenance": "host_capture"}
+        for surface in ("trace", "artifact", "assertion"):
+            with self.subTest(surface=surface):
+                record = self.result_record()
+                if surface == "trace":
+                    record["trace"] = copy.deepcopy(reference)
+                elif surface == "artifact":
+                    record["actual_artifacts"] = [copy.deepcopy(reference)]
+                else:
+                    record["assertions"][0]["evidence"] = [copy.deepcopy(reference)]
+                self.write_result(record)
+                result = self.verify()
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn("declaration cannot", result.stdout)
+
     def test_wrong_evidence_provenance_type_is_controlled_input_error(self):
         self.write_cases()
         record = self.result_record()
@@ -876,6 +896,54 @@ class ReleaseProfileTests(BehaviorCheckerTests):
         self.assertEqual(code, 0, output)
         self.assertIn("candidate records=60 (pass=120 fail=0 unknown=0; synthetic=1)", output)
         self.assertIn("synthetic evidence references=1", output)
+
+    def test_release_rejects_holdout_declarations_as_raw_capture(self):
+        # These are declaration-only mechanism probes, never host execution evidence.
+        for side, directory in (("holdout", self.holdout), ("baseline_holdout", self.baseline_holdout)):
+            with self.subTest(side=side):
+                manifest = self.host_labeled_fixture()
+                declaration = directory / "holdout-01.holdout.json"
+                path = directory / "holdout-00.holdout.json"
+                reference = {"path": declaration.name, "sha256": self.sha256(declaration),
+                             "provenance": "host_capture"}
+                record = json.loads(path.read_text(encoding="utf-8"))
+                record["trace"] = copy.deepcopy(reference)
+                record["actual_artifacts"] = [copy.deepcopy(reference)]
+                record["assertions"][0]["evidence"] = [copy.deepcopy(reference)]
+                path.write_text(json.dumps(record), encoding="utf-8")
+                entry = next(e for e in manifest["records"] if e["side"] == side and e["path"] == path.name)
+                entry["sha256"] = self.sha256(path)
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify(fixture_mode=False)
+                self.assertEqual(code, 2, output)
+                self.assertIn("declaration cannot", output)
+                self.assertNotIn("RELEASE MATERIAL VERIFIED", output)
+
+    def test_release_rejects_declaration_capture_symlinks(self):
+        manifest = self.host_labeled_fixture()
+        evidence = self.holdout / "evidence"
+        evidence.mkdir()
+        declaration = evidence / "other.HOLDOUT.JSON"
+        declaration.write_bytes((self.holdout / "holdout-01.holdout.json").read_bytes())
+        alias = evidence / "captured-trace.txt"
+        try:
+            alias.symlink_to(declaration)
+        except OSError as error:
+            self.skipTest(f"symlinks unavailable: {error}")
+        reference = {"path": "evidence/captured-trace.txt", "sha256": self.sha256(declaration),
+                     "provenance": "host_capture"}
+        path = self.holdout / "holdout-00.holdout.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["trace"] = copy.deepcopy(reference)
+        path.write_text(json.dumps(record), encoding="utf-8")
+        entry = next(e for e in manifest["records"] if e["side"] == "holdout" and e["path"] == path.name)
+        entry["sha256"] = self.sha256(path)
+        entry["conditions"]["budget"]["evidence"] = [copy.deepcopy(reference)]
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify(fixture_mode=False)
+        self.assertEqual(code, 2, output)
+        self.assertIn("declaration cannot", output)
+        self.assertNotIn("RELEASE MATERIAL VERIFIED", output)
 
     def test_release_missing_baseline_holdout_counterpart_is_insufficient(self):
         self.write_release_fixture()

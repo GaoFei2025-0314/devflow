@@ -4,6 +4,7 @@ All notable changes to the Devflow plugin. Versions follow the `version` field i
 
 ## Unreleased
 
+- Reject result and holdout declarations as capture evidence across checkpoint, release and manifest references, including filename case variants and symlink aliases.
 - Validate installation manifest schemas and complete source-derived file/link coverage. Installed bytes are checked against the supplied bundle, including files copied through internal directory links, so rewriting manifest hashes cannot conceal modified content.
 - Validate required holdout run fields before reading assertions, reporting malformed input as a controlled input error.
 - Reject synthetic evidence for release acceptance by default. The explicit `--allow-synthetic-fixtures` mode verifies tooling fixtures only and cannot report release acceptance.
