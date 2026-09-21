@@ -49,6 +49,8 @@ def parse_arguments() -> argparse.Namespace:
     verify_parser.add_argument("--baseline-holdout", help="paired baseline holdout directory (release profile)")
     verify_parser.add_argument("--target-candidate-source", help="target Git SHA or source SHA-256 (release)")
     verify_parser.add_argument("--release-manifest", help="bound comparison, reuse and holdout metadata JSON")
+    verify_parser.add_argument("--allow-synthetic-fixtures", action="store_true",
+                               help="release mechanism tests only; never establishes release acceptance")
     return parser.parse_args()
 
 
@@ -356,6 +358,11 @@ def validate_result_shape(record: Any, location: str) -> dict[str, Any]:
     repeat_index = required_field(result, "repeat_index", location)
     if type(repeat_index) is not int or repeat_index < 1:
         raise InputError(f"{location}.repeat_index must be a positive integer")
+    return validate_run_fields(result, location)
+
+
+def validate_run_fields(result: dict[str, Any], location: str, *, require_action_target: bool = True) -> dict[str, Any]:
+    """Validate fields shared by ordinary and holdout execution records."""
 
     source = require_object(required_field(result, "subject_source", location), f"{location}.subject_source")
     for field in ("version", "hash"):
@@ -392,7 +399,10 @@ def validate_result_shape(record: Any, location: str) -> dict[str, Any]:
     for index, raw_action in enumerate(actions):
         action_location = f"{location}.actual_actions[{index}]"
         action = require_object(raw_action, action_location)
-        for field in ("action", "target", "outcome"):
+        fields = ("action", "outcome")
+        if require_action_target:
+            fields += ("target",)
+        for field in fields:
             require_nonempty_string(required_field(action, field, action_location), f"{action_location}.{field}")
     artifacts = required_field(result, "actual_artifacts", location)
     if not isinstance(artifacts, list):
@@ -578,8 +588,13 @@ def load_release_manifest(arguments, detected, insufficient):
     if not path:
         raise InputError("release requires --release-manifest with explicit comparison and holdout evidence")
     manifest = require_object(read_json(Path(path), "release manifest"), "release manifest")
-    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
-        raise InputError("release manifest.schema_version must be the integer 1")
+    version = manifest.get("schema_version")
+    if type(version) is not int or version not in (1, 2):
+        raise InputError("release manifest.schema_version must be the integer 1 or 2")
+    if version == 2:
+        collection_id = manifest.get("collection_id")
+        if not isinstance(collection_id, str) or not SAFE_ID.fullmatch(collection_id):
+            raise InputError("release manifest.collection_id must be an input-safe ID")
     if manifest.get("target_candidate_source") != target:
         detected.append("release manifest target_candidate_source does not match explicit target")
     records = manifest.get("records")
@@ -596,6 +611,15 @@ def load_release_manifest(arguments, detected, insufficient):
             raise InputError(f"release manifest.records[{index}].path must be a direct result filename")
         if not isinstance(entry.get("sha256"), str) or not SHA256.fullmatch(entry["sha256"]):
             raise InputError(f"release manifest.records[{index}].sha256 must identify the original record bytes")
+        if version == 2:
+            if not isinstance(entry.get("run_id"), str) or not SAFE_ID.fullmatch(entry["run_id"]):
+                raise InputError(f"release manifest.records[{index}].run_id must bind an original run")
+            root = entry.get("evidence_root")
+            if (not isinstance(root, str) or not root or any(c in root for c in ("\\", ":", "\x00"))
+                    or any(part in ("", ".", "..") for part in root.split("/"))):
+                raise InputError(f"release manifest.records[{index}].evidence_root must be a canonical relative directory")
+        elif "evidence_root" in entry or "run_id" in entry:
+            raise InputError("per-record evidence_root and run_id require release manifest schema_version 2")
         key = (side, filename)
         if key in entries:
             detected.append(f"release manifest: duplicate binding for {side} {filename}")
@@ -604,7 +628,28 @@ def load_release_manifest(arguments, detected, insufficient):
     if not isinstance(exposures, list):
         insufficient.append("release manifest.holdout_exposures must explicitly list exposed inputs (or [])")
         exposures = []
-    return target, entries, exposures
+    return target, entries, exposures, version
+
+
+def collection_evidence_directories(entries, directories, detected):
+    """Keep each immutable run's evidence namespace inside its result side."""
+    roots, runs_by_root = {}, {}
+    for key, entry in entries.items():
+        side, filename = key
+        directory = directories[side]
+        try:
+            root = (directory / entry["evidence_root"]).resolve()
+            root.relative_to(directory.resolve())
+        except (OSError, ValueError, RuntimeError) as error:
+            raise InputError(f"{side} {filename}: evidence_root escapes or cannot be resolved") from error
+        if not root.is_dir():
+            raise InputError(f"{side} {filename}: evidence_root is not an existing directory")
+        run_key = (side, root)
+        if run_key in runs_by_root and runs_by_root[run_key] != entry["run_id"]:
+            detected.append(f"{side} {filename}: evidence_root binds multiple run_id values")
+        runs_by_root[run_key] = entry["run_id"]
+        roots[key] = root
+    return roots
 
 
 def validate_assertion_shape(raw_assertion: Any, location: str) -> dict[str, Any]:
@@ -669,7 +714,8 @@ def check_reuse(reuse, record, entry, target, identity, directory, detected, ins
     return before == (len(detected), len(insufficient))
 
 
-def check_release_binding(entry, record, filename, side, directory, target, detected, insufficient):
+def check_release_binding(entry, record, filename, side, directory, target, detected, insufficient,
+                          evidence_directory):
     identity = f"{side} {filename}"
     before = (len(detected), len(insufficient))
     if entry is None:
@@ -677,6 +723,8 @@ def check_release_binding(entry, record, filename, side, directory, target, dete
         return None, False
     if hashlib.sha256((directory / filename).read_bytes()).hexdigest() != entry["sha256"]:
         detected.append(f"{identity}: release manifest record hash mismatch")
+    if "run_id" in entry and entry["run_id"] != record["run_id"]:
+        detected.append(f"{identity}: run_id does not match original record")
     conditions = entry.get("conditions")
     values = {}
     if not isinstance(conditions, dict):
@@ -692,7 +740,7 @@ def check_release_binding(entry, record, filename, side, directory, target, dete
             insufficient.append(f"{location}: a known explicit comparison value is required")
             continue
         values[field] = canonical_json(item["value"])
-        check_capture_list(item.get("evidence"), f"{location}.evidence", directory, detected, insufficient)
+        check_capture_list(item.get("evidence"), f"{location}.evidence", evidence_directory, detected, insufficient)
     for field in ("model", "host"):
         value = record[field].get("id")
         if not isinstance(value, str) or contains_unknown(value):
@@ -706,7 +754,7 @@ def check_release_binding(entry, record, filename, side, directory, target, dete
     source_valid = True
     if side in ("candidate", "holdout") and record["subject_source"].get("hash") != target:
         source_valid = check_reuse(entry.get("reuse"), record, entry, target, identity,
-                                   directory, detected, insufficient)
+                                   evidence_directory, detected, insufficient)
     valid = before == (len(detected), len(insufficient))
     return values if valid else None, source_valid and valid
 
@@ -755,30 +803,17 @@ def validate_holdout_shape(record: Any, location: str) -> dict[str, Any]:
     if not SAFE_ID.fullmatch(scenario_id):
         raise InputError(f"{location}.scenario_id is not an input-safe ID: {scenario_id!r}")
     category = required_field(scenario, "category", location)
-    if category not in HOLDOUT_CATEGORIES:
+    if not isinstance(category, str) or category not in HOLDOUT_CATEGORIES:
         raise InputError(
             f"{location}.category must be one of {list(HOLDOUT_CATEGORIES)}"
         )
-    for field in ("run_id",):
-        require_nonempty_string(required_field(scenario, field, location), f"{location}.{field}")
-    scenario["subject_source"] = require_object(
-        required_field(scenario, "subject_source", location), f"{location}.subject_source"
-    )
-    scenario["actor"] = require_object(required_field(scenario, "actor", location), f"{location}.actor")
-    scenario["model"] = require_object(required_field(scenario, "model", location), f"{location}.model")
-    scenario["host"] = require_object(required_field(scenario, "host", location), f"{location}.host")
-    require_nonempty_string(
-        required_field(scenario, "conditions_digest", location), f"{location}.conditions_digest"
-    )
-    for field in ("actual_actions", "assertions"):
-        value = required_field(scenario, field, location)
-        if not isinstance(value, list) or (field == "assertions" and not value):
-            raise InputError(f"{location}.{field} must be a non-empty array")
-    if not isinstance(required_field(scenario, "judge", location), dict):
-        raise InputError(f"{location}.judge must be an object")
+    run_id = require_nonempty_string(required_field(scenario, "run_id", location), f"{location}.run_id")
+    if not SAFE_ID.fullmatch(run_id):
+        raise InputError(f"{location}.run_id is not an input-safe ID: {run_id!r}")
     if "trace" not in scenario:
         raise InputError(f"{location}.trace is required")
-    return scenario
+    # Historical schema-1 holdouts allow absent or structured target metadata.
+    return validate_run_fields(scenario, location, require_action_target=False)
 
 
 def load_holdout(directory: Path) -> list[tuple[str, dict[str, Any]]]:
@@ -902,12 +937,17 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
 
     detected: list[str] = []
     insufficient: list[str] = []
-    target_source, release_entries, exposures = load_release_manifest(arguments, detected, insufficient)
+    target_source, release_entries, exposures, manifest_version = load_release_manifest(arguments, detected, insufficient)
+    directories = {"candidate": results_directory, "baseline": baseline_directory,
+                   "holdout": Path(arguments.holdout), "baseline_holdout": Path(arguments.baseline_holdout)}
+    evidence_directories = (collection_evidence_directories(release_entries, directories, detected)
+                            if manifest_version == 2 else {})
     comparable = {"candidate": {}, "baseline": {}}
     valid_candidate_keys = set()
     used_bindings = set()
     synthetic_references = set()
     manifest_synthetic_references = set()
+    fixture_mode = getattr(arguments, "allow_synthetic_fixtures", False)
 
     def record_synthetic(side, record, entry):
         raw_keys = synthetic_reference_keys(record)
@@ -941,10 +981,14 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
             runs[key] = result
             binding_key = (run_label, filename)
             used_bindings.add(binding_key)
+            evidence_directory = evidence_directories.get(binding_key, directory)
             values, source_valid = check_release_binding(
                 release_entries.get(binding_key), result, filename, run_label, directory,
-                target_source, detected, insufficient,
+                target_source, detected, insufficient, evidence_directory,
             )
+            is_synthetic = record_synthetic(run_label, result, release_entries.get(binding_key))
+            if is_synthetic and not fixture_mode:
+                values, source_valid = None, False
             comparable[run_label][key] = values
             if run_label == "candidate" and source_valid:
                 valid_candidate_keys.add(key)
@@ -960,11 +1004,10 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
                 insufficient.append(f"{identity}: unknown source/model/host requires evidence_limits")
             raw_synthetic = walk_result_assertions(
                 result, identity, expected_variants.get(variant_key, set()),
-                directory, detected, insufficient,
+                evidence_directory, detected, insufficient,
                 strict_statuses=strict, status_counts=status_counts,
             )
-            synthetic += int(record_synthetic(run_label, result, release_entries.get(binding_key))
-                             or raw_synthetic)
+            synthetic += int(is_synthetic or raw_synthetic)
             if strict:
                 if "loading" not in result:
                     insufficient.append(f"{identity}: release results require loading data")
@@ -982,9 +1025,9 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
         baseline_items, baseline_directory, strict=False, run_label="baseline"
     )
 
-    if len(candidate_run_ids) > 1:
+    if manifest_version == 1 and len(candidate_run_ids) > 1:
         detected.append("candidate results directory contains multiple run_id values")
-    if len(baseline_run_ids) > 1:
+    if manifest_version == 1 and len(baseline_run_ids) > 1:
         detected.append("baseline results directory contains multiple run_id values")
 
     for case_id, variant_id in sorted(set(expected_variants) - variants_seen):
@@ -1055,10 +1098,11 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
     for side, items, directory in holdout_sides:
         for filename, scenario in items:
             entry = release_entries.get((side, filename), {})
+            evidence_directory = evidence_directories.get((side, filename), directory)
             holdout = entry.get("holdout")
             if isinstance(holdout, dict) and holdout.get("exposure") == "promoted_regression":
                 input_id = holdout_input_identity(holdout.get("input"), f"{side} {filename}.holdout.input",
-                                                  directory, detected, insufficient)
+                                                  evidence_directory, detected, insufficient)
                 if input_id:
                     exposed_ids.add(input_id)
 
@@ -1076,17 +1120,18 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
             binding_key = (side, filename)
             used_bindings.add(binding_key)
             entry = release_entries.get(binding_key)
+            evidence_directory = evidence_directories.get(binding_key, directory)
             values, source_valid = check_release_binding(entry, scenario, filename, side, directory,
-                                                         target_source, detected, insufficient)
+                                                         target_source, detected, insufficient, evidence_directory)
             holdout = entry.get("holdout") if entry else None
             input_id, eligible = None, False
             if not isinstance(holdout, dict):
                 insufficient.append(f"{identity}: holdout input identity and exposure evidence are required")
             else:
                 input_id = holdout_input_identity(holdout.get("input"), f"{identity}.input",
-                                                  directory, detected, insufficient)
+                                                  evidence_directory, detected, insufficient)
                 exposure_valid = check_capture_list(holdout.get("evidence"), f"{identity}.exposure.evidence",
-                                                    directory, detected, insufficient)
+                                                    evidence_directory, detected, insufficient)
                 duplicate = input_id is not None and input_id in input_ids
                 if duplicate:
                     detected.append(f"{identity}: duplicate underlying holdout input")
@@ -1105,13 +1150,16 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
                 insufficient.append(f"{identity}: model parameters are required for holdout pairing")
                 eligible = False
             raw_synthetic = walk_result_assertions(
-                scenario, identity, set(), directory, detected, insufficient,
+                scenario, identity, set(), evidence_directory, detected, insufficient,
                 strict_statuses=side == "holdout", status_counts=counts,
             )
-            synthetic += int(record_synthetic(side, scenario, entry) or raw_synthetic)
+            is_synthetic = record_synthetic(side, scenario, entry) or raw_synthetic
+            synthetic += int(is_synthetic)
+            if (is_synthetic or exposure_synthetic) and not fixture_mode:
+                values, eligible = None, False
             runs[scenario_id] = {"record": scenario, "input_id": input_id,
                                  "conditions": values, "eligible": eligible}
-        if len(run_ids) > 1:
+        if manifest_version == 1 and len(run_ids) > 1:
             detected.append(f"{side} results directory contains multiple run_id values")
         holdout_runs[side] = runs
         holdout_statistics[side] = {"counts": counts, "synthetic": synthetic, "records": len(items)}
@@ -1228,6 +1276,9 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
         + " bytes (exploratory loading metric; cannot offset quality failures; "
         "unknown cost or tokens are not converted)"
     )
+    if synthetic_references and not fixture_mode:
+        insufficient.append("synthetic evidence cannot establish release acceptance; "
+                            "use --allow-synthetic-fixtures only for mechanism tests")
     for error in detected:
         print(f"FAIL: {error}")
     for error in insufficient:
@@ -1245,13 +1296,18 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
     if insufficient:
         print(f"RELEASE INSUFFICIENT: {len(insufficient)} evidence gap(s)")
         return 2
-    print("RELEASE MATERIAL VERIFIED: structural release evidence is complete")
+    if fixture_mode:
+        print("SYNTHETIC FIXTURE VERIFIED: mechanism checks passed; not release acceptance")
+    else:
+        print("RELEASE MATERIAL VERIFIED: structural release evidence is complete")
     return 0
 
 
 def verify_command(arguments: argparse.Namespace) -> int:
     if arguments.profile == "release":
         return verify_release_command(arguments)
+    if getattr(arguments, "allow_synthetic_fixtures", False):
+        raise InputError("--allow-synthetic-fixtures is only valid with --profile release")
     selected_ids = parse_ids(arguments.ids)
     cases, material_errors = load_cases(Path(arguments.cases))
     selected = select_cases(cases, selected_ids, material_errors)

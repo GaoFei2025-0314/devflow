@@ -526,6 +526,72 @@ HOLDOUT_CATEGORIES = (
 
 
 class ReleaseProfileTests(BehaviorCheckerTests):
+    def test_release_rejects_synthetic_evidence_without_test_mode(self):
+        self.write_release_fixture()
+        self.write_release_manifest()
+        result = self.release_verify_existing_manifest(fixture_mode=False)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn("synthetic evidence cannot establish release acceptance", result.stdout)
+        self.assertNotIn("RELEASE MATERIAL VERIFIED", result.stdout)
+
+    def test_release_fixture_mode_never_reports_release_acceptance(self):
+        self.write_release_fixture()
+        result = self.release_verify()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("SYNTHETIC FIXTURE VERIFIED", result.stdout)
+        self.assertNotIn("RELEASE MATERIAL VERIFIED", result.stdout)
+
+    def test_holdout_required_run_fields_are_validated(self):
+        self.write_release_fixture()
+        original = json.loads((self.holdout / "holdout-00.holdout.json").read_text(encoding="utf-8"))
+        spec = importlib.util.spec_from_file_location("holdout_shape_test", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        fields = [
+            "run_id", "subject_source.version", "subject_source.hash", "actor.id",
+            "model.id", "model.parameters", "host.id", "conditions_digest",
+            "actual_actions", "actual_artifacts", "assertions", "judge.id",
+            "judge.type", "trace", "evidence_limits",
+        ]
+        for field in fields:
+            with self.subTest(missing=field):
+                record = copy.deepcopy(original)
+                keys = field.split(".")
+                parent = record
+                for key in keys[:-1]:
+                    parent = parent[key]
+                del parent[keys[-1]]
+                with self.assertRaises(module.InputError):
+                    module.validate_holdout_shape(record, "holdout")
+
+    def test_holdout_missing_artifacts_returns_controlled_input_error(self):
+        self.write_release_fixture()
+        path = self.holdout / "holdout-00.holdout.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        del record["actual_artifacts"]
+        path.write_text(json.dumps(record), encoding="utf-8")
+        self.write_release_manifest()
+        result = self.release_verify_existing_manifest(fixture_mode=False)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn("actual_artifacts", result.stderr)
+        self.assertIn("INPUT ERROR:", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_holdout_preserves_legacy_actions_without_target(self):
+        self.write_release_fixture()
+        path = self.holdout / "holdout-00.holdout.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        for target in (None, ["source-a", "source-b"]):
+            with self.subTest(target=target):
+                if target is None:
+                    record["actual_actions"][0].pop("target", None)
+                else:
+                    record["actual_actions"][0]["target"] = target
+                path.write_text(json.dumps(record), encoding="utf-8")
+                self.write_release_manifest()
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 0, output)
+
     def setUp(self):
         super().setUp()
         self.baseline = self.root / "baseline"
@@ -610,13 +676,14 @@ class ReleaseProfileTests(BehaviorCheckerTests):
         self.write_release_manifest()
         return self.release_verify_existing_manifest()
 
-    def release_verify_existing_manifest(self):
+    def release_verify_existing_manifest(self, *, fixture_mode=True):
         return self.run_checker(
             "verify", "--cases", self.cases, "--results", self.results,
             "--baseline", self.baseline, "--holdout", self.holdout,
             "--baseline-holdout", self.baseline_holdout,
             "--profile", "release", "--target-candidate-source", "a" * 40,
             "--release-manifest", self.root / "release-manifest.json",
+            *(["--allow-synthetic-fixtures"] if fixture_mode else []),
         )
 
     def write_release_manifest(self):
@@ -662,7 +729,91 @@ class ReleaseProfileTests(BehaviorCheckerTests):
     def save_manifest(self, manifest):
         (self.root / "release-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
-    def protocol_verify(self, *, target="a" * 40, manifest=True, baseline_holdout=True):
+    def collection_fixture(self):
+        self.write_release_fixture()
+        # Independent runs may use the same relative trace name with different bytes.
+        for directory in (self.results, self.baseline):
+            path = directory / "case-01-r1.result.json"
+            record = json.loads(path.read_text(encoding="utf-8"))
+            record["run_id"] += "-second"
+            path.write_text(json.dumps(record), encoding="utf-8")
+        manifest = self.write_release_manifest()
+        manifest.update(schema_version=2, collection_id="immutable-collection")
+        directories = {"candidate": self.results, "baseline": self.baseline,
+                       "holdout": self.holdout, "baseline_holdout": self.baseline_holdout}
+        for entry in manifest["records"]:
+            directory = directories[entry["side"]]
+            record = json.loads((directory / entry["path"]).read_text(encoding="utf-8"))
+            entry["run_id"] = record["run_id"]
+            entry["evidence_root"] = "packages/" + record["run_id"]
+            root = directory / entry["evidence_root"]
+            root.mkdir(parents=True, exist_ok=True)
+            for evidence in directory.iterdir():
+                if evidence.is_file() and not evidence.name.endswith((".result.json", ".holdout.json")):
+                    (root / evidence.name).write_bytes(evidence.read_bytes())
+        # Colliding root-level files must never mask the original per-package bytes.
+        for directory in directories.values():
+            (directory / "trace.txt").write_text("unrelated capture\n", encoding="utf-8")
+        self.save_manifest(manifest)
+        return manifest
+
+    def test_collection_manifest_preserves_independent_run_evidence(self):
+        self.collection_fixture()
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 0, output)
+        self.assertIn("AT comparable pairs=60", output)
+        self.assertIn("holdout scenarios=10", output)
+
+    def test_collection_requires_original_run_binding(self):
+        manifest = self.collection_fixture()
+        manifest["records"][0]["run_id"] = "forged-run"
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("run_id does not match original record", output)
+
+    def test_collection_rejects_unsafe_evidence_roots(self):
+        original = self.collection_fixture()
+        for root in ("../outside", "/absolute", "C:/outside", "packages\\capture", "packages/../x", "", "./packages", "packages//run"):
+            with self.subTest(root=root):
+                manifest = copy.deepcopy(original)
+                manifest["records"][0]["evidence_root"] = root
+                self.save_manifest(manifest)
+                code, output = self.protocol_verify()
+                self.assertEqual(code, 2, output)
+                self.assertIn("evidence_root", output)
+
+    def test_collection_cannot_use_external_symlink_root(self):
+        manifest = self.collection_fixture()
+        outside = self.root / "external-evidence"
+        outside.mkdir()
+        link = self.results / "linked-evidence"
+        try:
+            link.symlink_to(outside, target_is_directory=True)
+        except OSError as error:
+            self.skipTest(f"symlinks unavailable: {error}")
+        entry = next(item for item in manifest["records"] if item["side"] == "candidate")
+        entry["evidence_root"] = link.name
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 2, output)
+        self.assertIn("evidence_root escapes", output)
+
+    def test_collection_keeps_original_assertion_failure(self):
+        manifest = self.collection_fixture()
+        entry = manifest["records"][0]
+        path = self.results / entry["path"]
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["assertions"][0]["status"] = "fail"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        entry["sha256"] = self.sha256(path)
+        self.save_manifest(manifest)
+        code, output = self.protocol_verify()
+        self.assertEqual(code, 1, output)
+        self.assertIn("status is fail", output)
+
+    def protocol_verify(self, *, target="a" * 40, manifest=True, baseline_holdout=True,
+                        fixture_mode=True):
         # Direct invocation establishes RED for the missing gate, rather than an
         # argparse error for options that the old checker does not yet recognize.
         spec = importlib.util.spec_from_file_location("behavior_protocol_test", CHECKER)
@@ -674,6 +825,7 @@ class ReleaseProfileTests(BehaviorCheckerTests):
             baseline_holdout=str(self.baseline_holdout) if baseline_holdout else None,
             target_candidate_source=target,
             release_manifest=str(self.root / "release-manifest.json") if manifest else None,
+            allow_synthetic_fixtures=fixture_mode,
         )
         stream = io.StringIO()
         with contextlib.redirect_stdout(stream):
@@ -1225,7 +1377,7 @@ class ReleaseProfileTests(BehaviorCheckerTests):
         result = self.release_verify()
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("RELEASE MATERIAL VERIFIED", result.stdout)
+        self.assertIn("SYNTHETIC FIXTURE VERIFIED", result.stdout)
         self.assertIn("holdout scenarios=10", result.stdout)
         self.assertIn("AT comparable pairs=60; holdout comparable unexposed pairs=10", result.stdout)
         self.assertIn("COMPARISON", result.stdout)
