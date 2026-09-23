@@ -32,10 +32,22 @@ attempts, not a passing 2.0.2 collection. The two exact temporary Codex trust
 entries created by these tests were independently reviewed and removed; no
 planned test-workspace trust key remains.
 
-The usage-sample rule is being clarified for that AT-02 failure. Any new source
-must be frozen again and its scoped behavior rerun; source 002's AT-33 PASS
-cannot be relabeled as a later source's result. The patch checker, final
-independent review and CI remain pending. The previously frozen
+Source 003 (`78c3de1ed5105f879b642ce2432df0ec2410f5ff78e04c90eb0a4589bc081523`)
+added a source-identity and event-classification rule. Its 117 source files and
+87 actor files passed byte-for-byte checks, Windows and Ubuntu each passed 251
+maintenance tests, and the references, bundle and 40-case/66-variant material
+checks passed. A valid native AT-02 `default-off-analysis` run then failed E01
+again: its answer distinguished the two sources but still did not report the
+observed `user_named` and `assistant_selected` events separately. E02, E03,
+F01 and F02 passed. The other 14 prepared source-003 episodes were not
+dispatched. This failure remains in the attempt history. The one temporary
+Codex trust entry created by that run was independently reviewed and removed;
+the global config returned to its pre-test hash, with no planned entries left.
+
+The rule is being clarified to require explicit reporting of both observed
+stages. Any new source must be frozen again and its scoped behavior rerun;
+source 002's AT-33 PASS cannot be relabeled as a later source's result. The
+patch checker, final independent review and CI remain pending. The previously frozen
 `candidate-final-002` SHA-256
 `c1786019b71eb810a5afea83d522682f36ac2879810dde37cc3d113a91bd5911`
 is a pre-addendum snapshot, not a final 2.0.2 source binding; every subsequent

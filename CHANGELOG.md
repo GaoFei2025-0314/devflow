@@ -5,7 +5,7 @@ All notable changes to the Devflow plugin. Versions follow the `version` field i
 ## 2.0.2 (unreleased)
 
 - Require proposed telemetry measurements to define their observation window, counting unit, eligible population, and applicable numerator/denominator in the current deliverable. Explicit inclusion rules preserve unknown and unverified observations; this clarification follows retained AT-02 diagnostic evidence, with behavioral revalidation still pending.
-- Require usage-sample analyses to distinguish same-named source identities and discovery, user naming, assistant selection, requests, returns, and outcomes. A source-002 AT-02 default-off run omitted those distinctions in its answer despite valid native capture; its E01 failure remains in the attempt history pending revalidation of the clarified rule.
+- Require usage-sample analyses to distinguish same-named source identities and discovery, user naming, assistant selection, requests, returns, and outcomes. When both naming and selection are observed, the report must state each stage separately with its recorded label, status or count, and identifiers. Source-002 and source-003 AT-02 default-off runs have retained E01 failures; native revalidation of this clarification remains pending.
 - Require installation compatibility reports to list or directly link the complete itemized path set returned by the check, with each resolved target or missing reason tied to the candidate and raw check record. A count alone cannot substantiate the installation assessment; this follows a retained AT-33 linked-install candidate failure.
 
 - Reject result and holdout declarations as capture evidence across checkpoint, release and manifest references, including filename case variants and symlink aliases.
