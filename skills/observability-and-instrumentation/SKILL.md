@@ -174,6 +174,8 @@ When you analyze a telemetry or log sample for someone, ground the analysis in t
 
 For skill or tool usage records, identify each source by its recorded id and version when names overlap. Keep discovery or injection, user naming, assistant selection, read requests, delivered returns, follow-through, and outcomes separate; a same-named source or a path mentioned in a document is not evidence of a read or use. When reporting usage from a sample, explicitly report every observed stage for the target source in the current deliverable, using its recorded label, observed count or status, and available event and source identifiers. State which later stages have no evidence or remain unknown. A generic selection or usage total must not stand in for the individual stages.
 
+Zero recorded reads show no observed use, not that a skill lacks value. For a value assessment, explain what further task evidence would be needed: actual opportunities where the skill's guidance applies, whether it was selected, read, and used for those tasks, and outcomes linked to those tasks and the guidance. If there were no applicable opportunities, say so without treating zero reads as a value judgment; if applicability is unknown, do not count those tasks as having no need.
+
 When proposing measurements from a log or telemetry sample, define each metric in the current deliverable: its observation window, counting unit, and eligible population; for a rate or proportion, specify both numerator and denominator. State how duplicate, missing, unverified, or out-of-scope observations affect inclusion, and leave unavailable values unknown rather than inventing measurements or treating missing observations as success.
 
 ## Common Rationalizations
