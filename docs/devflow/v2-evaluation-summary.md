@@ -10,16 +10,31 @@ original full V2.0 qualification or the strict `release` profile. The earlier
 V1.3.1 full comparison remains an unresolved historical work item; a patch
 PASS, if later achieved, must not be reported as a retroactive full PASS.
 
-**The 2.0.2 patch has not passed acceptance.** An interim candidate source
+**The 2.0.2 patch has not passed acceptance.** Interim source 001
 (`0026d873210bbcb82a5288bedd4e348dc8452191e5eca12a5f39b3b491b68297`)
-and patch scope were frozen, two new holdouts were sealed, and isolated install
-smoke checks passed. A native AT-33 `linked-install` run then failed E01 in
-independent review: its report gave checked/missing totals without the exact
-resolved-reference list. AT-02 diagnostic runs with an incorrect workspace
-reference or host-config drift between pre-turn and post-turn captures remain
-invalid, not current PASS results.
-The corresponding delivery rule is being corrected, so the final source must
-be frozen again and its scoped behavior rerun. The patch checker, final
+was frozen with two sealed holdouts and passed isolated install smoke checks.
+Its native AT-33 `linked-install` run failed E01 in independent review: the
+report gave checked/missing totals without the exact resolved-reference list.
+Its AT-02 diagnostic runs with an incorrect workspace reference or host-config
+drift remain invalid, not current PASS results.
+
+After the delivery rule was clarified, source 002
+(`910704fbfe2682acc73ae69dd986f3832820688184a07ed05ae6c221d65c8ec3`)
+was frozen and independently checked against 117 Git archive member bytes.
+Windows and Ubuntu each passed 251 maintenance tests on this source; references,
+bundle structure and 40-case/66-variant material validation passed. Its native
+AT-33 `linked-install` run passed E01/E02/E03/F01/F02 in independent review,
+including direct links to 37 itemized checked paths and 66 resolved reference
+edges. A separate, valid native AT-02 `default-off-analysis` run failed E01:
+the answer omitted the two source identities and did not distinguish user naming
+from assistant selection. Its other four assertions passed. These are retained
+attempts, not a passing 2.0.2 collection. The two exact temporary Codex trust
+entries created by these tests were independently reviewed and removed; no
+planned test-workspace trust key remains.
+
+The usage-sample rule is being clarified for that AT-02 failure. Any new source
+must be frozen again and its scoped behavior rerun; source 002's AT-33 PASS
+cannot be relabeled as a later source's result. The patch checker, final
 independent review and CI remain pending. The previously frozen
 `candidate-final-002` SHA-256
 `c1786019b71eb810a5afea83d522682f36ac2879810dde37cc3d113a91bd5911`
