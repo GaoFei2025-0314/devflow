@@ -27,7 +27,7 @@
 
 ### 变更依赖处置：AT-28/29/40
 
-本次 `v2.0.1` 之后的规则内容变更是 `skills/observability-and-instrumentation/SKILL.md` 中对日志样本指标提案的窗口、单位、适用人群、分子/分母及未知值的要求。根据 `tests/behavior/cases/identity.json`、`tests/behavior/cases/observability.json`、`tests/behavior/cases/distribution.json` 的任务和断言，下列八个变体检验的是**已保留规则与恢复时的读取覆盖**，不要求针对日志样本提出统计指标。补丁改动未触及其判定前提，因此它们均记作 `not reverified in patch`，不是当前候选 PASS，也不加入补丁清单的必测成功计数：
+本次 `v2.0.1` 之后的规则内容变更包括 `skills/observability-and-instrumentation/SKILL.md` 对日志样本指标提案的窗口、单位、适用人群、分子/分母及未知值的要求，以及 `skills/using-devflow/references/delivery-contract.md` 对安装兼容性或引用检查返回逐项路径时的报告要求。根据 `tests/behavior/cases/identity.json`、`tests/behavior/cases/observability.json`、`tests/behavior/cases/distribution.json` 的任务和断言，下列八个变体检验的是**已保留规则与恢复时的读取覆盖**，产出是本地状态段落；它们既不要求针对日志样本提出统计指标，也不执行安装兼容性或引用检查，因此不会触发新加的逐项路径报告条件。两处补丁改动均未触及这些变体的判定前提，故逐个记作 `not reverified in patch`，不是当前候选 PASS，也不加入补丁清单的必测成功计数：
 
 | 变体 | 本次处置与理由 |
 | --- | --- |
