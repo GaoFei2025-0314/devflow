@@ -10,10 +10,18 @@ original full V2.0 qualification or the strict `release` profile. The earlier
 V1.3.1 full comparison remains an unresolved historical work item; a patch
 PASS, if later achieved, must not be reported as a retroactive full PASS.
 
-**The 2.0.2 patch has not passed acceptance.** The exact final source, patch
-scope, two new sealed holdouts, native candidate runs, isolated final-source
-installations, independent semantic review, patch checker result and CI are
-still pending. The previously frozen `candidate-final-002` SHA-256
+**The 2.0.2 patch has not passed acceptance.** An interim candidate source
+(`0026d873210bbcb82a5288bedd4e348dc8452191e5eca12a5f39b3b491b68297`)
+and patch scope were frozen, two new holdouts were sealed, and isolated install
+smoke checks passed. A native AT-33 `linked-install` run then failed E01 in
+independent review: its report gave checked/missing totals without the exact
+resolved-reference list. AT-02 diagnostic runs with an incorrect workspace
+reference or host-config drift between pre-turn and post-turn captures remain
+invalid, not current PASS results.
+The corresponding delivery rule is being corrected, so the final source must
+be frozen again and its scoped behavior rerun. The patch checker, final
+independent review and CI remain pending. The previously frozen
+`candidate-final-002` SHA-256
 `c1786019b71eb810a5afea83d522682f36ac2879810dde37cc3d113a91bd5911`
 is a pre-addendum snapshot, not a final 2.0.2 source binding; every subsequent
 repository content change requires a new freeze and evidence-impact review.
