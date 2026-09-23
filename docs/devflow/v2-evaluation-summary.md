@@ -1,5 +1,39 @@
 # Devflow V2.0 evaluation summary
 
+## 2.0.2 incremental acceptance status — 2026-09-23
+
+The user selected an incremental acceptance claim for the next `2.0.2` patch
+over the published `v2.0.1` tag. The separate
+[patch acceptance addendum](../../specs/changes/devflow-v2/specs/patch-2.0.2-acceptance.md)
+defines that gate and its risk-based scenario matrix. It does not change the
+original full V2.0 qualification or the strict `release` profile. The earlier
+V1.3.1 full comparison remains an unresolved historical work item; a patch
+PASS, if later achieved, must not be reported as a retroactive full PASS.
+
+**The 2.0.2 patch has not passed acceptance.** The exact final source, patch
+scope, two new sealed holdouts, native candidate runs, isolated final-source
+installations, independent semantic review, patch checker result and CI are
+still pending. The previously frozen `candidate-final-002` SHA-256
+`c1786019b71eb810a5afea83d522682f36ac2879810dde37cc3d113a91bd5911`
+is a pre-addendum snapshot, not a final 2.0.2 source binding; every subsequent
+repository content change requires a new freeze and evidence-impact review.
+
+The local evidence workspace outside this repository contains the September 23
+coordination checkpoint for the current V2 acceptance collection.
+It records offline refs/bundle/material validation and 231 Windows maintenance
+tests passed for that earlier snapshot, with 40 cases/66 variants structurally
+valid. These checks do not prove model behavior. The AT-14 native preflight
+observed 44 unrelated late iOS tool additions and a changed global config;
+without the relevant before/after configuration content it was not counted.
+One new AT-02 baseline was captured but lacked exit capability evidence and
+its own E01 assertion failed; that V1.3.1 baseline result is not a current
+candidate failure. A real-browser AT-39 baseline passed its five public
+assertions in independent review, but its CLI version differs from the current
+host and no current-source candidate pair is established. The prior AT-33
+single pair cannot supply the three valid repetitions for the changed patch
+source. Original failed, unknown and interrupted attempts remain in the
+external attempt history rather than being silently replaced.
+
 ## Status reviewed on 2026-09-21
 
 The sections below record the historical V2.0.0 evaluation from 2026-09-13; their
@@ -22,6 +56,55 @@ uses passed the separate byte-integrity audit. That audit proves file identity,
 not source-reuse validity or release acceptance; loading and comparison gaps remain.
 Cursor's explicit native-acceptance deferral remains in effect; see
 [host support](host-support.md) for the retained historical observations and limits.
+
+## Current work-package preflight (2026-09-22)
+
+The separate current acceptance collection is still in progress. No full-release
+PASS or PR readiness is established. Historical declarations and failed attempts
+remain immutable outside the repository.
+
+- Current material contains 40 cases and 66 variants. The additional AT-28
+  warm-context variant requires exact, source-bound retained bodies and actual
+  receipt evidence. Structural validity is not an executed behavior result.
+  The new floor is 114 runs per side / 228 total executions, including required repeats and
+  holdouts; the historical 65-variant counts below retain their original scope.
+- One new AT-33 pair on Windows Codex passed independent semantic review, with
+  five assertions per side. Both actors assessed the candidate before receiving
+  the actual staged user approval. The simulated switch exited 7, changed only
+  `VERSION`, and the authorized restore exited 0 with original bytes restored.
+  This single pair does not satisfy the three-repeat gate.
+- The first AT-15 native-collaboration pair has five PASS and two UNKNOWN assertions
+  per side. Host captures retain opaque dispatch and receipt payloads. The
+  candidate also displayed its first complete prompt after dispatch, failing the
+  separate capture-order preflight. These attempts remain visible. A subsequent
+  pair using the reviewed local delegation adapter passed all seven assertions
+  per side. Exact dispatch/receipt text, real overlap, task boundaries and all five
+  comparison conditions were independently checked. These are controller-bound
+  native roots, not built-in spawn lineage. Rejected task-name attempts remain in
+  the capture. Observed source-body tool payloads were 38,320 bytes for baseline
+  and 85,955 bytes for candidate; supplied task context is recorded separately.
+  This pair does not meet the exploratory 30% loading-reduction target.
+- Independent review of historical AT-28 distinguished necessary first contract
+  loading from repeated retained text. The old E02 rationale incorrectly treated
+  three applicable first reads as unnecessary. Its loading ledger also omitted
+  their fully delivered content. The old FAIL remains unchanged with a separate
+  calibration record. Fresh ordinary and warm-context pairs independently passed
+  all 18 assertions. Warm actors received complete rule bodies and did not reread
+  retained rules. The ordinary candidate recovered a genuinely truncated return;
+  that avoidable truncation remains an advisory finding, not missing coverage.
+- These pilot actors used `gpt-6-astra` with recorded `xhigh` effort and no explicit
+  model/effort override. The frozen candidate pilot is Git `46613e6`, content
+  manifest `8f6bf7d7d291a26b67ff4e02248ef0d1768c987ea1b1af6d9768f158009bd0f7`;
+  the baseline remains V1.3.1 `137e025`. Final-source validity still needs review.
+- Windows and Ubuntu each passed 231 maintenance tests. Reference and bundle
+  checks passed. Real isolated full, single-skill closure and symbolic-link
+  installations passed against the pilot source; no global installation changed.
+- Metadata repair proposals preserve original identities and judgments. Adding
+  loading field aliases does not prove delivered coverage or comparable metrics.
+  Independent review of the first 35 historical pairs supports 29 unchanged
+  reuses and six evidence-backed supplements, all tied only to the pilot source.
+  Every correction retains the original hash and exact field differences.
+  Remaining source-reuse, loading, comparison-condition and holdout gates remain open.
 
 ## Historical V2.0.0 evaluation
 

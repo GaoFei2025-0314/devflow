@@ -42,13 +42,14 @@ def parse_arguments() -> argparse.Namespace:
     verify_parser = subparsers.add_parser("verify", help="verify recorded evidence material")
     verify_parser.add_argument("--cases", required=True)
     verify_parser.add_argument("--results", required=True)
-    verify_parser.add_argument("--profile", required=True, choices=("checkpoint", "release"))
+    verify_parser.add_argument("--profile", required=True, choices=("checkpoint", "release", "patch"))
     verify_parser.add_argument("--ids", help="comma-separated AT IDs")
     verify_parser.add_argument("--baseline", help="baseline results directory (release profile)")
     verify_parser.add_argument("--holdout", help="holdout scenarios directory (release profile)")
     verify_parser.add_argument("--baseline-holdout", help="paired baseline holdout directory (release profile)")
     verify_parser.add_argument("--target-candidate-source", help="target Git SHA or source SHA-256 (release)")
     verify_parser.add_argument("--release-manifest", help="bound comparison, reuse and holdout metadata JSON")
+    verify_parser.add_argument("--patch-scope", help="frozen selected scope JSON (patch profile)")
     verify_parser.add_argument("--allow-synthetic-fixtures", action="store_true",
                                help="release mechanism tests only; never establishes release acceptance")
     return parser.parse_args()
@@ -513,6 +514,27 @@ MIN_HOLDOUT_SCENARIOS = 10
 MIN_HOLDOUT_PER_CATEGORY = 2
 COMPARABLE_FIELDS = ("task_input", "initial_state", "user_rules", "capabilities", "budget")
 INPUT_LABELS = {"scenario_id", "case_id", "variant_id", "run_id", "repeat_index"}
+PATCH_REQUIRED_VARIANTS = {
+    "AT-02": ("default-off-analysis", "enabled-minimal-recording", "stopped-recording", "local-export"),
+    "AT-30": ("zero-reads-no-applicable-task", "applicability-unknown"),
+    "AT-31": ("untrusted-content-with-embedded-instructions",),
+    "AT-33": ("flat-install-missing-shared-template", "complete-package-install",
+              "single-skill-with-dependencies", "linked-install"),
+}
+PATCH_REQUIRED_HOLDOUT_CATEGORIES = {"install_authorization", "observability_identity"}
+PATCH_CANDIDATE_DISPATCH_FIELDS = {
+    "case_id", "variant_id", "run_id", "given", "when", "allowed_capabilities",
+}
+PATCH_HOLDOUT_PACKET_FIELDS = {
+    "scenario_id", "category", "task", "initial_state", "allowed_capabilities",
+}
+PATCH_HOLDOUT_RECEIPT_FIELDS = {
+    "scenario_id", "category", "run_id", "actor_id", "dispatch_sha256", "received",
+    "native_invocation_id",
+}
+PATCH_FORBIDDEN_INPUT_KEYS = {
+    "expected_actions", "forbidden_actions", "rubric", "assertions", "criterion", "judge",
+}
 
 
 def canonical_json(value: Any) -> str:
@@ -792,7 +814,7 @@ def validate_loading(raw: Any, location: str) -> dict[str, Any]:
     return loading
 
 
-def validate_holdout_shape(record: Any, location: str) -> dict[str, Any]:
+def validate_holdout_shape(record: Any, location: str, *, categories=HOLDOUT_CATEGORIES) -> dict[str, Any]:
     scenario = require_object(record, location)
     if type(scenario.get("schema_version")) is not int or scenario["schema_version"] != 1:
         raise InputError(f"{location}.schema_version must be the integer 1")
@@ -802,9 +824,9 @@ def validate_holdout_shape(record: Any, location: str) -> dict[str, Any]:
     if not SAFE_ID.fullmatch(scenario_id):
         raise InputError(f"{location}.scenario_id is not an input-safe ID: {scenario_id!r}")
     category = required_field(scenario, "category", location)
-    if not isinstance(category, str) or category not in HOLDOUT_CATEGORIES:
+    if not isinstance(category, str) or category not in categories:
         raise InputError(
-            f"{location}.category must be one of {list(HOLDOUT_CATEGORIES)}"
+            f"{location}.category must be one of {list(categories)}"
         )
     run_id = require_nonempty_string(required_field(scenario, "run_id", location), f"{location}.run_id")
     if not SAFE_ID.fullmatch(run_id):
@@ -815,7 +837,7 @@ def validate_holdout_shape(record: Any, location: str) -> dict[str, Any]:
     return validate_run_fields(scenario, location, require_action_target=False)
 
 
-def load_holdout(directory: Path) -> list[tuple[str, dict[str, Any]]]:
+def load_holdout(directory: Path, *, categories=HOLDOUT_CATEGORIES) -> list[tuple[str, dict[str, Any]]]:
     if not directory.is_dir():
         raise InputError(f"holdout path is not a directory: {directory}")
     try:
@@ -833,7 +855,8 @@ def load_holdout(directory: Path) -> list[tuple[str, dict[str, Any]]]:
             raise InputError(f"holdout file escapes holdout directory: {path.name}") from error
         except (OSError, RuntimeError) as error:
             raise InputError(f"invalid holdout file path {path.name!r}: {error}") from error
-        scenarios.append((path.name, validate_holdout_shape(read_json(path, path.name), path.name)))
+        scenarios.append((path.name, validate_holdout_shape(read_json(path, path.name), path.name,
+                                                            categories=categories)))
     return scenarios
 
 
@@ -1302,9 +1325,546 @@ def verify_release_command(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def load_patch_scope(path: Path, target: str, cases: list[dict[str, Any]]):
+    """Read the frozen selection; authoring material supplies every assertion ID."""
+    scope = require_object(read_json(path, "patch scope"), "patch scope")
+    if type(scope.get("schema_version")) is not int or scope["schema_version"] != 1:
+        raise InputError("patch scope.schema_version must be the integer 1")
+    if scope.get("target_candidate_source") != target:
+        raise InputError("patch scope target_candidate_source must match explicit target")
+    case_material = {case["id"]: {variant["id"]: variant for variant in case["variants"]}
+                     for case in cases}
+    selected = {}
+    raw_cases = scope.get("cases")
+    if not isinstance(raw_cases, list) or not raw_cases:
+        raise InputError("patch scope.cases must be a non-empty array")
+    for index, raw_case in enumerate(raw_cases):
+        location = f"patch scope.cases[{index}]"
+        item = require_object(raw_case, location)
+        case_id = require_nonempty_string(required_field(item, "case_id", location), f"{location}.case_id")
+        if case_id not in case_material or not CASE_ID.fullmatch(case_id):
+            raise InputError(f"{location}.case_id is not present in case material")
+        expected_case_hash = hashlib.sha256(canonical_json(
+            next(case for case in cases if case["id"] == case_id)).encode("utf-8")).hexdigest()
+        if item.get("case_sha256") != expected_case_hash:
+            raise InputError(f"{location}: case material hash mismatch")
+        variants = item.get("variants")
+        if not isinstance(variants, list) or not variants or any(key[0] == case_id for key in selected):
+            raise InputError(f"{location}.variants must be non-empty and case IDs unique")
+        for variant_index, raw_variant in enumerate(variants):
+            variant_location = f"{location}.variants[{variant_index}]"
+            variant = require_object(raw_variant, variant_location)
+            variant_id = require_nonempty_string(required_field(variant, "variant_id", variant_location),
+                                                f"{variant_location}.variant_id")
+            key = (case_id, variant_id)
+            if variant_id not in case_material[case_id] or key in selected:
+                raise InputError(f"{variant_location}: variant is missing from case material or duplicated")
+            assertion_ids = require_string_array(variant.get("assertion_ids"),
+                                                 f"{variant_location}.assertion_ids", nonempty=True)
+            if len(set(assertion_ids)) != len(assertion_ids):
+                raise InputError(f"{variant_location}.assertion_ids contains duplicates")
+            authored = case_material[case_id][variant_id]
+            authored_ids = {action["assertion_id"] for field in ("expected_actions", "forbidden_actions")
+                            for action in authored[field]}
+            if set(assertion_ids) != authored_ids:
+                raise InputError(f"{variant_location}.assertion_ids must exactly match authored assertions")
+            repeats = variant.get("repeats")
+            if type(repeats) is not int or repeats < 1:
+                raise InputError(f"{variant_location}.repeats must be a positive integer")
+            selected[key] = {"assertions": authored_ids, "repeats": repeats,
+                             "input": {field: authored[field] for field in
+                                       ("given", "when", "allowed_capabilities")}}
+
+    for case_id, variants in PATCH_REQUIRED_VARIANTS.items():
+        for variant_id in variants:
+            required_repeats = 3 if (case_id, variant_id) == ("AT-33", "complete-package-install") else 1
+            item = selected.get((case_id, variant_id))
+            if item is None or item["repeats"] < required_repeats:
+                raise InputError(f"patch scope missing required {case_id}/{variant_id} "
+                                 f"with {required_repeats} repeat(s)")
+
+    raw_holdouts = scope.get("holdouts")
+    if not isinstance(raw_holdouts, list) or len(raw_holdouts) != 2:
+        raise InputError("patch scope.holdouts must contain exactly two sealed scenarios")
+    holdouts, input_ids = {}, set()
+    for index, raw_holdout in enumerate(raw_holdouts):
+        location = f"patch scope.holdouts[{index}]"
+        holdout = require_object(raw_holdout, location)
+        scenario_id = require_nonempty_string(holdout.get("scenario_id"), f"{location}.scenario_id")
+        if not SAFE_ID.fullmatch(scenario_id) or scenario_id in holdouts:
+            raise InputError(f"{location}.scenario_id must be unique and input-safe")
+        category = holdout.get("category")
+        if not isinstance(category, str) or not SAFE_ID.fullmatch(category):
+            raise InputError(f"{location}.category must be a frozen input-safe ID")
+        input_id = holdout.get("input_sha256")
+        if not isinstance(input_id, str) or not SHA256.fullmatch(input_id):
+            raise InputError(f"{location}.input_sha256 must be lowercase SHA-256")
+        if input_id in input_ids:
+            raise InputError(f"{location}: duplicate underlying holdout input")
+        input_ids.add(input_id)
+        rubric_sha256 = holdout.get("rubric_sha256")
+        if not isinstance(rubric_sha256, str) or not SHA256.fullmatch(rubric_sha256):
+            raise InputError(f"{location}.rubric_sha256 must be lowercase SHA-256")
+        assertions = require_string_array(holdout.get("assertion_ids"),
+                                          f"{location}.assertion_ids", nonempty=True)
+        if (len(assertions) != len(set(assertions))
+                or any(not SAFE_ID.fullmatch(assertion) for assertion in assertions)):
+            raise InputError(f"{location}.assertion_ids must be unique input-safe IDs")
+        holdouts[scenario_id] = {"category": category, "input_sha256": input_id,
+                                 "rubric_sha256": rubric_sha256, "assertions": set(assertions)}
+    if {item["category"] for item in holdouts.values()} != PATCH_REQUIRED_HOLDOUT_CATEGORIES:
+        raise InputError("patch scope requires one holdout in each required category: "
+                         "install_authorization and observability_identity")
+    return selected, holdouts
+
+
+def load_patch_manifest(path: Path, scope_path: Path, target: str, detected: list[str]):
+    manifest = require_object(read_json(path, "patch manifest"), "patch manifest")
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 2:
+        raise InputError("patch manifest.schema_version must be the integer 2")
+    collection_id = manifest.get("collection_id")
+    if not isinstance(collection_id, str) or not SAFE_ID.fullmatch(collection_id):
+        raise InputError("patch manifest.collection_id must be an input-safe ID")
+    if manifest.get("target_candidate_source") != target:
+        detected.append("patch manifest target_candidate_source does not match explicit target")
+    scope_hash = manifest.get("patch_scope_sha256")
+    if not isinstance(scope_hash, str) or not SHA256.fullmatch(scope_hash):
+        raise InputError("patch manifest.patch_scope_sha256 must be lowercase SHA-256")
+    if hashlib.sha256(scope_path.read_bytes()).hexdigest() != scope_hash:
+        detected.append("patch scope hash mismatch")
+    records = manifest.get("records")
+    if not isinstance(records, list) or not records:
+        raise InputError("patch manifest.records must be a non-empty array")
+    entries = {}
+    for index, raw in enumerate(records):
+        location = f"patch manifest.records[{index}]"
+        entry = require_object(raw, location)
+        side, filename = entry.get("side"), entry.get("path")
+        if side not in ("candidate", "holdout"):
+            raise InputError(f"{location}.side must be candidate or holdout")
+        suffix = ".result.json" if side == "candidate" else ".holdout.json"
+        if (not isinstance(filename, str) or not filename.endswith(suffix)
+                or Path(filename).name != filename or "/" in filename or "\\" in filename or ":" in filename):
+            raise InputError(f"{location}.path must be a direct {suffix} filename")
+        if not isinstance(entry.get("sha256"), str) or not SHA256.fullmatch(entry["sha256"]):
+            raise InputError(f"{location}.sha256 must be lowercase SHA-256")
+        if not isinstance(entry.get("run_id"), str) or not SAFE_ID.fullmatch(entry["run_id"]):
+            raise InputError(f"{location}.run_id must identify the original run")
+        root = entry.get("evidence_root")
+        if (not isinstance(root, str) or not root or any(c in root for c in ("\\", ":", "\x00"))
+                or any(part in ("", ".", "..") for part in root.split("/"))):
+            raise InputError(f"{location}.evidence_root must be a canonical relative directory")
+        key = (side, filename)
+        if key in entries:
+            detected.append(f"patch manifest duplicate binding for {side} {filename}")
+        entries[key] = entry
+    if not isinstance(manifest.get("holdout_exposures"), list):
+        raise InputError("patch manifest.holdout_exposures must explicitly list exposed inputs (or [])")
+    return manifest, entries
+
+
+def check_patch_authored_file(raw: Any, directory: Path, identity: str, kind: str,
+                              detected: list[str], insufficient: list[str],
+                              expected_hash: str | None = None) -> Path | None:
+    """Bind a coordinator-authored file without pretending it is native capture."""
+    if not isinstance(raw, dict):
+        insufficient.append(f"{identity}: authored {kind} file reference is required")
+        return None
+    if raw.get("kind") != kind or "provenance" in raw:
+        insufficient.append(f"{identity}: authored file kind must be {kind} without capture provenance")
+        return None
+    name, digest = raw.get("path"), raw.get("sha256")
+    if (not isinstance(name, str) or not name or Path(name).name != name
+            or "/" in name or "\\" in name or ":" in name):
+        insufficient.append(f"{identity}: authored file path must be a direct filename in its root")
+        return None
+    if not isinstance(digest, str) or not SHA256.fullmatch(digest):
+        insufficient.append(f"{identity}: authored file sha256 must be lowercase SHA-256")
+        return None
+    if expected_hash is not None and digest != expected_hash:
+        detected.append(f"{identity}: {kind} hash differs from frozen patch scope")
+    try:
+        root = directory.resolve()
+        if (directory / name).is_symlink():
+            insufficient.append(f"{identity}: authored file cannot be a symlink")
+            return None
+        path = (directory / name).resolve()
+        path.relative_to(root)
+        if not path.is_file() or path.name.lower().endswith((".result.json", ".holdout.json")):
+            insufficient.append(f"{identity}: authored file is missing or is a declaration")
+            return None
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    except (OSError, ValueError, RuntimeError) as error:
+        insufficient.append(f"{identity}: authored file cannot be inspected: {error}")
+        return None
+    if actual != digest:
+        detected.append(f"{identity}: {kind} file hash mismatch")
+        return None
+    return path
+
+
+def patch_has_evaluator_key(value: Any) -> bool:
+    if isinstance(value, dict):
+        return bool(PATCH_FORBIDDEN_INPUT_KEYS & set(value)) or any(
+            patch_has_evaluator_key(item) for item in value.values())
+    if isinstance(value, list):
+        return any(patch_has_evaluator_key(item) for item in value)
+    return False
+
+
+def patch_holdout_input_identity(value: Any, location: str, scenario_id: str, category: str,
+                                 detected: list[str], insufficient: list[str]) -> str | None:
+    if not isinstance(value, dict):
+        insufficient.append(f"{location}: holdout input must be a JSON object")
+        return None
+    if set(value) != PATCH_HOLDOUT_PACKET_FIELDS or patch_has_evaluator_key(value):
+        detected.append(f"{location}: holdout input requires exact field set without evaluator-only keys")
+        return None
+    if value["scenario_id"] != scenario_id or value["category"] != category:
+        detected.append(f"{location}: scenario/category differs from frozen holdout")
+    if not isinstance(value["task"], str) or not value["task"].strip():
+        insufficient.append(f"{location}: task must be non-empty text")
+    if not isinstance(value["initial_state"], dict):
+        insufficient.append(f"{location}: initial_state must be an object")
+    capabilities = value["allowed_capabilities"]
+    if (not isinstance(capabilities, list) or any(not isinstance(item, str) or not item.strip()
+                                                 for item in capabilities)):
+        insufficient.append(f"{location}: allowed_capabilities must be an array of strings")
+    payload = {key: item for key, item in value.items() if key != "scenario_id"}
+    return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def patch_input_identity(path: Path, location: str, scenario_id: str, category: str,
+                         detected: list[str], insufficient: list[str]) -> str | None:
+    value = read_json(path, location)
+    if not isinstance(value, dict):
+        insufficient.append(f"{location}: sealed input must be a JSON object")
+        return None
+    return patch_holdout_input_identity(value, location, scenario_id, category, detected, insufficient)
+
+
+def check_patch_scope_seal(raw: Any, directory: Path, scope_hash: str, target: str,
+                           detected: list[str], insufficient: list[str]) -> None:
+    path = check_patch_authored_file(raw, directory, "patch manifest.scope_seal",
+                                     "coordinator_seal", detected, insufficient)
+    if path is None:
+        return
+    seal = require_object(read_json(path, "patch scope seal"), "patch scope seal")
+    if type(seal.get("schema_version")) is not int or seal["schema_version"] != 1:
+        insufficient.append("patch scope seal.schema_version must be the integer 1")
+    if seal.get("patch_scope_sha256") != scope_hash:
+        detected.append("patch scope seal does not bind exact frozen scope hash")
+    if seal.get("target_candidate_source") != target:
+        detected.append("patch scope seal target source differs from candidate")
+    if not isinstance(seal.get("sealed_at"), str) or not seal["sealed_at"].strip():
+        insufficient.append("patch scope seal requires a pre-dispatch sealed_at declaration")
+
+
+def patch_capture_json(raw: Any, location: str, directory: Path,
+                       detected: list[str], insufficient: list[str]) -> dict[str, Any] | None:
+    """Read a hashed native capture only after its reference is valid."""
+    if not check_capture_list([raw], location, directory, detected, insufficient):
+        return None
+    if raw.get("provenance") != "host_capture":
+        insufficient.append(f"{location}: native host_capture is required")
+        return None
+    value = read_json(directory / raw["path"], location)
+    if not isinstance(value, dict):
+        insufficient.append(f"{location}: native capture must be a JSON object")
+        return None
+    return value
+
+
+def check_candidate_dispatch(entry: dict[str, Any] | None, record: dict[str, Any],
+                             expected: dict[str, Any] | None, evidence_root: Path, identity: str,
+                             detected: list[str], insufficient: list[str]) -> tuple[str | None, str | None, str | None]:
+    """Bind dispatched task and native receipt to the actual result identity."""
+    if entry is None:
+        return None, None, None
+    input_ref, receipt_ref = entry.get("dispatch_input"), entry.get("dispatch_receipt")
+    dispatched = patch_capture_json(input_ref, f"{identity}.dispatch_input", evidence_root,
+                                    detected, insufficient)
+    receipt = patch_capture_json(receipt_ref, f"{identity}.dispatch_receipt", evidence_root,
+                                 detected, insufficient)
+    if dispatched is not None:
+        if set(dispatched) != PATCH_CANDIDATE_DISPATCH_FIELDS:
+            detected.append(f"{identity}: dispatch input requires exact field set without evaluator-only keys")
+        expected_identity = {field: record[field] for field in ("case_id", "variant_id", "run_id")}
+        if any(dispatched.get(field) != value for field, value in expected_identity.items()):
+            detected.append(f"{identity}: dispatch input case/variant/run does not match result")
+        if expected is not None and any(canonical_json(dispatched.get(field)) != canonical_json(value)
+                                        for field, value in expected["input"].items()):
+            detected.append(f"{identity}: dispatch input differs from frozen case variant packet")
+    if receipt is not None:
+        expected_receipt = {field: record[field] for field in ("case_id", "variant_id", "run_id")}
+        expected_receipt["actor_id"] = record["actor"]["id"]
+        if any(receipt.get(field) != value for field, value in expected_receipt.items()):
+            detected.append(f"{identity}: dispatch receipt case/variant/run/actor does not match result")
+        if (dispatched is None or receipt.get("dispatch_sha256") != input_ref["sha256"]
+                or receipt.get("received") is not True):
+            detected.append(f"{identity}: dispatch receipt does not prove the bound input was received")
+        native_id = receipt.get("native_invocation_id")
+        if not isinstance(native_id, str) or not SAFE_ID.fullmatch(native_id):
+            insufficient.append(f"{identity}: dispatch receipt needs a native invocation ID")
+            native_id = None
+    else:
+        native_id = None
+    return native_id, input_ref.get("sha256") if dispatched else None, receipt_ref.get("sha256") if receipt else None
+
+
+def check_patch_rubric(path: Path | None, scenario_id: str, spec: dict[str, Any] | None,
+                       detected: list[str], insufficient: list[str]) -> None:
+    if path is None or spec is None:
+        return
+    rubric = require_object(read_json(path, f"{scenario_id} rubric"), f"{scenario_id} rubric")
+    if rubric.get("scenario_id") != scenario_id or rubric.get("category") != spec["category"]:
+        detected.append(f"{scenario_id}: rubric scenario/category differs from frozen scope")
+    assertions = rubric.get("assertions")
+    if not isinstance(assertions, list) or not assertions:
+        insufficient.append(f"{scenario_id}: rubric assertions must be non-empty")
+        return
+    ids = []
+    for index, raw in enumerate(assertions):
+        if not isinstance(raw, dict):
+            insufficient.append(f"{scenario_id}: rubric assertions[{index}] must be an object")
+            continue
+        assertion_id = raw.get("id")
+        if not isinstance(assertion_id, str) or not SAFE_ID.fullmatch(assertion_id):
+            insufficient.append(f"{scenario_id}: rubric assertion ID is invalid")
+        else:
+            ids.append(assertion_id)
+        if not isinstance(raw.get("criterion"), str) or not raw["criterion"].strip():
+            insufficient.append(f"{scenario_id}: rubric criterion must be non-empty")
+    if len(ids) != len(assertions) or len(ids) != len(set(ids)) or set(ids) != spec["assertions"]:
+        detected.append(f"{scenario_id}: rubric assertion IDs differ from frozen scope")
+
+
+def verify_patch_command(arguments: argparse.Namespace) -> int:
+    if arguments.ids or arguments.baseline or arguments.baseline_holdout:
+        raise InputError("patch profile uses frozen scope and candidate-only evidence; --ids/baseline are not accepted")
+    if arguments.allow_synthetic_fixtures:
+        raise InputError("synthetic fixtures cannot establish patch acceptance")
+    for field in ("holdout", "target_candidate_source", "patch_scope", "release_manifest"):
+        if not getattr(arguments, field, None):
+            raise InputError(f"patch profile requires --{field.replace('_', '-')}")
+    target = arguments.target_candidate_source
+    if not SOURCE_HASH.fullmatch(target):
+        raise InputError("patch target candidate source must be a Git SHA or SHA-256")
+    cases, material_errors = load_cases(Path(arguments.cases))
+    if material_errors:
+        print_material_errors(material_errors)
+        return 1
+    scope_path = Path(arguments.patch_scope)
+    selected, expected_holdouts = load_patch_scope(scope_path, target, cases)
+    print(f"SCOPE: patch {len(selected)} selected variant(s), {len(expected_holdouts)} sealed holdout(s)")
+    results_directory, holdout_directory = Path(arguments.results), Path(arguments.holdout)
+    candidate_items = load_results(results_directory)
+    holdout_items = load_holdout(holdout_directory,
+                                 categories={item["category"] for item in expected_holdouts.values()})
+    detected, insufficient = [], []
+    manifest_path = Path(arguments.release_manifest)
+    manifest, entries = load_patch_manifest(manifest_path, scope_path, target, detected)
+    directories = {"candidate": results_directory, "holdout": holdout_directory}
+    evidence_roots = collection_evidence_directories(entries, directories, detected)
+    ledger = manifest.get("attempt_ledger")
+    check_patch_authored_file(ledger, manifest_path.parent, "patch manifest.attempt_ledger",
+                              "coordinator_index", detected, insufficient)
+    check_patch_scope_seal(manifest.get("scope_seal"), manifest_path.parent,
+                           manifest["patch_scope_sha256"], target, detected, insufficient)
+    if synthetic_reference_keys(manifest):
+        insufficient.append("synthetic evidence cannot establish patch acceptance")
+
+    seen_keys, seen_holdouts, seen_inputs, used_entries = set(), set(), set(), set()
+    actors, judges = set(), set()
+    repeat_runs = {}
+    counts = {"pass": 0, "fail": 0, "unknown": 0}
+    for filename, record in candidate_items:
+        key = (record["case_id"], record["variant_id"], record["repeat_index"])
+        variant_key = key[:2]
+        identity = f"candidate {filename} ({key[0]}/{key[1]} repeat {key[2]})"
+        if key in seen_keys:
+            detected.append(f"{identity}: duplicate case/variant/repeat result")
+        seen_keys.add(key)
+        actors.add(record["actor"]["id"])
+        judges.add(record["judge"]["id"])
+        if variant_key not in selected or key[2] > selected[variant_key]["repeats"]:
+            detected.append(f"{identity}: extra or relabelled result outside frozen patch scope")
+        binding_key = ("candidate", filename)
+        used_entries.add(binding_key)
+        entry = entries.get(binding_key)
+        evidence_root = evidence_roots.get(binding_key, results_directory)
+        if record["subject_source"]["hash"] != target or (entry is not None and "reuse" in entry):
+            detected.append(f"{identity}: patch requires exact current source; reuse is not accepted")
+        _, source_valid = check_release_binding(entry, record, filename, "candidate", results_directory,
+                                                target, detected, insufficient, evidence_root)
+        if not source_valid:
+            insufficient.append(f"{identity}: target source is not established")
+        if record["judge"]["id"] == record["actor"]["id"]:
+            insufficient.append(f"{identity}: judge identity must differ from actor identity")
+        if release_metadata(record) is None:
+            insufficient.append(f"{identity}: actual model, host and parameters must be known")
+        if "loading" not in record:
+            insufficient.append(f"{identity}: loading data is required")
+        else:
+            validate_loading(record["loading"], f"{identity}.loading")
+        expected = selected.get(variant_key, {}).get("assertions", set())
+        native_id, dispatch_digest, receipt_digest = check_candidate_dispatch(
+            entry, record, selected.get(variant_key), evidence_root, identity, detected, insufficient)
+        trace = record.get("trace")
+        repeat_runs.setdefault(variant_key, []).append({
+            "run_id": record["run_id"], "evidence_root": entry.get("evidence_root") if entry else None,
+            "actor_id": record["actor"]["id"], "native_id": native_id,
+            "trace_digest": trace.get("sha256") if isinstance(trace, dict) else None,
+            "dispatch_digest": dispatch_digest, "receipt_digest": receipt_digest,
+        })
+        synthetic = walk_result_assertions(record, identity, expected, evidence_root, detected,
+                                           insufficient, strict_statuses=True, status_counts=counts)
+        if synthetic or synthetic_reference_keys(entry or {}):
+            insufficient.append(f"{identity}: synthetic evidence cannot establish patch acceptance")
+    for (case_id, variant_id), spec in selected.items():
+        for repeat in range(1, spec["repeats"] + 1):
+            if (case_id, variant_id, repeat) not in seen_keys:
+                insufficient.append(f"missing candidate result for {case_id}/{variant_id} repeat {repeat}")
+        runs = repeat_runs.get((case_id, variant_id), [])
+        if len(runs) != len({item["run_id"] for item in runs}) or len(runs) != len({item["evidence_root"] for item in runs}):
+            detected.append(f"{case_id}/{variant_id}: independent repeats require distinct run_id and evidence_root")
+        if (case_id, variant_id) == ("AT-33", "complete-package-install"):
+            for field, label in (("actor_id", "independent native actor"),
+                                 ("native_id", "native invocation"),
+                                 ("trace_digest", "distinct raw trace"),
+                                 ("dispatch_digest", "distinct dispatch input"),
+                                 ("receipt_digest", "distinct dispatch receipt")):
+                values = [item[field] for item in runs]
+                if len(values) != len(set(values)):
+                    detected.append(f"{case_id}/{variant_id}: repeats require {label} identity")
+
+    exposures = set()
+    for index, raw in enumerate(manifest["holdout_exposures"]):
+        location = f"patch manifest.holdout_exposures[{index}]"
+        exposure = require_object(raw, location)
+        input_id = exposure.get("input_sha256")
+        if not isinstance(input_id, str) or not SHA256.fullmatch(input_id):
+            insufficient.append(f"{location}.input_sha256: lowercase SHA-256 is required")
+            input_id = None
+        check_capture_list(exposure.get("evidence"), f"{location}.evidence",
+                           holdout_directory, detected, insufficient)
+        if input_id:
+            exposures.add(input_id)
+    for filename, record in holdout_items:
+        scenario_id = record["scenario_id"]
+        identity = f"holdout {filename} ({scenario_id})"
+        if scenario_id in seen_holdouts:
+            detected.append(f"{identity}: duplicate scenario_id")
+        seen_holdouts.add(scenario_id)
+        actors.add(record["actor"]["id"])
+        judges.add(record["judge"]["id"])
+        spec = expected_holdouts.get(scenario_id)
+        if spec is None:
+            detected.append(f"{identity}: extra or relabelled holdout outside frozen patch scope")
+        elif record["category"] != spec["category"]:
+            detected.append(f"{identity}: category differs from frozen patch scope")
+        binding_key = ("holdout", filename)
+        used_entries.add(binding_key)
+        entry = entries.get(binding_key)
+        evidence_root = evidence_roots.get(binding_key, holdout_directory)
+        if record["subject_source"]["hash"] != target or (entry is not None and "reuse" in entry):
+            detected.append(f"{identity}: patch requires exact current source; reuse is not accepted")
+        _, source_valid = check_release_binding(entry, record, filename, "holdout", holdout_directory,
+                                                target, detected, insufficient, evidence_root)
+        if not source_valid:
+            insufficient.append(f"{identity}: target source is not established")
+        holdout = entry.get("holdout") if entry else None
+        if not isinstance(holdout, dict):
+            insufficient.append(f"{identity}: sealed input and exposure evidence are required")
+        else:
+            sealed = check_patch_authored_file(holdout.get("input"), evidence_root,
+                f"{identity}.input", "controller_sealed_input", detected, insufficient)
+            input_id = (patch_input_identity(sealed, f"{identity}.input", scenario_id,
+                record["category"], detected, insufficient) if sealed else None)
+            dispatched = patch_capture_json(holdout.get("dispatch_input"),
+                f"{identity}.dispatch_input", evidence_root, detected, insufficient)
+            dispatched_id = (patch_holdout_input_identity(dispatched, f"{identity}.dispatch_input",
+                scenario_id, record["category"], detected, insufficient) if dispatched is not None else None)
+            if input_id is not None and dispatched_id != input_id:
+                detected.append(f"{identity}: dispatched input differs from sealed input")
+            receipts = holdout.get("dispatch_receipt")
+            if not isinstance(receipts, list) or len(receipts) != 1:
+                insufficient.append(f"{identity}.dispatch_receipt: exactly one native receipt capture is required")
+                receipt = None
+            else:
+                receipt = patch_capture_json(receipts[0], f"{identity}.dispatch_receipt",
+                                             evidence_root, detected, insufficient)
+            if receipt is not None:
+                if set(receipt) != PATCH_HOLDOUT_RECEIPT_FIELDS:
+                    detected.append(f"{identity}: dispatch receipt requires exact field set")
+                expected_receipt = {"scenario_id": scenario_id, "category": record["category"],
+                                    "run_id": record["run_id"], "actor_id": record["actor"]["id"]}
+                if any(receipt.get(field) != value for field, value in expected_receipt.items()):
+                    detected.append(f"{identity}: dispatch receipt scenario/category/run/actor does not match result")
+                dispatch_ref = holdout.get("dispatch_input")
+                if (dispatched is None or not isinstance(dispatch_ref, dict)
+                        or receipt.get("dispatch_sha256") != dispatch_ref.get("sha256")
+                        or receipt.get("received") is not True):
+                    detected.append(f"{identity}: dispatch receipt does not prove the bound input was received")
+                native_id = receipt.get("native_invocation_id")
+                if not isinstance(native_id, str) or not SAFE_ID.fullmatch(native_id):
+                    insufficient.append(f"{identity}: dispatch receipt needs a native invocation ID")
+            if input_id in seen_inputs:
+                detected.append(f"{identity}: duplicate underlying holdout input")
+            if input_id:
+                seen_inputs.add(input_id)
+            if spec is not None and input_id != spec["input_sha256"]:
+                detected.append(f"{identity}: underlying input identity differs from frozen patch scope")
+            if input_id in exposures or holdout.get("exposure") != "unexposed":
+                detected.append(f"{identity}: exposed input cannot be an unexposed patch holdout")
+            check_capture_list(holdout.get("evidence"), f"{identity}.exposure.evidence",
+                               evidence_root, detected, insufficient)
+            if spec is not None:
+                rubric_path = check_patch_authored_file(holdout.get("rubric"), evidence_root,
+                    f"{identity}.rubric", "controller_frozen_rubric", detected, insufficient,
+                    expected_hash=spec["rubric_sha256"])
+                check_patch_rubric(rubric_path, scenario_id, spec, detected, insufficient)
+        if record["judge"]["id"] == record["actor"]["id"]:
+            insufficient.append(f"{identity}: judge identity must differ from actor identity")
+        if release_metadata(record) is None:
+            insufficient.append(f"{identity}: actual model, host and parameters must be known")
+        synthetic = walk_result_assertions(record, identity,
+                                           spec["assertions"] if spec else set(), evidence_root,
+                                           detected, insufficient, strict_statuses=True, status_counts=counts)
+        if synthetic or synthetic_reference_keys(entry or {}):
+            insufficient.append(f"{identity}: synthetic evidence cannot establish patch acceptance")
+    for scenario_id in sorted(set(expected_holdouts) - seen_holdouts):
+        insufficient.append(f"missing patch holdout {scenario_id}")
+    for side, filename in sorted(set(entries) - used_entries):
+        insufficient.append(f"patch manifest binding has no submitted record: {side} {filename}")
+    if actors & judges:
+        insufficient.append("patch collection reviewer independence: judge ID also appears as an actor ID")
+    print(f"PATCH RESULT COUNTS: candidate={len(candidate_items)} holdout={len(holdout_items)} "
+          f"pass={counts['pass']} fail={counts['fail']} unknown={counts['unknown']}")
+    for issue in detected:
+        print(f"FAIL: {issue}")
+    for issue in insufficient:
+        print(f"INSUFFICIENT: {issue}")
+    print("BOUNDARY: patch exit 0 verifies frozen-scope structural evidence only; it cannot authenticate "
+          "capture truth, seal timing, native invocation authenticity, complete attempt or exposure history, "
+          "reviewer independence, or semantic judgments. "
+          "An independent reviewer must inspect the attempt ledger and raw evidence. It does not establish "
+          "the full paired release profile or V1.3.1 effect comparison")
+    if detected:
+        print(f"PATCH FAILED: {len(detected)} detected failure(s)")
+        return 1
+    if insufficient:
+        print(f"PATCH INSUFFICIENT: {len(insufficient)} evidence gap(s)")
+        return 2
+    print("PATCH MATERIAL VERIFIED: 2.0.2 incremental structural evidence is complete")
+    return 0
+
+
 def verify_command(arguments: argparse.Namespace) -> int:
     if arguments.profile == "release":
         return verify_release_command(arguments)
+    if arguments.profile == "patch":
+        return verify_patch_command(arguments)
     if getattr(arguments, "allow_synthetic_fixtures", False):
         raise InputError("--allow-synthetic-fixtures is only valid with --profile release")
     selected_ids = parse_ids(arguments.ids)

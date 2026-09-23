@@ -63,6 +63,10 @@ Point your tool's skill, prompt, rules, or instruction loader at the repository 
 
 Per-host support levels and what was natively verified: [host support table](docs/devflow/host-support.md).
 
+Current V2 full behavior acceptance remains open. Published tags and passing
+maintenance checks do not establish that gate; see the [evaluation status](docs/devflow/v2-evaluation-summary.md)
+for historical results, current preflight evidence and remaining limitations.
+
 ## Usage
 
 Ask the assistant to use Devflow before a development task:

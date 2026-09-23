@@ -2,7 +2,9 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
-## Unreleased
+## 2.0.2 (unreleased)
+
+- Require proposed telemetry measurements to define their observation window, counting unit, eligible population, and applicable numerator/denominator in the current deliverable. Explicit inclusion rules preserve unknown and unverified observations; this clarification follows a retained AT-02 candidate failure, with behavioral revalidation still pending.
 
 - Reject result and holdout declarations as capture evidence across checkpoint, release and manifest references, including filename case variants and symlink aliases.
 - Validate installation manifest schemas and complete source-derived file/link coverage. Installed bytes are checked against the supplied bundle, including files copied through internal directory links, so rewriting manifest hashes cannot conceal modified content.

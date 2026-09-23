@@ -1565,3 +1565,668 @@ class ReleaseProfileTests(BehaviorCheckerTests):
 
         self.assertEqual(result.returncode, 2)
         self.assertIn("no paired loading data", result.stdout)
+
+
+class PatchProfileTests(unittest.TestCase):
+    """Structural patch fixtures are host-labelled bytes, never real acceptance."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.cases = self.root / "cases"
+        self.results = self.root / "results"
+        self.holdout = self.root / "holdout"
+        for directory in (self.cases, self.results, self.holdout):
+            directory.mkdir()
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    @staticmethod
+    def digest(path):
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def save(self, path, data):
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        return path
+
+    def reference(self, path):
+        return {"path": path.name, "sha256": self.digest(path), "provenance": "host_capture"}
+
+    def fixture(self):
+        variant = {
+            "id": "target", "given": {"request": "check target"}, "when": "actor responds",
+            "allowed_capabilities": ["filesystem.read"],
+            "expected_actions": [{"assertion_id": "AT-02-A01", "criterion": "correct metric"}],
+            "forbidden_actions": [{"assertion_id": "AT-02-F01", "criterion": "no false metric"}],
+        }
+        case = {"id": "AT-02", "title": "metric", "requirement_ids": ["FR-01"],
+                "variants": [variant]}
+        self.save(self.cases / "routing.json", {"schema_version": 1, "cases": [case]})
+        scope = {
+            "schema_version": 1, "target_candidate_source": "a" * 40,
+            "cases": [{"case_id": "AT-02", "case_sha256": hashlib.sha256(json.dumps(case,
+                       sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest(),
+                       "variants": [{"variant_id": "target",
+                       "assertion_ids": ["AT-02-A01", "AT-02-F01"], "repeats": 1}]}],
+            "holdouts": [],
+        }
+        manifest = {"schema_version": 2, "collection_id": "patch-fixture",
+                    "target_candidate_source": "a" * 40, "patch_scope_sha256": "",
+                    "attempt_ledger": None, "records": [], "holdout_exposures": []}
+
+        def captured(directory, name, content):
+            evidence_root = directory / "evidence" / name
+            evidence_root.mkdir(parents=True)
+            trace = evidence_root / "trace.txt"
+            trace.write_text(content, encoding="utf-8")
+            return self.reference(trace), evidence_root.relative_to(directory).as_posix()
+
+        def record(trace, **identity):
+            return {"schema_version": 1, "run_id": "patch-run-" + identity.get("scenario_id", "at02"),
+                    "subject_source": {"version": "2.0.2", "hash": "a" * 40},
+                    "actor": {"id": "actor"}, "model": {"id": "model", "parameters": {"effort": "high"}},
+                    "host": {"id": "windows-codex"}, "conditions_digest": "b" * 64,
+                    "actual_actions": [{"action": "read", "target": "rules", "outcome": "done"}],
+                    "actual_artifacts": [copy.deepcopy(trace)], "trace": copy.deepcopy(trace),
+                    "judge": {"id": "judge", "type": "independent"}, "evidence_limits": [],
+                    **identity}
+
+        def binding(side, path, item, root, trace):
+            conditions = {field: {"value": {"captured": field}, "evidence": [copy.deepcopy(trace)]}
+                          for field in ("task_input", "initial_state", "user_rules", "capabilities", "budget")}
+            return {"side": side, "path": path.name, "sha256": self.digest(path),
+                    "run_id": item["run_id"], "evidence_root": root, "conditions": conditions}
+
+        def dispatch_binding(entry, item, authored):
+            directory = self.results / entry["evidence_root"]
+            dispatched = {"case_id": item["case_id"], "variant_id": item["variant_id"],
+                          "run_id": item["run_id"], "given": authored["given"],
+                          "when": authored["when"],
+                          "allowed_capabilities": authored["allowed_capabilities"]}
+            input_path = self.save(directory / "dispatch-input.json", dispatched)
+            receipt = {"case_id": item["case_id"], "variant_id": item["variant_id"],
+                       "run_id": item["run_id"], "actor_id": item["actor"]["id"],
+                       "native_invocation_id": "native-" + item["run_id"],
+                       "dispatch_sha256": self.digest(input_path), "received": True}
+            receipt_path = self.save(directory / "dispatch-receipt.json", receipt)
+            entry["dispatch_input"] = self.reference(input_path)
+            entry["dispatch_receipt"] = self.reference(receipt_path)
+
+        trace, evidence_root = captured(self.results, "at02", "structural fixture candidate trace")
+        candidate = record(trace, case_id="AT-02", variant_id="target", repeat_index=1)
+        candidate["assertions"] = [{"id": aid, "status": "pass", "evidence": [copy.deepcopy(trace)]}
+                                   for aid in ("AT-02-A01", "AT-02-F01")]
+        candidate["loading"] = {"total_bytes": 5, "entries": [{"path": "rules", "bytes": 5}]}
+        path = self.save(self.results / "at02.result.json", candidate)
+        manifest["records"].append(binding("candidate", path, candidate, evidence_root, trace))
+        dispatch_binding(manifest["records"][-1], candidate, variant)
+
+        required = {
+            "AT-02": ("default-off-analysis", "enabled-minimal-recording", "stopped-recording", "local-export"),
+            "AT-30": ("zero-reads-no-applicable-task", "applicability-unknown"),
+            "AT-31": ("untrusted-content-with-embedded-instructions",),
+            "AT-33": ("flat-install-missing-shared-template", "complete-package-install",
+                      "single-skill-with-dependencies", "linked-install"),
+        }
+        authored_cases = {"AT-02": case}
+        scope_cases = {"AT-02": scope["cases"][0]}
+        for case_id, variants in required.items():
+            if case_id not in authored_cases:
+                authored_cases[case_id] = {"id": case_id, "title": case_id,
+                                            "requirement_ids": ["FR-01"], "variants": []}
+                scope_cases[case_id] = {"case_id": case_id, "variants": []}
+            for variant_id in variants:
+                ids = [f"{case_id}-{variant_id}-E01", f"{case_id}-{variant_id}-F01"]
+                authored_cases[case_id]["variants"].append({
+                    "id": variant_id, "given": {"request": variant_id}, "when": "actor responds",
+                    "allowed_capabilities": ["filesystem.read"],
+                    "expected_actions": [{"assertion_id": ids[0], "criterion": "required action"}],
+                    "forbidden_actions": [{"assertion_id": ids[1], "criterion": "forbidden action"}],
+                })
+                repeats = 3 if (case_id, variant_id) == ("AT-33", "complete-package-install") else 1
+                scope_cases[case_id]["variants"].append({"variant_id": variant_id,
+                                                         "assertion_ids": ids, "repeats": repeats})
+                for repeat in range(1, repeats + 1):
+                    name = f"{case_id}-{variant_id}-r{repeat}"
+                    variant_trace, variant_root = captured(self.results, name, f"structural {name} trace")
+                    item = record(variant_trace, case_id=case_id, variant_id=variant_id, repeat_index=repeat)
+                    item["run_id"] = f"patch-run-{name}"
+                    item["actor"]["id"] = "actor-" + name
+                    item["assertions"] = [{"id": aid, "status": "pass",
+                                           "evidence": [copy.deepcopy(variant_trace)]} for aid in ids]
+                    item["loading"] = {"total_bytes": 5, "entries": [{"path": "rules", "bytes": 5}]}
+                    item_path = self.save(self.results / f"{name}.result.json", item)
+                    manifest["records"].append(binding("candidate", item_path, item,
+                                                       variant_root, variant_trace))
+                    dispatch_binding(manifest["records"][-1], item, authored_cases[case_id]["variants"][-1])
+        scope["cases"] = list(scope_cases.values())
+        for item in scope["cases"]:
+            item["case_sha256"] = hashlib.sha256(json.dumps(authored_cases[item["case_id"]],
+                sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()
+        self.save(self.cases / "routing.json", {"schema_version": 1, "cases": list(authored_cases.values())})
+
+        for index, category in enumerate(("install_authorization", "observability_identity"), 1):
+            scenario_id = f"patch-holdout-{index}"
+            trace, evidence_root = captured(self.holdout, scenario_id, f"fixture {scenario_id}")
+            packet = {"scenario_id": scenario_id, "category": category,
+                      "task": f"new-{index}", "initial_state": {"files": []},
+                      "allowed_capabilities": ["filesystem.read"]}
+            packet_path = self.save(self.holdout / "evidence" / scenario_id / "packet.json", packet)
+            dispatched_path = self.save(self.holdout / "evidence" / scenario_id / "dispatch.json", packet)
+            receipt_path = self.save(self.holdout / "evidence" / scenario_id / "receipt.json",
+                {"scenario_id": scenario_id, "category": category,
+                 "run_id": f"patch-run-{scenario_id}", "actor_id": "actor",
+                 "dispatch_sha256": self.digest(dispatched_path), "received": True,
+                 "native_invocation_id": f"native-{scenario_id}"})
+            input_hash = hashlib.sha256(json.dumps({key: value for key, value in packet.items()
+                          if key != "scenario_id"}, sort_keys=True,
+                          separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()
+            assertion_id = f"PATCH-H{index}-A01"
+            rubric_path = self.holdout / "evidence" / scenario_id / "rubric.json"
+            self.save(rubric_path, {"scenario_id": scenario_id, "category": category,
+                                    "assertions": [{"id": assertion_id, "criterion": "accept only safe action"}]})
+            scope["holdouts"].append({"scenario_id": scenario_id, "category": category,
+                                      "input_sha256": input_hash, "rubric_sha256": self.digest(rubric_path),
+                                      "assertion_ids": [assertion_id]})
+            holdout = record(trace, scenario_id=scenario_id, category=category)
+            holdout["assertions"] = [{"id": assertion_id, "status": "pass", "evidence": [copy.deepcopy(trace)]}]
+            path = self.save(self.holdout / f"{scenario_id}.holdout.json", holdout)
+            entry = binding("holdout", path, holdout, evidence_root, trace)
+            entry["holdout"] = {"input": {"kind": "controller_sealed_input", "path": packet_path.name,
+                                             "sha256": self.digest(packet_path)},
+                                "dispatch_input": self.reference(dispatched_path),
+                                "dispatch_receipt": [self.reference(receipt_path)],
+                                "exposure": "unexposed",
+                                "evidence": [copy.deepcopy(trace)],
+                                "rubric": {"kind": "controller_frozen_rubric", "path": rubric_path.name,
+                                           "sha256": self.digest(rubric_path)}}
+            manifest["records"].append(entry)
+
+        ledger = self.root / "ledger.txt"
+        ledger.write_text("attempt ledger structural fixture", encoding="utf-8")
+        manifest["attempt_ledger"] = {"kind": "coordinator_index", "path": ledger.name,
+                                      "sha256": self.digest(ledger)}
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        return scope, manifest
+
+    def write_scope(self, scope, manifest):
+        path = self.save(self.root / "patch-scope.json", scope)
+        manifest["patch_scope_sha256"] = self.digest(path)
+        seal_path = self.save(self.root / "scope-seal.json", {"schema_version": 1,
+            "patch_scope_sha256": manifest["patch_scope_sha256"],
+            "target_candidate_source": scope["target_candidate_source"],
+            "sealed_at": "2026-09-23T00:00:00Z"})
+        manifest["scope_seal"] = {"kind": "coordinator_seal", "path": seal_path.name,
+                                  "sha256": self.digest(seal_path)}
+
+    def write_manifest(self, manifest):
+        self.save(self.root / "manifest.json", manifest)
+
+    def verify(self):
+        return subprocess.run([sys.executable, "-B", str(CHECKER), "verify", "--profile", "patch",
+            "--cases", str(self.cases), "--results", str(self.results), "--holdout", str(self.holdout),
+            "--target-candidate-source", "a" * 40, "--patch-scope", str(self.root / "patch-scope.json"),
+            "--release-manifest", str(self.root / "manifest.json")], capture_output=True, text=True,
+            encoding="utf-8", errors="replace", check=False)
+
+    def test_patch_accepts_frozen_candidate_and_two_holdouts_structurally(self):
+        self.fixture()
+        result = self.verify()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("PATCH MATERIAL VERIFIED", result.stdout)
+        self.assertIn("cannot authenticate", result.stdout)
+
+    def test_patch_rejects_missing_variant_and_assertion(self):
+        scope, manifest = self.fixture()
+        case_path = self.cases / "routing.json"
+        cases = json.loads(case_path.read_text(encoding="utf-8"))
+        other = copy.deepcopy(cases["cases"][0]["variants"][0])
+        other["id"] = "other"
+        other["expected_actions"][0]["assertion_id"] = "AT-02-A02"
+        other["forbidden_actions"][0]["assertion_id"] = "AT-02-F02"
+        cases["cases"][0]["variants"].append(other)
+        self.save(case_path, cases)
+        scope["cases"][0]["case_sha256"] = hashlib.sha256(json.dumps(cases["cases"][0],
+            sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()
+        scope["cases"][0]["variants"].append({"variant_id": "other", "assertion_ids": ["AT-02-A02", "AT-02-F02"], "repeats": 1})
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("missing candidate result", result.stdout)
+        scope["cases"][0]["variants"][0]["assertion_ids"].remove("AT-02-F01")
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("assertion", result.stdout + result.stderr)
+
+    def test_patch_rejects_synthetic_hash_mismatch_and_source_mismatch(self):
+        _, manifest = self.fixture()
+        candidate_path = self.results / "at02.result.json"
+        candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+        candidate["trace"]["provenance"] = "synthetic_unit_fixture"
+        self.save(candidate_path, candidate)
+        manifest["records"][0]["sha256"] = self.digest(candidate_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("synthetic", result.stdout)
+        candidate["trace"]["provenance"] = "host_capture"
+        candidate["trace"]["sha256"] = "0" * 64
+        self.save(candidate_path, candidate)
+        manifest["records"][0]["sha256"] = self.digest(candidate_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("hash mismatch", result.stdout)
+        candidate["trace"]["sha256"] = self.digest(self.results / "evidence" / "at02" / "trace.txt")
+        candidate["subject_source"]["hash"] = "c" * 40
+        self.save(candidate_path, candidate)
+        manifest["records"][0]["sha256"] = self.digest(candidate_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("source", result.stdout)
+
+    def test_patch_rejects_duplicate_exposed_holdout_and_missing_ledger(self):
+        scope, manifest = self.fixture()
+        scope["holdouts"][1]["input_sha256"] = scope["holdouts"][0]["input_sha256"]
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate", result.stdout + result.stderr)
+        packet = json.loads((self.holdout / "evidence" / "patch-holdout-2" / "packet.json").read_text(encoding="utf-8"))
+        scope["holdouts"][1]["input_sha256"] = hashlib.sha256(json.dumps({key: value for key, value in packet.items()
+            if key != "scenario_id"}, sort_keys=True, separators=(",", ":"),
+            ensure_ascii=False).encode("utf-8")).hexdigest()
+        self.write_scope(scope, manifest)
+        holdout_entry = next(item for item in manifest["records"] if item["side"] == "holdout")
+        exposed_input_id = scope["holdouts"][0]["input_sha256"]
+        exposed_trace = copy.deepcopy(holdout_entry["holdout"]["evidence"][0])
+        exposed_trace["path"] = "evidence/patch-holdout-1/trace.txt"
+        manifest["holdout_exposures"] = [{"input_sha256": exposed_input_id,
+                                          "evidence": [exposed_trace]}]
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exposed", result.stdout)
+        manifest["holdout_exposures"] = []
+        manifest.pop("attempt_ledger")
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("attempt_ledger", result.stdout + result.stderr)
+
+    def test_patch_rejects_invalid_scope_and_unbound_scope_hash(self):
+        scope, manifest = self.fixture()
+        original_scope = copy.deepcopy(scope)
+        scope["cases"] = []
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("patch scope", result.stdout + result.stderr)
+        scope = original_scope
+        self.write_scope(scope, manifest)
+        manifest["patch_scope_sha256"] = "0" * 64
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("scope hash", result.stdout)
+
+    def test_patch_rejects_extra_result_and_repeated_run_identity(self):
+        scope, manifest = self.fixture()
+        extra = json.loads((self.results / "at02.result.json").read_text(encoding="utf-8"))
+        extra["repeat_index"] = 2
+        extra_path = self.save(self.results / "at02-extra.result.json", extra)
+        entry = copy.deepcopy(manifest["records"][0])
+        entry["path"] = extra_path.name
+        entry["sha256"] = self.digest(extra_path)
+        manifest["records"].append(entry)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("outside frozen patch scope", result.stdout)
+        scope["cases"][0]["variants"][0]["repeats"] = 2
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("independent", result.stdout)
+
+    def test_patch_rejects_judge_who_acts_in_another_record(self):
+        _, manifest = self.fixture()
+        path = self.holdout / "patch-holdout-1.holdout.json"
+        holdout = json.loads(path.read_text(encoding="utf-8"))
+        holdout["actor"]["id"] = "judge"
+        holdout["judge"]["id"] = "other-judge"
+        self.save(path, holdout)
+        entry = next(item for item in manifest["records"] if item["path"] == path.name)
+        entry["sha256"] = self.digest(path)
+        receipt_path = self.holdout / entry["evidence_root"] / "receipt.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt["actor_id"] = "judge"
+        self.save(receipt_path, receipt)
+        entry["holdout"]["dispatch_receipt"][0]["sha256"] = self.digest(receipt_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("independent", result.stdout)
+
+    def test_patch_rejects_changed_case_criterion_and_holdout_rubric(self):
+        _, manifest = self.fixture()
+        case_path = self.cases / "routing.json"
+        material = json.loads(case_path.read_text(encoding="utf-8"))
+        material["cases"][0]["variants"][0]["expected_actions"][0]["criterion"] = "weaker criterion"
+        self.save(case_path, material)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("case material hash", result.stdout + result.stderr)
+        material["cases"][0]["variants"][0]["expected_actions"][0]["criterion"] = "correct metric"
+        self.save(case_path, material)
+        rubric_path = self.holdout / "evidence" / "patch-holdout-1" / "rubric.json"
+        rubric_path.write_text("changed rubric", encoding="utf-8")
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("rubric", result.stdout)
+
+    def test_patch_rejects_scope_shrunk_or_relabelled_category(self):
+        scope, manifest = self.fixture()
+        scope["cases"][1]["variants"].pop()
+        omitted = self.results / "AT-30-applicability-unknown-r1.result.json"
+        omitted_bytes = omitted.read_bytes()
+        omitted.unlink()
+        omitted_entry = next(item for item in manifest["records"] if item["path"] == omitted.name)
+        manifest["records"].remove(omitted_entry)
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("required", result.stdout + result.stderr)
+        omitted.write_bytes(omitted_bytes)
+        manifest["records"].append(omitted_entry)
+        scope["cases"][1]["variants"].append({"variant_id": "applicability-unknown",
+            "assertion_ids": ["AT-30-applicability-unknown-E01", "AT-30-applicability-unknown-F01"],
+            "repeats": 1})
+        scope["holdouts"][1]["category"] = "authorization"
+        path = self.holdout / "patch-holdout-2.holdout.json"
+        holdout = json.loads(path.read_text(encoding="utf-8"))
+        holdout["category"] = "authorization"
+        self.save(path, holdout)
+        next(item for item in manifest["records"] if item["path"] == path.name)["sha256"] = self.digest(path)
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("category", result.stdout + result.stderr)
+
+    def test_patch_requires_native_dispatch_and_authored_file_provenance(self):
+        _, manifest = self.fixture()
+        entry = next(item for item in manifest["records"] if item["side"] == "holdout")
+        receipt = entry["holdout"].pop("dispatch_receipt")
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("dispatch_receipt", result.stdout)
+
+        entry["holdout"]["dispatch_receipt"] = receipt
+        dispatched = self.holdout / entry["evidence_root"] / "dispatch.json"
+        packet = json.loads((self.holdout / entry["evidence_root"] / "packet.json").read_text(encoding="utf-8"))
+        changed = dict(packet, task="other")
+        self.save(dispatched, changed)
+        entry["holdout"]["dispatch_input"]["sha256"] = self.digest(dispatched)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("dispatched input differs", result.stdout)
+
+        self.save(dispatched, packet)
+        entry["holdout"]["dispatch_input"]["sha256"] = self.digest(dispatched)
+        entry["holdout"]["input"]["provenance"] = "host_capture"
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("controller_sealed_input", result.stdout)
+
+        del entry["holdout"]["input"]["provenance"]
+        (self.root / "ledger.txt").write_text("mutated ledger", encoding="utf-8")
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("coordinator_index file hash mismatch", result.stdout)
+
+    def test_patch_rejects_reduced_install_repeats_and_unknown_assertion(self):
+        scope, manifest = self.fixture()
+        install = next(item for item in scope["cases"] if item["case_id"] == "AT-33")
+        complete = next(item for item in install["variants"] if item["variant_id"] == "complete-package-install")
+        complete["repeats"] = 2
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("required AT-33/complete-package-install", result.stdout + result.stderr)
+
+        complete["repeats"] = 3
+        self.write_scope(scope, manifest)
+        path = self.results / "at02.result.json"
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["assertions"][0]["status"] = "unknown"
+        self.save(path, record)
+        manifest["records"][0]["sha256"] = self.digest(path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("status is unknown", result.stdout)
+
+    def test_patch_requires_exact_current_source_even_with_reuse_claim(self):
+        _, manifest = self.fixture()
+        candidate_path = self.results / "at02.result.json"
+        candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+        candidate["subject_source"]["hash"] = "c" * 40
+        self.save(candidate_path, candidate)
+        manifest["records"][0]["sha256"] = self.digest(candidate_path)
+        manifest["records"][0]["reuse"] = {"target_hash": "a" * 40}
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exact current source", result.stdout)
+
+        candidate["subject_source"]["hash"] = "a" * 40
+        self.save(candidate_path, candidate)
+        manifest["records"][0]["sha256"] = self.digest(candidate_path)
+        holdout_path = self.holdout / "patch-holdout-1.holdout.json"
+        holdout = json.loads(holdout_path.read_text(encoding="utf-8"))
+        holdout["subject_source"]["hash"] = "c" * 40
+        self.save(holdout_path, holdout)
+        next(item for item in manifest["records"] if item["path"] == holdout_path.name)["sha256"] = self.digest(holdout_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exact current source", result.stdout)
+
+    def test_patch_requires_candidate_dispatch_and_matching_receipt(self):
+        _, manifest = self.fixture()
+        entry = manifest["records"][0]
+        receipt = entry.pop("dispatch_receipt")
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("dispatch_receipt", result.stdout)
+        entry["dispatch_receipt"] = receipt
+        input_path = self.results / entry["evidence_root"] / "dispatch-input.json"
+        dispatched = json.loads(input_path.read_text(encoding="utf-8"))
+        dispatched["run_id"] = "different-run"
+        self.save(input_path, dispatched)
+        entry["dispatch_input"]["sha256"] = self.digest(input_path)
+        receipt_path = self.results / entry["evidence_root"] / "dispatch-receipt.json"
+        received = json.loads(receipt_path.read_text(encoding="utf-8"))
+        received["dispatch_sha256"] = self.digest(input_path)
+        self.save(receipt_path, received)
+        entry["dispatch_receipt"]["sha256"] = self.digest(receipt_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("dispatch input", result.stdout)
+
+    def test_patch_install_repeats_require_distinct_actor_trace_and_native_invocation(self):
+        _, manifest = self.fixture()
+        first = next(item for item in manifest["records"] if item["path"] ==
+                     "AT-33-complete-package-install-r1.result.json")
+        second = next(item for item in manifest["records"] if item["path"] ==
+                      "AT-33-complete-package-install-r2.result.json")
+        first_path = self.results / first["path"]
+        second_path = self.results / second["path"]
+        first_record = json.loads(first_path.read_text(encoding="utf-8"))
+        second_record = json.loads(second_path.read_text(encoding="utf-8"))
+        second_record["actor"]["id"] = first_record["actor"]["id"]
+        self.save(second_path, second_record)
+        second["sha256"] = self.digest(second_path)
+        receipt_path = self.results / second["evidence_root"] / "dispatch-receipt.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt["actor_id"] = second_record["actor"]["id"]
+        self.save(receipt_path, receipt)
+        second["dispatch_receipt"]["sha256"] = self.digest(receipt_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("independent native actor", result.stdout)
+
+        second_record["actor"]["id"] = "actor-AT-33-complete-package-install-r2"
+        self.save(second_path, second_record)
+        second["sha256"] = self.digest(second_path)
+        receipt["actor_id"] = second_record["actor"]["id"]
+        first_receipt_path = self.results / first["evidence_root"] / "dispatch-receipt.json"
+        first_receipt = json.loads(first_receipt_path.read_text(encoding="utf-8"))
+        receipt["native_invocation_id"] = first_receipt["native_invocation_id"]
+        self.save(receipt_path, receipt)
+        second["dispatch_receipt"]["sha256"] = self.digest(receipt_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("native invocation", result.stdout)
+
+    def test_patch_install_repeats_reject_reused_raw_trace_digest(self):
+        _, manifest = self.fixture()
+        first = next(item for item in manifest["records"] if item["path"] ==
+                     "AT-33-complete-package-install-r1.result.json")
+        second = next(item for item in manifest["records"] if item["path"] ==
+                      "AT-33-complete-package-install-r2.result.json")
+        source_trace = self.results / first["evidence_root"] / "trace.txt"
+        target_trace = self.results / second["evidence_root"] / "trace.txt"
+        target_trace.write_bytes(source_trace.read_bytes())
+        path = self.results / second["path"]
+        record = json.loads(path.read_text(encoding="utf-8"))
+        for reference in [record["trace"], *record["actual_artifacts"],
+                          *(item for assertion in record["assertions"] for item in assertion["evidence"])]:
+            reference["sha256"] = self.digest(target_trace)
+        for condition in second["conditions"].values():
+            condition["evidence"][0]["sha256"] = self.digest(target_trace)
+        self.save(path, record)
+        second["sha256"] = self.digest(path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("distinct raw trace", result.stdout)
+
+    def test_patch_rejects_self_consistent_empty_or_relabelled_rubric(self):
+        scope, manifest = self.fixture()
+        entry = next(item for item in manifest["records"] if item["side"] == "holdout")
+        path = self.holdout / entry["evidence_root"] / "rubric.json"
+        rubric = json.loads(path.read_text(encoding="utf-8"))
+        rubric["assertions"][0]["criterion"] = ""
+        self.save(path, rubric)
+        entry["holdout"]["rubric"]["sha256"] = self.digest(path)
+        scope["holdouts"][0]["rubric_sha256"] = self.digest(path)
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("rubric criterion", result.stdout)
+        rubric["assertions"][0]["criterion"] = "accept only safe action"
+        rubric["assertions"][0]["id"] = "different-id"
+        self.save(path, rubric)
+        entry["holdout"]["rubric"]["sha256"] = self.digest(path)
+        scope["holdouts"][0]["rubric_sha256"] = self.digest(path)
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("rubric assertion IDs", result.stdout)
+
+    def test_patch_requires_bound_pre_dispatch_scope_seal(self):
+        _, manifest = self.fixture()
+        seal = manifest.pop("scope_seal")
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("scope_seal", result.stdout)
+        manifest["scope_seal"] = seal
+        seal_path = self.root / "scope-seal.json"
+        seal_json = json.loads(seal_path.read_text(encoding="utf-8"))
+        seal_json["patch_scope_sha256"] = "0" * 64
+        self.save(seal_path, seal_json)
+        manifest["scope_seal"]["sha256"] = self.digest(seal_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("scope seal", result.stdout)
+
+    def test_patch_rejects_unrelated_holdout_receipt(self):
+        _, manifest = self.fixture()
+        entry = next(item for item in manifest["records"] if item["side"] == "holdout")
+        path = self.holdout / entry["evidence_root"] / "receipt.json"
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+        receipt["scenario_id"] = "unrelated-scenario"
+        self.save(path, receipt)
+        entry["holdout"]["dispatch_receipt"][0]["sha256"] = self.digest(path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("dispatch receipt", result.stdout)
+
+    def test_patch_rejects_extra_evaluator_fields_in_candidate_dispatch(self):
+        _, manifest = self.fixture()
+        entry = manifest["records"][0]
+        path = self.results / entry["evidence_root"] / "dispatch-input.json"
+        dispatched = json.loads(path.read_text(encoding="utf-8"))
+        dispatched["expected_actions"] = [{"assertion_id": "AT-02-A01"}]
+        self.save(path, dispatched)
+        entry["dispatch_input"]["sha256"] = self.digest(path)
+        receipt_path = self.results / entry["evidence_root"] / "dispatch-receipt.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt["dispatch_sha256"] = self.digest(path)
+        self.save(receipt_path, receipt)
+        entry["dispatch_receipt"]["sha256"] = self.digest(receipt_path)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exact field set", result.stdout)
+
+    def test_patch_rejects_evaluator_fields_in_sealed_and_dispatched_holdout(self):
+        scope, manifest = self.fixture()
+        entry = next(item for item in manifest["records"] if item["side"] == "holdout")
+        root = self.holdout / entry["evidence_root"]
+        packet_path, dispatched_path = root / "packet.json", root / "dispatch.json"
+        packet = json.loads(packet_path.read_text(encoding="utf-8"))
+        packet["assertions"] = [{"id": "PATCH-H1-A01", "status": "pass"}]
+        self.save(packet_path, packet)
+        self.save(dispatched_path, packet)
+        entry["holdout"]["input"]["sha256"] = self.digest(packet_path)
+        entry["holdout"]["dispatch_input"]["sha256"] = self.digest(dispatched_path)
+        receipt_path = root / "receipt.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt["dispatch_sha256"] = self.digest(dispatched_path)
+        self.save(receipt_path, receipt)
+        entry["holdout"]["dispatch_receipt"][0]["sha256"] = self.digest(receipt_path)
+        scope["holdouts"][0]["input_sha256"] = hashlib.sha256(json.dumps({key: value for key, value in packet.items()
+            if key != "scenario_id"}, sort_keys=True, separators=(",", ":"),
+            ensure_ascii=False).encode("utf-8")).hexdigest()
+        self.write_scope(scope, manifest)
+        self.write_manifest(manifest)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exact field set", result.stdout)

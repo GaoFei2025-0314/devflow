@@ -14,6 +14,29 @@ Tag `v2.0.1` was published on 2026-09-20 at `9db63cde0ddb3fecc0971ed16644b341212
 | Copilot CLI | format compatibility only | unverified | unverified | unverified | unverified | unverified | Purpose mappings in `skills/using-devflow/references/copilot-tools.md`; not natively tested. |
 | Gemini CLI | format compatibility only | unverified | unverified | unverified | unverified | unverified | Purpose mappings in `skills/using-devflow/references/gemini-tools.md`; not natively tested. |
 
+## Current Windows preflight (2026-09-22)
+
+The separate current work package has observed real Windows Codex app-server
+file reads, local commands, two-turn approval delivery and bounded fixture
+recovery on frozen pilot `46613e6`. Its independently reviewed AT-33 pair passes
+five assertions per side. Built-in collaboration executes two native children,
+but opaque dispatch/receipt payloads leave two AT-15 assertions UNKNOWN per side.
+The subsequent plaintext delegation adapter pair passed seven assertions per
+side, including exact dispatch/receipt text and real overlapping investigation.
+It uses controller-bound native root executions, not built-in spawn lineage;
+the original opaque built-in transport limitations remain documented.
+
+A separate Codex desktop in-app-browser smoke observed input, clicking, AX state,
+screenshots, local navigation and back on an isolated loopback fixture. The
+loaded browser skill bytes match the frozen pilot source. This is scoped native
+host evidence, not an AT-16 paired result, full browser compatibility or user
+visual acceptance. Isolated full, single-skill and real symbolic-link layouts
+also passed installation verification against the pilot; no global switch ran.
+
+These observations do not replace the outstanding source validity, repeats,
+holdouts or complete acceptance gates. Claude Code remains within the approved
+format/controlled-contract scope; Cursor native verification remains deferred.
+
 ## Historical V2.0.0 findings
 
 - T31 contains 103 initial paired runs per side for 40 cases / 65 variants, followed by five paired repair runs. Candidate records retain their actual sources: 103 at 722c369, four at b58489d and one at 30b54e4. They are not 108 runs of a single final source. The original aggregate release check failed and final-source critical repeats remain incomplete.

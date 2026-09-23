@@ -172,6 +172,8 @@ Instrumentation is code; it can be wrong. Verify applicable signals on an author
 
 When you analyze a telemetry or log sample for someone, ground the analysis in the sample's own frame: state the observation window the sample covers, and report the identity units the records actually carry — task, tree/agent, turn, and call or correlation ids — naming their values where the sample provides them. Grouping counts "by task" while never naming which task, turn, or call ids were observed leaves the reader unable to re-check the sample; a complete analysis names the units it counted, keeps observed fact separate from inference, and states which units or values are absent or unknown.
 
+When proposing measurements from a log or telemetry sample, define each metric in the current deliverable: its observation window, counting unit, and eligible population; for a rate or proportion, specify both numerator and denominator. State how duplicate, missing, unverified, or out-of-scope observations affect inclusion, and leave unavailable values unknown rather than inventing measurements or treating missing observations as success.
+
 ## Common Rationalizations
 
 | Rationalization | Reality |

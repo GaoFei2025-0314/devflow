@@ -168,6 +168,20 @@ python -B scripts/check-behavior.py verify --cases tests/behavior/cases --result
 
 Omitting `--ids` selects the full `AT-01` through `AT-40` case set. A checkpoint checks one or more evidence-bearing results for every selected variant. It does not enforce release repeats, holdouts, paired baseline conditions, or cost comparison.
 
+## 2.0.2 patch profile
+
+The `patch` profile is the separately approved incremental gate for changes from published `v2.0.1` to the final `2.0.2` candidate. It does not replace the full paired `release` profile or turn historical V2.0 results into PASS. The final candidate must be frozen before any actor dispatch:
+
+```text
+python scripts/check-behavior.py verify --profile patch --cases tests/behavior/cases --results <candidate-dir> --holdout <holdout-dir> --target-candidate-source <source-sha256> --patch-scope <scope.json> --release-manifest <manifest.json>
+```
+
+The scope (schema 1) binds the exact source, each selected case's canonical JSON SHA-256, every selected variant's full assertion IDs and required repeats, and two fresh holdouts' scenario/category, underlying input SHA-256, rubric byte SHA-256 and assertion IDs. The checker enforces the 2.0.2 minimum matrix: all four AT-02 variants, both AT-30 variants, AT-31's untrusted-content variant, all four AT-33 layouts with three complete-package-install runs, plus exactly one `install_authorization` and one `observability_identity` holdout. Adding cases is allowed; shrinking this minimum is not.
+
+The manifest (schema 2) binds the scope's raw SHA-256, an authored pre-dispatch `scope_seal` (`kind: coordinator_seal`, path and SHA-256), an authored complete-attempt ledger (`kind: coordinator_index`, path and SHA-256), and every candidate/holdout result and evidence root. Each result must name the exact frozen source; old-source `reuse` does not satisfy this patch gate. Ordinary candidate entries require host-captured `dispatch_input` and `dispatch_receipt` JSON matching the frozen case packet and result identity. Candidate dispatch JSON contains exactly `case_id`, `variant_id`, `run_id`, `given`, `when` and `allowed_capabilities`. Holdout entries bind separately authored `controller_sealed_input` and `controller_frozen_rubric` files and require host-captured dispatched input and a structured receipt bound to scenario, run, actor, native invocation and dispatch hash. The holdout input contains exactly `scenario_id`, `category`, `task`, `initial_state` and `allowed_capabilities`; evaluator-only fields are forbidden in both dispatched and sealed input. A rubric must contain the exact frozen assertion IDs and nonempty criteria. All selected assertions must pass with actual capture evidence; UNKNOWN, FAIL, synthetic fixtures, missing/extra results and unregistered repetitions fail. AT-33 complete-install repetitions need distinct run, actor, native invocation, trace, dispatch and receipt identities.
+
+An exit 0 means the submitted **patch evidence is structurally complete**. It does not authenticate the captured host event, the seal's timing, complete attempt/exposure history, true execution independence, or semantic correctness. An independent reviewer must inspect those and the actual installation/host evidence before declaring 2.0.2 patch acceptance.
+
 ## Release profile (T30)
 
 The `release` profile verifies the full scope and cannot be scoped down with `--ids`:
@@ -184,7 +198,7 @@ It enforces everything the checkpoint does, plus:
 - **Holdout scenarios:** `--holdout` and `--baseline-holdout` contain the candidate and baseline scenario files (suffix .holdout dot json) (schema: `schema_version`, `scenario_id`, `category` in phase/authorization/evidence_invalidation/host/recovery, plus the same run/actor/model/host/trace/assertions/judge fields as results). At least 10 distinct, unexposed input pairs with at least 2 per category are required. Candidate assertions must pass with capture evidence; baseline assertion outcomes remain visible in counts as for the ordinary baseline. Exposed inputs become regressions and need fresh holdout replacements. Renaming the same input or repeating it after tuning cannot fill this gate.
 - **Loading data:** candidate results must carry a `loading` object (`total_bytes` int-or-null and `entries` of `{path, bytes}`); the comparison reports paired median loading for baseline and candidate, labeled exploratory — it can never offset a quality failure, and unknown cost or tokens are not converted.
 
-The minimum run plan implied by these gates is 65 base variants + 38 extra key-repeat runs (19 key-case variants, 3 repeats each) + 10 holdout scenarios = 113 runs per version, 226 paired across baseline and candidate; additional variants, repair regressions, and native-host runs add to that floor.
+The minimum run plan implied by these gates is 66 base variants + 38 extra key-repeat runs (19 key-case variants, 3 repeats each) + 10 holdout scenarios = 114 runs per version, 228 paired across baseline and candidate; additional variants, repair regressions, and native-host runs add to that floor. The added AT-28 warm-context variant requires the source-bound materialization and actual receipt evidence described in its evaluator-only `materialization_contract`; a generic packet with null source identity and empty retained entries is not executable warm-context evidence. The historical 65-variant evaluations retain their original scope.
 
 ### Release manifest: preserve original records
 
