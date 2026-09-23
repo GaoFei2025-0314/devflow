@@ -44,8 +44,17 @@ dispatched. This failure remains in the attempt history. The one temporary
 Codex trust entry created by that run was independently reviewed and removed;
 the global config returned to its pre-test hash, with no planned entries left.
 
-The rule is being clarified to require explicit reporting of both observed
-stages. Any new source must be frozen again and its scoped behavior rerun;
+Source 004 (`784ec13620b4492daec6cda4415ad68946ab085d09269a830acb356b29a7f461`)
+clarified separate user-naming and assistant-selection reporting and passed
+Windows and Ubuntu maintenance checks. Its valid native AT-02
+`default-off-analysis` run still failed E01: the answer reported those two
+stages and the pending read, but omitted the observed source-A catalog
+injection (`e1`). The other four assertions passed. The other 14 prepared
+source-004 episodes were not dispatched. The one temporary Codex trust entry
+was independently reviewed and removed; all 15 planned entries are absent.
+
+The rule is being clarified to require explicit reporting of every observed
+usage stage. Any new source must be frozen again and its scoped behavior rerun;
 source 002's AT-33 PASS cannot be relabeled as a later source's result. The
 patch checker, final independent review and CI remain pending. The previously frozen
 `candidate-final-002` SHA-256
