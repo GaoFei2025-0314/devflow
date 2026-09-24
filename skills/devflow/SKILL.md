@@ -36,6 +36,8 @@ Inspect enough project facts to answer clearly, cite the key local evidence, and
 
 Read the relevant records and preserve their provenance. Use [systematic-debugging](../systematic-debugging/SKILL.md) when the user asks for root cause, failure diagnosis, or reproducibility. Report observations, attributed source claims, inferences, and remaining unknowns separately. Investigation does not authorize a fix; implement only when the requested deliverable includes it.
 
+For questions about a skill or tool's usage frequency or value from records, including zero recorded reads, load [observability-and-instrumentation](../observability-and-instrumentation/SKILL.md) before making a value judgment. Check applicable task opportunities and keep selection, actual reads, use, and linked outcomes distinct; do not start new collection without authorization.
+
 For two or more potentially independent read-only investigation questions, when delegation is permitted and agent capability is available, select and fully load [dispatching-parallel-agents](../dispatching-parallel-agents/SKILL.md) before deciding or issuing any dispatch, then apply its linked focused-agent contract to prompts and integration. Use that workflow's independence, permission, resource, source, write-boundary, aggregation, and fallback checks; if its conditions fail, keep the investigation in-session or serial as it directs. Do not select this workflow for a single question, ordinary multi-file reading, coupled writes, prohibited delegation, unavailable capability, or unrelated implementation or review work.
 
 ### Produce only a Spec or design — Specify

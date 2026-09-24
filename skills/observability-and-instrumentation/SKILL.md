@@ -16,6 +16,7 @@ Select the requested deliverable first: an instrumentation or alert design may e
 - Building or changing a production path whose operational questions, risk, or project policy call for new signals
 - Adding a new service, endpoint, background job, or external integration
 - A production incident took too long to diagnose ("we couldn't tell what happened")
+- Assessing a skill or tool's usage frequency or value from existing records, including zero-read samples
 - Setting up or reviewing alerting rules
 - Reviewing a PR that adds I/O, retries, queues, or cross-service calls
 
