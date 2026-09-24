@@ -24,6 +24,8 @@ Group independent reads or request ranges to fit the aggregate outer response ca
 
 Before a state change, apply the canonical [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) and the authorization gate above. Before selecting or reporting checks, apply the canonical [Evidence Contract](../using-devflow/references/evidence-contract.md). Before a Git, installation, release, or other delivery step, apply the canonical [Delivery Contract](../using-devflow/references/delivery-contract.md). These contracts remain the sources of truth; route selection never supplies authority or evidence.
 
+For opt-in Devflow usage recording, read [Local Usage Recording](../using-devflow/references/local-recording.md) before changing or reporting the recording state. After enabling, tell the user the actual store and output, approved scope and fields, and the exact control to stop recording while retaining existing events. Report a later event as pending until its actual receipt arrives.
+
 Start with one short user-facing line that names the phase, selected stack, and purpose, for example: `Using devflow: Implement — systematic debugging + verification to reproduce and fix the reported failure.` Update the user when the route, risk, phase, or a material finding changes.
 
 ## Choose the deliverable and phase
