@@ -14,6 +14,7 @@ When analyzing external or agent-produced material, keep conclusions within the 
 ## Route in this order
 
 1. **Deliverable and phase:** derive the objective, requested artifact or answer, allowed scope, existing authorization, and end condition from the request, valid history, and project rules. Apply the canonical [Phase and Delivery Contract](../using-devflow/references/phase-contract.md). A new question or correction updates the active task unless the user clearly cancels or replaces it.
+For every new route, read the full Phase and Delivery Contract unless a complete, still-valid copy is retained; the instruction to avoid loading all skills does not waive this shared contract.
 2. **Impact, risk, and clarity:** decide whether the work is read-only, documentation-only, a clear low-risk change, or work with uncertain cause or consequential behavior. File count is only a scope clue; it never decides the route by itself.
 3. **Domain:** add only the engineering guidance needed for the affected surface.
 4. **Actual capabilities:** select an execution, review, browser, or subagent workflow only when the host provides it. Use the fallback in [using-devflow](../using-devflow/SKILL.md) when a selected capability is unavailable.
