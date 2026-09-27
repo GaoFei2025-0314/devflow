@@ -63,8 +63,9 @@ ln -s /path/to/devflow/skills/test-driven-development ~/.codex/skills/test-drive
 
 各宿主的支持等级与已原生验证的范围见[宿主支持表](docs/devflow/host-support.md)。
 
-当前 V2 完整行为验收仍未通过。已发布标签和维护检查通过不代表该门禁已完成；
-历史结果、本轮预检证据与剩余限制见[验收状态](docs/devflow/v2-evaluation-summary.md)。
+2.0.2 工作包已按附环境豁免的有限范围人工验收收尾：8 项完整原生场景实测通过，
+未验证场景如实保留。严格补丁验收和 V2 全量行为资格仍未完成；
+具体范围、证据与限制见[验收状态](docs/devflow/v2-evaluation-summary.md)。
 
 ## 使用
 

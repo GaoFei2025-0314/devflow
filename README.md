@@ -63,9 +63,10 @@ Point your tool's skill, prompt, rules, or instruction loader at the repository 
 
 Per-host support levels and what was natively verified: [host support table](docs/devflow/host-support.md).
 
-Current V2 full behavior acceptance remains open. Published tags and passing
-maintenance checks do not establish that gate; see the [evaluation status](docs/devflow/v2-evaluation-summary.md)
-for historical results, current preflight evidence and remaining limitations.
+The 2.0.2 work package has limited human acceptance with an environment exception:
+eight complete native scenarios passed, and unverified scenarios remain explicit.
+Strict patch and full V2 behavior qualification remain incomplete. See the
+[evaluation status](docs/devflow/v2-evaluation-summary.md) for scope, evidence and limits.
 
 ## Usage
 

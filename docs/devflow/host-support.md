@@ -1,6 +1,25 @@
 # Devflow host support
 
-Status note updated on 2026-09-21; the table and historical findings below retain the evidence reviewed on 2026-09-13 for V2.0.0. They are not a fresh native-host evaluation of V2.0.1. A host observation covers only the recorded version, candidate source and operation. Controlled scenarios can run on a real native host without proving that host's plugin installation or every integration works. Markdown compatibility is not a successful native loading test.
+Status note updated on 2026-09-28. The source-011 note below is current for the limited 2.0.2 closeout; the table and historical findings retain the evidence reviewed on 2026-09-13 for V2.0.0. They are not a fresh native-host evaluation of V2.0.1. A host observation covers only the recorded version, candidate source and operation. Controlled scenarios can run on a real native host without proving that host's plugin installation or every integration works. Markdown compatibility is not a successful native loading test.
+
+## Source 011 limited closeout (2026-09-27)
+
+Eight complete Windows Codex native scenarios passed independent review. A
+complete-package initial assessment passed semantic review but its host capture
+remains BLOCKED because native collaboration entry/exit tool definitions were
+unavailable; the approval continuation was not run. The user accepted an
+environment exception for closing this round, not a successful observation of
+the missing definitions. Six other initial scenarios remain unverified.
+
+Claude Code's single controlled status probe passed five actual reads and six
+contract assertions on source 011. Actual assistant messages identify `glm-5.3`,
+while CLI initialization identifies `claude-opus-4-8[1m]`; these fields do not
+authenticate backend weights. This probe does not cover plugin discovery,
+browser, collaboration or shell behavior. The source-010 failure remains in
+history. Cursor stays native-unverified. See the [evaluation status](v2-evaluation-summary.md)
+for exact source binding, evidence and cleanup.
+
+## Previously published baseline and historical host table
 
 Tag `v2.0.1` was published on 2026-09-20 at `9db63cde0ddb3fecc0971ed16644b34121266b05` after PR #13 passed all five required checks and merged. No GitHub Release was created as of this review. The later v10 release check still reports failures and insufficient evidence; repairing its package references in v11 does not turn those records into successful native observations. Publication, matching installed files and green offline CI do not close host acceptance. See the [evaluation status](v2-evaluation-summary.md) for the distinct historical and later aggregate results.
 

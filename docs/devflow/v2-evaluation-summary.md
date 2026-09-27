@@ -1,6 +1,63 @@
 # Devflow V2.0 evaluation summary
 
-## 2.0.2 incremental acceptance status — 2026-09-23
+## 2.0.2 limited human closeout — 2026-09-27
+
+The user accepted this round with an environment exception and requested its
+submission on September 28. **The bounded work package is closed by human
+acceptance; the original strict patch and full V2.0 qualification remain
+incomplete.** This is not a 15/15 native PASS or a `verify` exit-0 claim.
+The original [patch acceptance requirements](../../specs/changes/devflow-v2/specs/patch-2.0.2-acceptance.md)
+and checker rejection rules remain unchanged.
+
+The tested source is commit `213ec083e95a0b131636b10861c0ea76fb62330c`,
+source 011, with 117-file source identity
+`b2a41f6cb5b465535b08a89318af58a7b9060c78583decd532ee661e866bb8b0`.
+Subsequent closeout documentation is not a new native-tested source: the source
+011 records retain their original binding. No new runtime behavior is claimed
+from the documentation update.
+
+| Scope | Observed result and disposition |
+| --- | --- |
+| AT-02: default off, enabled recording, stopped recording, local export | Four complete native scenarios PASS after independent review; enabled/stopped include actual follow-up events. |
+| AT-30: zero applicable tasks, unknown applicability | Two complete native scenarios PASS. Unknown values remain distinct from zero. |
+| AT-31: untrusted embedded instructions | One complete native scenario PASS. |
+| AT-33: flat install missing shared template | One complete native scenario PASS. The interrupted first attempt remains historical UNKNOWN. |
+| AT-33: complete package, repetition 1 | Initial candidate assessment passed semantic review; raw host status remains BLOCKED. The approval/switch/recovery continuation was not run, so the complete scenario is not PASS. |
+| Remaining six initial scenarios | Complete-package repetitions 2/3, single-skill dependencies, linked install, and both sealed holdouts were not run. They remain outside the verified scope, not environment failures or passing tests. |
+| Maintenance and installation | Source 011 passed 251 maintenance tests on each of Windows and Ubuntu, refs/bundle checks and 40-case/66-variant material validation. Six isolated stage/verify steps passed for full, single-skill and real-link installation; these do not replace the missing agent scenarios. |
+| Claude Code / Cursor | One source-011 controlled status probe passed five actual reads and six contract assertions. This does not establish plugin loading, commands, browser or collaboration support. Cursor native verification remains deferred. |
+
+The environment exception concerns missing entry/exit registration definitions
+for native Codex collaboration tools. The raw traces establish calls, responses
+and actor completion, but not the complete tool definitions at those points.
+The user accepted ending this round rather than collecting those unavailable
+definitions. The six unstarted scenarios and complete-package continuation are
+explicitly unverified; the exception does not invent a separate environment
+blocker for them. Original FAIL, UNKNOWN and BLOCKED records remain intact.
+
+All 15 temporary test workspaces and their temporary trust entries were removed.
+An independently verified private archive preserves 551 files and metadata for
+two internal links. The post-cleanup review confirmed all 54 hashed references
+in the attempt ledger, including eight formal results and 12 native attempts,
+remain valid. Raw transcripts, private configuration and sealed materials stay
+outside Git. Traceable private-record hashes are:
+
+| Record | SHA-256 |
+| --- | --- |
+| Attempt ledger, source 011 batch 001 | `ed377ff890df66596b9b2569ab1549e8f574e00f5d5862eab2d85769995b2360` |
+| Maintenance source011-002 | `43ff0dd386238becfaa0ab51312392cf543a037e9901f64ab65dc29893c47cc3` |
+| Isolated install smoke source011-001 | `6a0d7b37016897947dda1af86fcff01ec95715560d8656f70c20c24cf42bb041` |
+| Limited human closeout independent review | `361e2384b72abf79aa426ae131d15a30db94174655ab00fc1feff0926c85bb5f` |
+| Claude evidence correction to that review | `c772bda08ac4532dbe87559654f0cf574eb9e9efde7182753d5f2cfdb3d530b4` |
+| Post-cleanup independent review | `e72e6ddf83bf13bca708b8711ee07fc52ec5bcdb9e9aa97b6ff8f561c6a6adb7` |
+
+Submission does not authorize merge, publication, a global installation switch
+or branch deletion. Required PR CI and explicit risky-merge approval remain
+separate gates. No comparative efficiency or full V1.3.1 qualification claim is
+made. The dated sections below preserve earlier states rather than overriding
+this closeout.
+
+## Historical 2.0.2 incremental acceptance status — 2026-09-23
 
 The user selected an incremental acceptance claim for the next `2.0.2` patch
 over the published `v2.0.1` tag. The separate
@@ -10,7 +67,7 @@ original full V2.0 qualification or the strict `release` profile. The earlier
 V1.3.1 full comparison remains an unresolved historical work item; a patch
 PASS, if later achieved, must not be reported as a retroactive full PASS.
 
-**The 2.0.2 patch has not passed acceptance.** Interim source 001
+**At this checkpoint, the 2.0.2 patch had not passed acceptance.** Interim source 001
 (`0026d873210bbcb82a5288bedd4e348dc8452191e5eca12a5f39b3b491b68297`)
 was frozen with two sealed holdouts and passed isolated install smoke checks.
 Its native AT-33 `linked-install` run failed E01 in independent review: the

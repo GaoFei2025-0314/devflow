@@ -4,6 +4,7 @@ Pre-push checklist for a Devflow release candidate. CI runs the offline part on 
 
 ## Choose the release claim before checking
 
+- **September 27 limited human closeout:** the user accepted ending the source-011 round with an environment exception. The [closeout record](v2-evaluation-summary.md) separates eight complete native PASS results from one incomplete scenario and six unstarted scenarios. This permits reporting and submitting the bounded work package; it does not satisfy or tick the strict patch/full-release gates below, create a checker exemption, or authorize merge/publication.
 - **Full V2.0 qualification:** use the original [product requirements](../../specs/changes/devflow-v2/specs/product-requirements.md), including section 9.7's 40 AT/all variants, critical repeats, 10 untouched holdout pairs and the V1.3.1 comparison conditions. `verify --profile release` retains its full paired meaning. Historical failed and insufficient records have not been converted to PASS.
 - **2.0.2 incremental patch:** use the separately approved [patch acceptance addendum](../../specs/changes/devflow-v2/specs/patch-2.0.2-acceptance.md). This checks changes from published `v2.0.1` to the final 2.0.2 candidate. Its `verify --profile patch` result cannot be described as full V2.0 qualification. No same-V1.3.1 pairing is required for this narrower claim; any comparative efficiency claim still needs comparable measurements.
 - `checkpoint` is a diagnostic profile, not either release gate. A structural checker exit 0 never replaces independent review of actual behavior.
