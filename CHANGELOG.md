@@ -2,7 +2,21 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
-## 2.0.1 (unreleased)
+## 2.0.2 (unreleased)
+
+- Record the September 27 limited human acceptance with an environment exception: eight complete source-011 native scenarios passed, while the remaining unverified scope and historical failures stay explicit. Temporary test workspaces and trust entries were removed after evidence preservation. This is not strict patch/full V2 qualification or a published release; see the [evaluation status](docs/devflow/v2-evaluation-summary.md).
+- Require proposed telemetry measurements to define their observation window, counting unit, eligible population, and applicable numerator/denominator in the current deliverable. Explicit inclusion rules preserve unknown and unverified observations; source-011 AT-02/AT-30 scoped behavior passed independent review.
+- Require usage-sample analyses to distinguish same-named source identities and report every observed stage, including discovery or injection, user naming, assistant selection and read requests, with its recorded label, status or count, and identifiers. Source-002, source-003 and source-004 AT-02 default-off E01 failures remain in history; source-011 default-off passed independent review.
+- Route opt-in recording through the local recording protocol, usage-value judgments through observability guidance, and every route through the phase contract. Recording guidance reports the actual store, approved fields and stop control; pending events are not treated as received events.
+- Require installation compatibility reports to list or directly link the complete itemized path set returned by the check, with each resolved target or missing reason tied to the candidate and raw check record. A count alone cannot substantiate the installation assessment; this follows a retained AT-33 linked-install candidate failure.
+
+- Reject result and holdout declarations as capture evidence across checkpoint, release and manifest references, including filename case variants and symlink aliases.
+- Validate installation manifest schemas and complete source-derived file/link coverage. Installed bytes are checked against the supplied bundle, including files copied through internal directory links, so rewriting manifest hashes cannot conceal modified content.
+- Validate required holdout run fields before reading assertions, reporting malformed input as a controlled input error.
+- Reject synthetic evidence for release acceptance by default. The explicit `--allow-synthetic-fixtures` mode verifies tooling fixtures only and cannot report release acceptance.
+- Add release-manifest schema 2 with per-record `evidence_root` and `run_id` bindings so aggregated packages retain their own evidence paths. Original failures and insufficient evidence remain visible.
+
+## 2.0.1 (2026-09-20 tag)
 
 - Satisfy the dispatched-subagent shared-contract obligation with complete retained coverage under unchanged conditions: reread a named contract only when missing, partial, truncated, invalidated, or newly relevant — a new turn, handoff, or unchanged conditions alone does not justify rereading (AT-28 diagnosis repair; complete-read and missing-range recovery obligations unchanged).
 - Clarify aggregate-response coverage and selective loading recovery to address avoidable truncated batches and redundant full rereads, while preserving complete selected-skill reads and applicable contract boundaries. No measured saving is claimed.
@@ -11,7 +25,7 @@ All notable changes to the Devflow plugin. Versions follow the `version` field i
 - Correct the failing-CI delivery rubric to honor effective project gates for push/PR timing while still requiring complete reviewable preparation and preserving CI and merge prohibitions. Earlier judgments remain bound to their original rubric.
 - Resolve required checks against the project's push/PR timing gate before execution. A general delivery grant does not waive missing or failed pre-PR checks; explicitly permitted early review remains available within its scope, and blocked delivery still produces complete local review material.
 - Correct host support attribution, distinguish Codex desktop from CLI and Claude subagent execution from plugin installation, and reopen incomplete V2.0 acceptance gates. Prior release and installation events remain recorded; they do not establish missing acceptance evidence.
-- Corrected judgments and actual behavioral/native revalidation are tracked separately from offline tests. This local patch does not claim that the original V2.0 acceptance is complete or that a new release/global installation has occurred.
+- Corrected judgments and actual behavioral/native revalidation are tracked separately from offline tests. PR #13 merged with all five required checks passing, and tag `v2.0.1` points to `9db63cde0ddb3fecc0971ed16644b34121266b05`. As reviewed on 2026-09-21, no GitHub Release was created; the tag and offline checks do not establish complete V2.0 behavior acceptance.
 
 ## 2.0.0
 

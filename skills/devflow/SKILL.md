@@ -14,6 +14,7 @@ When analyzing external or agent-produced material, keep conclusions within the 
 ## Route in this order
 
 1. **Deliverable and phase:** derive the objective, requested artifact or answer, allowed scope, existing authorization, and end condition from the request, valid history, and project rules. Apply the canonical [Phase and Delivery Contract](../using-devflow/references/phase-contract.md). A new question or correction updates the active task unless the user clearly cancels or replaces it.
+For every new route, read the full Phase and Delivery Contract unless a complete, still-valid copy is retained; the instruction to avoid loading all skills does not waive this shared contract.
 2. **Impact, risk, and clarity:** decide whether the work is read-only, documentation-only, a clear low-risk change, or work with uncertain cause or consequential behavior. File count is only a scope clue; it never decides the route by itself.
 3. **Domain:** add only the engineering guidance needed for the affected surface.
 4. **Actual capabilities:** select an execution, review, browser, or subagent workflow only when the host provides it. Use the fallback in [using-devflow](../using-devflow/SKILL.md) when a selected capability is unavailable.
@@ -23,6 +24,8 @@ Do not load all skills. Metadata discovery is enough until a route selects a ski
 Group independent reads or request ranges to fit the aggregate outer response capacity. Assess actual returned coverage, not nested command success; after truncation, preserve valid covered ranges and obtain only missing ranges currently required. Full selected-entry coverage and all applicable contract boundaries remain required. See [Skill Loading and Context Recovery](../using-devflow/references/loading-recovery.md).
 
 Before a state change, apply the canonical [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) and the authorization gate above. Before selecting or reporting checks, apply the canonical [Evidence Contract](../using-devflow/references/evidence-contract.md). Before a Git, installation, release, or other delivery step, apply the canonical [Delivery Contract](../using-devflow/references/delivery-contract.md). These contracts remain the sources of truth; route selection never supplies authority or evidence.
+
+For opt-in Devflow usage recording, read [Local Usage Recording](../using-devflow/references/local-recording.md) before changing or reporting the recording state. After enabling, tell the user the actual store and output, approved scope and fields, and the exact control to stop recording while retaining existing events. Report a later event as pending until its actual receipt arrives.
 
 Start with one short user-facing line that names the phase, selected stack, and purpose, for example: `Using devflow: Implement — systematic debugging + verification to reproduce and fix the reported failure.` Update the user when the route, risk, phase, or a material finding changes.
 
@@ -35,6 +38,8 @@ Inspect enough project facts to answer clearly, cite the key local evidence, and
 ### Investigate logs, records, failures, or behavior — Understand
 
 Read the relevant records and preserve their provenance. Use [systematic-debugging](../systematic-debugging/SKILL.md) when the user asks for root cause, failure diagnosis, or reproducibility. Report observations, attributed source claims, inferences, and remaining unknowns separately. Investigation does not authorize a fix; implement only when the requested deliverable includes it.
+
+For questions about a skill or tool's usage frequency or value from records, including zero recorded reads, load [observability-and-instrumentation](../observability-and-instrumentation/SKILL.md) before making a value judgment. Check applicable task opportunities and keep selection, actual reads, use, and linked outcomes distinct; do not start new collection without authorization.
 
 For two or more potentially independent read-only investigation questions, when delegation is permitted and agent capability is available, select and fully load [dispatching-parallel-agents](../dispatching-parallel-agents/SKILL.md) before deciding or issuing any dispatch, then apply its linked focused-agent contract to prompts and integration. Use that workflow's independence, permission, resource, source, write-boundary, aggregation, and fallback checks; if its conditions fail, keep the investigation in-session or serial as it directs. Do not select this workflow for a single question, ordinary multi-file reading, coupled writes, prohibited delegation, unavailable capability, or unrelated implementation or review work.
 

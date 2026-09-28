@@ -6,8 +6,8 @@ Subcommands:
           conflicts, and unknown sources. Never writes.
   stage   Copy (or link) the bundle or a single-skill dependency closure
           into a brand-new destination directory.
-  verify  Check a staged installation's entries, declared resources,
-          references, and links against its own layout.
+  verify  Check a staged installation's manifest, entries, references,
+          bytes, and links against the supplied source bundle.
 
 Exit codes: 0 pass, 1 check failure, 2 input or environment error.
 """
@@ -20,9 +20,10 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 BUNDLE_CHECKER_PATH = Path(__file__).with_name("check-bundle.py")
@@ -37,6 +38,10 @@ DISTRIBUTION_ROOT_FILES = (
     "templates/project-overrides.md",
 )
 MANIFEST_NAME = "install-manifest.json"
+MANIFEST_FIELDS = {
+    "kind", "schema_version", "created_at", "layout", "skills", "source_bundle",
+    "paths", "links", "file_sha256",
+}
 
 
 def load_bundle_checker():
@@ -132,6 +137,133 @@ def distribution_paths(bundle: Path, layout: str, skills: list[str]) -> list[str
     return paths
 
 
+def validate_relative_path(value: Any, location: str) -> None:
+    if (
+        not isinstance(value, str)
+        or not value
+        or any(char in value for char in ("\\", ":", "\x00"))
+        or any(part in ("", ".", "..") for part in value.split("/"))
+    ):
+        raise InputError(f"{location}: expected a canonical bundle-relative path")
+
+
+def validate_absolute_path(value: Any, location: str) -> None:
+    if (
+        not isinstance(value, str)
+        or "\x00" in value
+        or not (PurePosixPath(value).is_absolute() or PureWindowsPath(value).is_absolute())
+    ):
+        raise InputError(f"{location}: expected an absolute source path")
+
+
+def distribution_files(bundle: Path, paths: list[str]) -> list[Path]:
+    """Follow directory links like copytree, retaining every installed alias path."""
+    bundle_root = bundle.resolve()
+    files: list[Path] = []
+
+    def visit(path: Path, ancestors: frozenset[Path]) -> None:
+        relative = path.relative_to(bundle).as_posix()
+        validate_relative_path(relative, "source distribution path")
+        resolved = path.resolve(strict=True)
+        try:
+            resolved.relative_to(bundle_root)
+        except ValueError as error:
+            raise InputError(f"source distribution path escapes bundle: {relative}") from error
+        if path.is_dir():
+            if resolved in ancestors:
+                raise InputError(f"source distribution directory link cycle: {relative}")
+            for child in sorted(path.iterdir()):
+                visit(child, ancestors | {resolved})
+        elif path.is_file():
+            files.append(path)
+        else:
+            raise InputError(f"source distribution path is not a file or directory: {relative}")
+
+    for relative in paths:
+        validate_relative_path(relative, "source distribution path")
+        visit(bundle / relative, frozenset())
+    return files
+
+
+def validate_manifest(
+    manifest: Any, bundle: Path, catalog: dict[str, Any]
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Derive coverage from the bundle; declarations cannot shrink verification."""
+    if not isinstance(manifest, dict):
+        raise InputError("install manifest must be a JSON object")
+    if set(manifest) != MANIFEST_FIELDS:
+        missing = sorted(MANIFEST_FIELDS - set(manifest))
+        extra = sorted(set(manifest) - MANIFEST_FIELDS)
+        raise InputError(f"install manifest fields differ: missing={missing}, extra={extra}")
+    if manifest["kind"] != "devflow-install-manifest":
+        raise InputError("install manifest kind must be devflow-install-manifest")
+    if type(manifest["schema_version"]) is not int or manifest["schema_version"] != 1:
+        raise InputError("install manifest schema_version must be the integer 1")
+    if manifest["layout"] not in ("full", "single", "symlink"):
+        raise InputError("install manifest layout must be full, single, or symlink")
+    try:
+        created_at = datetime.datetime.fromisoformat(manifest["created_at"])
+        if created_at.tzinfo is None:
+            raise ValueError("timezone is required")
+    except (TypeError, ValueError) as error:
+        raise InputError("install manifest created_at must be an ISO timestamp with timezone") from error
+    validate_absolute_path(manifest["source_bundle"], "source_bundle")
+
+    skills = manifest["skills"]
+    if not isinstance(skills, list) or not skills or any(not isinstance(skill, str) for skill in skills):
+        raise InputError("install manifest skills must be a non-empty array of identifiers")
+    if len(set(skills)) != len(skills):
+        raise InputError("install manifest skills must not contain duplicates")
+    catalog_ids = {skill["id"] for skill in catalog["skills"]}
+    for skill in catalog["skills"]:
+        validate_relative_path(skill["id"], "catalog skill id")
+        if "/" in skill["id"]:
+            raise InputError("catalog skill id must name one directory")
+        for relative in [skill["entry"], *skill["required_resources"]]:
+            validate_relative_path(relative, "catalog resource")
+    if not set(skills).issubset(catalog_ids):
+        raise InputError("install manifest skills include unknown source catalog identifiers")
+    if manifest["layout"] == "single":
+        # Schema v1 records the closure, not its original requested root. It must
+        # still be exactly the closure of one of its members, not an arbitrary union.
+        if not any(set(resolve_closure(bundle, catalog, [skill])) == set(skills) for skill in skills):
+            raise InputError("single install skills must match one complete source dependency closure")
+    elif set(skills) != catalog_ids:
+        raise InputError("install manifest skills must cover the complete source catalog")
+
+    paths = manifest["paths"]
+    if not isinstance(paths, list):
+        raise InputError("install manifest paths must be an array")
+    for relative in paths:
+        validate_relative_path(relative, "paths")
+    expected_paths = distribution_paths(bundle, manifest["layout"], skills)
+    if len(set(paths)) != len(paths) or set(paths) != set(expected_paths):
+        raise InputError("install manifest paths must exactly cover the source distribution")
+
+    for field in ("links", "file_sha256"):
+        if not isinstance(manifest[field], dict):
+            raise InputError(f"install manifest {field} must be an object")
+        for relative, value in manifest[field].items():
+            validate_relative_path(relative, field)
+            if field == "links":
+                validate_absolute_path(value, f"links[{relative}]")
+            elif not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+                raise InputError(f"file_sha256[{relative}]: expected a SHA-256 hex digest")
+
+    expected_hashes: dict[str, str] = {}
+    expected_links: dict[str, str] = {}
+    source_files = distribution_files(bundle, expected_paths)
+    if manifest["layout"] == "symlink":
+        expected_links = {relative: str((bundle / relative).resolve()) for relative in expected_paths}
+    else:
+        expected_hashes = {member.relative_to(bundle).as_posix(): digest(member) for member in source_files}
+    if set(manifest["links"]) != set(expected_links):
+        raise InputError("install manifest links must exactly cover the source distribution for its layout")
+    if set(manifest["file_sha256"]) != set(expected_hashes):
+        raise InputError("install manifest file_sha256 must exactly cover the source files for its layout")
+    return expected_hashes, expected_links
+
+
 def stage(bundle: Path, layout: str, skill: str | None, destination: Path) -> int:
     if layout == "single" and not skill:
         print("INPUT ERROR: --skill is required for the single layout", file=sys.stderr)
@@ -177,10 +309,19 @@ def stage(bundle: Path, layout: str, skill: str | None, destination: Path) -> in
         closure = [entry["id"] for entry in catalog["skills"]]
 
     paths = distribution_paths(bundle, layout, closure)
+    try:
+        # Validate the whole source before copytree can follow an unsafe or cyclic
+        # directory link, and use the same file coverage as verification.
+        source_files = distribution_files(bundle, paths)
+        file_hashes = {} if layout == "symlink" else {
+            member.relative_to(bundle).as_posix(): digest(member) for member in source_files
+        }
+    except (InputError, OSError, RuntimeError) as error:
+        print(f"INPUT ERROR: {error}", file=sys.stderr)
+        return 2
 
     destination.mkdir(parents=True)
     links: dict[str, str] = {}
-    file_hashes: dict[str, str] = {}
     try:
         for relative in paths:
             source = bundle / relative
@@ -193,15 +334,6 @@ def stage(bundle: Path, layout: str, skill: str | None, destination: Path) -> in
                 shutil.copytree(source, target)
             else:
                 shutil.copy2(source, target)
-            if layout != "symlink" and source.is_dir():
-                for member in sorted(source.rglob("*")):
-                    if member.is_file():
-                        member_relative = (
-                            Path(relative) / member.relative_to(source)
-                        ).as_posix()
-                        file_hashes[member_relative] = digest(member)
-            elif layout != "symlink" and source.is_file():
-                file_hashes[relative] = digest(source)
     except PermissionError as error:
         print(
             f"INPUT ERROR: permission denied while staging ({error}); "
@@ -254,12 +386,13 @@ def verify(bundle: Path, install_root: Path) -> int:
         return 2
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
         print(f"INPUT ERROR: cannot read install manifest: {error}", file=sys.stderr)
         return 2
     try:
         catalog = load_catalog(bundle)
-    except CHECK_BUNDLE.InputError as error:
+        expected_hashes, expected_links = validate_manifest(manifest, bundle, catalog)
+    except (CHECK_BUNDLE.InputError, InputError, OSError, UnicodeError, RuntimeError) as error:
         print(f"INPUT ERROR: {error}", file=sys.stderr)
         return 2
     by_id = {entry["id"]: entry for entry in catalog["skills"]}
@@ -305,7 +438,10 @@ def verify(bundle: Path, install_root: Path) -> int:
                     )
 
     if manifest["layout"] == "symlink":
-        for relative, recorded_target in manifest["links"].items():
+        for relative, expected_target in expected_links.items():
+            recorded_target = manifest["links"][relative]
+            if os.path.normcase(os.path.normpath(recorded_target)) != os.path.normcase(expected_target):
+                errors.append(f"{relative}: recorded link target differs from source bundle")
             staged = install_root / relative
             if not staged.is_symlink():
                 errors.append(f"{relative}: expected a symlink, found a copied path")
@@ -318,15 +454,19 @@ def verify(bundle: Path, install_root: Path) -> int:
                 errors.append(
                     f"{relative}: does not point at the recorded source {recorded_target}"
                 )
-            elif not Path(recorded_target).exists():
+            if os.path.normcase(actual_target) != os.path.normcase(expected_target):
+                errors.append(f"{relative}: symlink does not point at the source bundle")
+            elif not Path(expected_target).exists():
                 errors.append(f"{relative}: link target no longer exists")
     else:
-        for relative, recorded_hash in manifest["file_sha256"].items():
+        for relative, expected_hash in expected_hashes.items():
+            if manifest["file_sha256"][relative] != expected_hash:
+                errors.append(f"{relative}: recorded hash differs from source bundle bytes")
             staged = install_root / relative
             if not staged.is_file():
                 errors.append(f"{relative}: missing from install")
-            elif digest(staged) != recorded_hash:
-                errors.append(f"{relative}: differs from staged source bytes")
+            elif digest(staged) != expected_hash:
+                errors.append(f"{relative}: differs from source bundle bytes")
 
     if errors:
         for error in errors:

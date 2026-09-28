@@ -16,6 +16,7 @@ Select the requested deliverable first: an instrumentation or alert design may e
 - Building or changing a production path whose operational questions, risk, or project policy call for new signals
 - Adding a new service, endpoint, background job, or external integration
 - A production incident took too long to diagnose ("we couldn't tell what happened")
+- Assessing a skill or tool's usage frequency or value from existing records, including zero-read samples
 - Setting up or reviewing alerting rules
 - Reviewing a PR that adds I/O, retries, queues, or cross-service calls
 
@@ -171,6 +172,14 @@ Instrumentation is code; it can be wrong. Verify applicable signals on an author
 - Validate alert rules and runbook links with provider-supported dry-run/test facilities when available and authorized; otherwise record live delivery verification as pending
 
 When you analyze a telemetry or log sample for someone, ground the analysis in the sample's own frame: state the observation window the sample covers, and report the identity units the records actually carry — task, tree/agent, turn, and call or correlation ids — naming their values where the sample provides them. Grouping counts "by task" while never naming which task, turn, or call ids were observed leaves the reader unable to re-check the sample; a complete analysis names the units it counted, keeps observed fact separate from inference, and states which units or values are absent or unknown.
+
+When the sample supplies multiple tasks, trees, agents, or turns, state the distinct count for each supplied identity unit in the current deliverable. A few example identity chains or a link to raw data do not replace those totals; mark a count unknown when the records cannot support it.
+
+For skill or tool usage records, identify each source by its recorded id and version when names overlap. Keep discovery or injection, user naming, assistant selection, read requests, delivered returns, follow-through, and outcomes separate; a same-named source or a path mentioned in a document is not evidence of a read or use. When reporting usage from a sample, explicitly report every observed stage for the target source in the current deliverable, using its recorded label, observed count or status, and available event and source identifiers. State which later stages have no evidence or remain unknown. A generic selection or usage total must not stand in for the individual stages.
+
+Zero recorded reads show no observed use, not that a skill lacks value. For a value assessment, explain what further task evidence would be needed: actual opportunities where the skill's guidance applies, whether it was selected, read, and used for those tasks, and outcomes linked to those tasks and the guidance. If there were no applicable opportunities, say so without treating zero reads as a value judgment; if applicability is unknown, do not count those tasks as having no need.
+
+When proposing measurements from a log or telemetry sample, define each metric in the current deliverable: its observation window, counting unit, and eligible population; for a rate or proportion, specify both numerator and denominator. State how duplicate, missing, unverified, or out-of-scope observations affect inclusion, and leave unavailable values unknown rather than inventing measurements or treating missing observations as success.
 
 ## Common Rationalizations
 

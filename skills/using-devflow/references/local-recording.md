@@ -68,6 +68,14 @@ python scripts/usage.py report  --store <dir> --out <report.json>
   are managed by the host; this tool never changes host log settings,
   spawns no background process, scans no directories, and uses no network.
 
+After enabling optional recording, tell the user the actual store and output
+location, the approved scope and selected fields, and how to stop it with
+`disable --store <dir>` while retaining existing events. When a later event is
+expected, report its collection as pending until it arrives; then check the
+actual stored fields and scope against the approved selection and report the
+observed result. Do not claim a scope label enforces filtering unless that
+behavior was verified.
+
 ## When to record
 
 Only after the user has opted in for the named store. Record events you

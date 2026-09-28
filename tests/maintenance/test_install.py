@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import shutil
@@ -130,6 +131,239 @@ class InstallToolTests(unittest.TestCase):
             "--install-root",
             str(install_root),
         )
+
+    def write_manifest(self, destination, manifest):
+        (destination / "install-manifest.json").write_text(
+            json.dumps(manifest), encoding="utf-8"
+        )
+
+    def read_manifest(self, destination):
+        return json.loads((destination / "install-manifest.json").read_text(encoding="utf-8"))
+
+    def assert_manifest_error(self, destination):
+        result = self.verify(destination)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn("INPUT ERROR:", result.stderr)
+        self.assertNotIn("Traceback", result.stdout + result.stderr)
+        self.assertNotIn("INSTALL VERIFY PASSED", result.stdout)
+
+    def test_verify_rejects_empty_and_malformed_manifest_objects(self):
+        destination = self.work / "empty-install"
+        destination.mkdir()
+        for manifest in ({}, [], None, {"skills": [], "layout": "weird", "links": {}, "file_sha256": {}}):
+            with self.subTest(manifest=manifest):
+                self.write_manifest(destination, manifest)
+                self.assert_manifest_error(destination)
+
+    def test_verify_validates_manifest_fields_before_using_them(self):
+        result, destination = self.stage("full")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        original = self.read_manifest(destination)
+        invalid_values = {
+            "kind": [None, "other-manifest"],
+            "schema_version": [True, 2, "1"],
+            "created_at": [None, "not-a-time"],
+            "layout": ["weird", [], None],
+            "skills": [[], "devflow", [{}], ["ghost"], ["devflow", "devflow"]],
+            "source_bundle": [None, "relative/path"],
+            "paths": [[], "skills/devflow", [{}]],
+            "links": [[], {"skills/devflow": None}],
+            "file_sha256": [[], {"skills/devflow/SKILL.md": None}, {"skills/devflow/SKILL.md": "invalid"}],
+        }
+        for field, values in invalid_values.items():
+            for value in values:
+                with self.subTest(field=field, value=value):
+                    self.write_manifest(destination, {**original, field: value})
+                    self.assert_manifest_error(destination)
+        for field in original:
+            with self.subTest(missing=field):
+                self.write_manifest(destination, {key: value for key, value in original.items() if key != field})
+                self.assert_manifest_error(destination)
+
+    def test_verify_rejects_undecodable_manifest_without_traceback(self):
+        destination = self.work / "invalid-encoding"
+        destination.mkdir()
+        (destination / "install-manifest.json").write_bytes(b"\xff")
+        self.assert_manifest_error(destination)
+
+    def test_verify_requires_exact_full_skill_and_distribution_coverage(self):
+        result, destination = self.stage("full")
+        self.assertEqual(result.returncode, 0)
+        original = self.read_manifest(destination)
+        for field, value in (
+            ("skills", original["skills"][:-1]),
+            ("paths", original["paths"][:-1]),
+            ("paths", original["paths"] + [original["paths"][0]]),
+            ("paths", original["paths"] + ["unexpected.txt"]),
+            ("file_sha256", {}),
+            ("file_sha256", {**original["file_sha256"], "unexpected.txt": "0" * 64}),
+            ("links", {"skills/devflow": str(self.bundle / "skills" / "devflow")}),
+        ):
+            with self.subTest(field=field, value=value):
+                self.write_manifest(destination, {**original, field: value})
+                self.assert_manifest_error(destination)
+
+    def test_verify_rejects_escaping_or_noncanonical_path_declarations(self):
+        result, destination = self.stage("full")
+        self.assertEqual(result.returncode, 0)
+        original = self.read_manifest(destination)
+        for path in ("../outside.txt", "/outside.txt", "C:/outside.txt", "C:outside.txt", "skills\\devflow", "skills/./devflow", "skills//devflow", "skills/devflow/", "skills/devflow/../devflow", "bad\x00path"):
+            for field in ("paths", "file_sha256", "links"):
+                with self.subTest(path=path, field=field):
+                    if field == "paths":
+                        value = original[field] + [path]
+                    else:
+                        value = {**original[field], path: "0" * 64 if field == "file_sha256" else str(self.bundle)}
+                    self.write_manifest(destination, {**original, field: value})
+                    self.assert_manifest_error(destination)
+
+    def test_verify_single_manifest_requires_one_complete_dependency_closure(self):
+        result, destination = self.stage("single", "--skill", "api-and-interface-design")
+        self.assertEqual(result.returncode, 0)
+        original = self.read_manifest(destination)
+        for skills in (["api-and-interface-design"], original["skills"] + ["isolated-skill"]):
+            with self.subTest(skills=skills):
+                # Keep the declared paths/hashes consistent with the false skill set.
+                changed = {**original, "skills": skills}
+                changed["paths"] = [f"skills/{skill}" for skill in skills] + ["templates/project-overrides.md"]
+                changed["file_sha256"] = {
+                    path: value for path, value in original["file_sha256"].items()
+                    if not path.startswith("skills/") or path.split("/")[1] in skills
+                }
+                if "isolated-skill" in skills:
+                    path = "skills/isolated-skill/SKILL.md"
+                    changed["file_sha256"][path] = hashlib.sha256((self.bundle / path).read_bytes()).hexdigest()
+                    shutil.copytree(self.bundle / "skills" / "isolated-skill", destination / "skills" / "isolated-skill")
+                self.write_manifest(destination, changed)
+                self.assert_manifest_error(destination)
+
+    def test_verify_cannot_hide_modified_content_by_rewriting_manifest_hash(self):
+        result, destination = self.stage("full")
+        self.assertEqual(result.returncode, 0)
+        path = "skills/isolated-skill/SKILL.md"
+        (destination / path).write_text("Changed guidance.\n", encoding="utf-8")
+        manifest = self.read_manifest(destination)
+        manifest["file_sha256"][path] = hashlib.sha256((destination / path).read_bytes()).hexdigest()
+        self.write_manifest(destination, manifest)
+
+        result = self.verify(destination)
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(path, result.stdout)
+        self.assertIn("source bundle", result.stdout)
+
+    def test_verify_copied_install_is_bound_to_supplied_bundle_bytes(self):
+        result, destination = self.stage("full")
+        self.assertEqual(result.returncode, 0)
+        (self.bundle / "skills" / "isolated-skill" / "SKILL.md").write_text("New source.\n", encoding="utf-8")
+
+        result = self.verify(destination)
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("source bundle", result.stdout)
+
+    def test_verify_symlink_manifest_requires_complete_link_coverage(self):
+        result, destination = self.stage("symlink")
+        if result.returncode == 2 and "permission" in result.stderr.lower():
+            self.skipTest("symlink creation is unavailable on this host")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        original = self.read_manifest(destination)
+        for field, value in (
+            ("skills", original["skills"][:-1]),
+            ("links", {}),
+            ("links", {**original["links"], "unexpected.txt": str(self.bundle)}),
+            ("file_sha256", {"skills/devflow/SKILL.md": "0" * 64}),
+        ):
+            with self.subTest(field=field, value=value):
+                self.write_manifest(destination, {**original, field: value})
+                self.assert_manifest_error(destination)
+
+    def test_verify_cannot_hide_relinked_skill_by_rewriting_manifest_target(self):
+        result, destination = self.stage("symlink")
+        if result.returncode == 2 and "permission" in result.stderr.lower():
+            self.skipTest("symlink creation is unavailable on this host")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        relative = "skills/isolated-skill"
+        replacement = self.work / "replacement"
+        shutil.copytree(self.bundle / relative, replacement)
+        (destination / relative).unlink()
+        (destination / relative).symlink_to(replacement, target_is_directory=True)
+        manifest = self.read_manifest(destination)
+        manifest["links"][relative] = str(replacement.resolve())
+        self.write_manifest(destination, manifest)
+
+        result = self.verify(destination)
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("source bundle", result.stdout)
+
+    def make_directory_link(self, target, link):
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except OSError as error:
+            if isinstance(error, PermissionError) or getattr(error, "winerror", None) in (1314, 1925):
+                self.skipTest("symlink creation is unavailable on this host")
+            raise
+
+    def test_source_directory_links_are_copied_and_fully_hashed(self):
+        assets = self.bundle / "shared-assets"
+        (assets / "nested").mkdir(parents=True)
+        (assets / "nested" / "payload.json").write_text('{"version": 1}', encoding="utf-8")
+        for name in ("assets", "assets-alias"):
+            self.make_directory_link(assets, self.bundle / "skills" / "isolated-skill" / name)
+        for layout, extra in (("full", ()), ("single", ("--skill", "isolated-skill"))):
+            with self.subTest(layout=layout):
+                result, destination = self.stage(layout, *extra)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                manifest = self.read_manifest(destination)
+                for name in ("assets", "assets-alias"):
+                    relative = f"skills/isolated-skill/{name}/nested/payload.json"
+                    self.assertIn(relative, manifest["file_sha256"])
+                    self.assertEqual((destination / relative).read_text(encoding="utf-8"), '{"version": 1}')
+                    self.assertFalse((destination / "skills" / "isolated-skill" / name).is_symlink())
+                clean = self.verify(destination)
+                self.assertEqual(clean.returncode, 0, clean.stdout + clean.stderr)
+                payload = destination / "skills" / "isolated-skill" / "assets" / "nested" / "payload.json"
+                payload.write_text('{"version": 2}', encoding="utf-8")
+                changed = self.verify(destination)
+                self.assertEqual(changed.returncode, 1, changed.stdout + changed.stderr)
+                self.assertIn("skills/isolated-skill/assets/nested/payload.json", changed.stdout)
+
+    def test_source_directory_link_file_hash_cannot_be_omitted(self):
+        assets = self.bundle / "shared-assets"
+        assets.mkdir()
+        (assets / "payload.json").write_text("{}", encoding="utf-8")
+        self.make_directory_link(assets, self.bundle / "skills" / "isolated-skill" / "assets")
+        result, destination = self.stage("full")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        manifest = self.read_manifest(destination)
+        manifest["file_sha256"].pop("skills/isolated-skill/assets/payload.json", None)
+        self.write_manifest(destination, manifest)
+        self.assert_manifest_error(destination)
+
+    def test_source_directory_link_cycle_is_rejected_before_staging(self):
+        skill = self.bundle / "skills" / "isolated-skill"
+        self.make_directory_link(skill, skill / "cycle")
+        for layout in ("full", "symlink"):
+            with self.subTest(layout=layout):
+                result, destination = self.stage(layout)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn("cycle", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertFalse(destination.exists())
+
+    def test_source_directory_link_outside_bundle_is_rejected_before_staging(self):
+        external = self.work / "external-assets"
+        external.mkdir()
+        (external / "payload.json").write_text("{}", encoding="utf-8")
+        self.make_directory_link(external, self.bundle / "skills" / "isolated-skill" / "assets")
+        for layout in ("full", "symlink"):
+            with self.subTest(layout=layout):
+                result, destination = self.stage(layout)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn("escapes bundle", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertFalse(destination.exists())
 
     def test_plan_on_absent_target_is_read_only(self):
         target = self.work / "absent-target"

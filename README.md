@@ -63,6 +63,11 @@ Point your tool's skill, prompt, rules, or instruction loader at the repository 
 
 Per-host support levels and what was natively verified: [host support table](docs/devflow/host-support.md).
 
+The 2.0.2 work package has limited human acceptance with an environment exception:
+eight complete native scenarios passed, and unverified scenarios remain explicit.
+Strict patch and full V2 behavior qualification remain incomplete. See the
+[evaluation status](docs/devflow/v2-evaluation-summary.md) for scope, evidence and limits.
+
 ## Usage
 
 Ask the assistant to use Devflow before a development task:
@@ -85,7 +90,7 @@ Devflow's skill examples are TypeScript/web-flavored, but the rules are stack-ag
 
 ## Maintenance
 
-- Run `bash scripts/check-refs.sh` before committing skill changes — it validates frontmatter, backtick references, size budgets, and delegates to `python scripts/check-bundle.py`, which resolves every Markdown link and backtick path in the bundle, checks the catalog and template mirror, and reports total entry load against the per-entry line and byte budgets. Run `python -m unittest discover -s tests/maintenance -p 'test_*.py'` for the tooling's 156 behavior tests. CI runs all of these on every push.
+- Run `bash scripts/check-refs.sh` before committing skill changes — it validates frontmatter, backtick references, size budgets, and delegates to `python scripts/check-bundle.py`, which resolves every Markdown link and backtick path in the bundle, checks the catalog and template mirror, and reports total entry load against the per-entry line and byte budgets. Run `python -m unittest discover -s tests/maintenance -p 'test_*.py'` for the tooling's maintenance tests; the runner reports the current test count and results. CI runs all of these on every push.
 - Installing or switching an installation: `python scripts/install-bundle.py plan|stage|verify` plus the [installation and switch-over guide](docs/devflow/installation.md) — auditable diff, bundle-owned-only backup, explicit switch authorization, bounded recovery.
 - Optional local usage recording (`python scripts/usage.py status|enable|disable|append|export|report --store <dir>`) is **off by default**, records only whitelisted minimal events, never raw dialogue or credentials, and no workflow step depends on it.
 - **Bump `version` in `.claude-plugin/plugin.json` in any PR that changes skill content** (CI enforces this on pull requests), and add a `CHANGELOG.md` entry for the new version. Installed plugins only receive updates when the version string changes — content changes without a version bump never reach `/plugin update` users.

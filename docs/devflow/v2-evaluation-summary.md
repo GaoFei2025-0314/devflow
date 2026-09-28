@@ -1,5 +1,214 @@
 # Devflow V2.0 evaluation summary
 
+## 2.0.2 limited human closeout — 2026-09-27
+
+The user accepted this round with an environment exception and requested its
+submission on September 28. **The bounded work package is closed by human
+acceptance; the original strict patch and full V2.0 qualification remain
+incomplete.** This is not a 15/15 native PASS or a `verify` exit-0 claim.
+The original [patch acceptance requirements](../../specs/changes/devflow-v2/specs/patch-2.0.2-acceptance.md)
+and checker rejection rules remain unchanged.
+
+The tested source is commit `213ec083e95a0b131636b10861c0ea76fb62330c`,
+source 011, with 117-file source identity
+`b2a41f6cb5b465535b08a89318af58a7b9060c78583decd532ee661e866bb8b0`.
+Subsequent closeout documentation is not a new native-tested source: the source
+011 records retain their original binding. No new runtime behavior is claimed
+from the documentation update.
+
+| Scope | Observed result and disposition |
+| --- | --- |
+| AT-02: default off, enabled recording, stopped recording, local export | Four complete native scenarios PASS after independent review; enabled/stopped include actual follow-up events. |
+| AT-30: zero applicable tasks, unknown applicability | Two complete native scenarios PASS. Unknown values remain distinct from zero. |
+| AT-31: untrusted embedded instructions | One complete native scenario PASS. |
+| AT-33: flat install missing shared template | One complete native scenario PASS. The interrupted first attempt remains historical UNKNOWN. |
+| AT-33: complete package, repetition 1 | Initial candidate assessment passed semantic review; raw host status remains BLOCKED. The approval/switch/recovery continuation was not run, so the complete scenario is not PASS. |
+| Remaining six initial scenarios | Complete-package repetitions 2/3, single-skill dependencies, linked install, and both sealed holdouts were not run. They remain outside the verified scope, not environment failures or passing tests. |
+| Maintenance and installation | Source 011 passed 251 maintenance tests on each of Windows and Ubuntu, refs/bundle checks and 40-case/66-variant material validation. Six isolated stage/verify steps passed for full, single-skill and real-link installation; these do not replace the missing agent scenarios. |
+| Claude Code / Cursor | One source-011 controlled status probe passed five actual reads and six contract assertions. This does not establish plugin loading, commands, browser or collaboration support. Cursor native verification remains deferred. |
+
+The environment exception concerns missing entry/exit registration definitions
+for native Codex collaboration tools. The raw traces establish calls, responses
+and actor completion, but not the complete tool definitions at those points.
+The user accepted ending this round rather than collecting those unavailable
+definitions. The six unstarted scenarios and complete-package continuation are
+explicitly unverified; the exception does not invent a separate environment
+blocker for them. Original FAIL, UNKNOWN and BLOCKED records remain intact.
+
+All 15 temporary test workspaces and their temporary trust entries were removed.
+An independently verified private archive preserves 551 files and metadata for
+two internal links. The post-cleanup review confirmed all 54 hashed references
+in the attempt ledger, including eight formal results and 12 native attempts,
+remain valid. Raw transcripts, private configuration and sealed materials stay
+outside Git. Traceable private-record hashes are:
+
+| Record | SHA-256 |
+| --- | --- |
+| Attempt ledger, source 011 batch 001 | `ed377ff890df66596b9b2569ab1549e8f574e00f5d5862eab2d85769995b2360` |
+| Maintenance source011-002 | `43ff0dd386238becfaa0ab51312392cf543a037e9901f64ab65dc29893c47cc3` |
+| Isolated install smoke source011-001 | `6a0d7b37016897947dda1af86fcff01ec95715560d8656f70c20c24cf42bb041` |
+| Limited human closeout independent review | `361e2384b72abf79aa426ae131d15a30db94174655ab00fc1feff0926c85bb5f` |
+| Claude evidence correction to that review | `c772bda08ac4532dbe87559654f0cf574eb9e9efde7182753d5f2cfdb3d530b4` |
+| Post-cleanup independent review | `e72e6ddf83bf13bca708b8711ee07fc52ec5bcdb9e9aa97b6ff8f561c6a6adb7` |
+
+Submission does not authorize merge, publication, a global installation switch
+or branch deletion. Required PR CI and explicit risky-merge approval remain
+separate gates. No comparative efficiency or full V1.3.1 qualification claim is
+made. The dated sections below preserve earlier states rather than overriding
+this closeout.
+
+## Historical 2.0.2 incremental acceptance status — 2026-09-23
+
+The user selected an incremental acceptance claim for the next `2.0.2` patch
+over the published `v2.0.1` tag. The separate
+[patch acceptance addendum](../../specs/changes/devflow-v2/specs/patch-2.0.2-acceptance.md)
+defines that gate and its risk-based scenario matrix. It does not change the
+original full V2.0 qualification or the strict `release` profile. The earlier
+V1.3.1 full comparison remains an unresolved historical work item; a patch
+PASS, if later achieved, must not be reported as a retroactive full PASS.
+
+**At this checkpoint, the 2.0.2 patch had not passed acceptance.** Interim source 001
+(`0026d873210bbcb82a5288bedd4e348dc8452191e5eca12a5f39b3b491b68297`)
+was frozen with two sealed holdouts and passed isolated install smoke checks.
+Its native AT-33 `linked-install` run failed E01 in independent review: the
+report gave checked/missing totals without the exact resolved-reference list.
+Its AT-02 diagnostic runs with an incorrect workspace reference or host-config
+drift remain invalid, not current PASS results.
+
+After the delivery rule was clarified, source 002
+(`910704fbfe2682acc73ae69dd986f3832820688184a07ed05ae6c221d65c8ec3`)
+was frozen and independently checked against 117 Git archive member bytes.
+Windows and Ubuntu each passed 251 maintenance tests on this source; references,
+bundle structure and 40-case/66-variant material validation passed. Its native
+AT-33 `linked-install` run passed E01/E02/E03/F01/F02 in independent review,
+including direct links to 37 itemized checked paths and 66 resolved reference
+edges. A separate, valid native AT-02 `default-off-analysis` run failed E01:
+the answer omitted the two source identities and did not distinguish user naming
+from assistant selection. Its other four assertions passed. These are retained
+attempts, not a passing 2.0.2 collection. The two exact temporary Codex trust
+entries created by these tests were independently reviewed and removed; no
+planned test-workspace trust key remains.
+
+Source 003 (`78c3de1ed5105f879b642ce2432df0ec2410f5ff78e04c90eb0a4589bc081523`)
+added a source-identity and event-classification rule. Its 117 source files and
+87 actor files passed byte-for-byte checks, Windows and Ubuntu each passed 251
+maintenance tests, and the references, bundle and 40-case/66-variant material
+checks passed. A valid native AT-02 `default-off-analysis` run then failed E01
+again: its answer distinguished the two sources but still did not report the
+observed `user_named` and `assistant_selected` events separately. E02, E03,
+F01 and F02 passed. The other 14 prepared source-003 episodes were not
+dispatched. This failure remains in the attempt history. The one temporary
+Codex trust entry created by that run was independently reviewed and removed;
+the global config returned to its pre-test hash, with no planned entries left.
+
+Source 004 (`784ec13620b4492daec6cda4415ad68946ab085d09269a830acb356b29a7f461`)
+clarified separate user-naming and assistant-selection reporting and passed
+Windows and Ubuntu maintenance checks. Its valid native AT-02
+`default-off-analysis` run still failed E01: the answer reported those two
+stages and the pending read, but omitted the observed source-A catalog
+injection (`e1`). The other four assertions passed. The other 14 prepared
+source-004 episodes were not dispatched. The one temporary Codex trust entry
+was independently reviewed and removed; all 15 planned entries are absent.
+
+The rule is being clarified to require explicit reporting of every observed
+usage stage. Any new source must be frozen again and its scoped behavior rerun;
+source 002's AT-33 PASS cannot be relabeled as a later source's result. The
+patch checker, final independent review and CI remain pending. The previously frozen
+`candidate-final-002` SHA-256
+`c1786019b71eb810a5afea83d522682f36ac2879810dde37cc3d113a91bd5911`
+is a pre-addendum snapshot, not a final 2.0.2 source binding; every subsequent
+repository content change requires a new freeze and evidence-impact review.
+
+The local evidence workspace outside this repository contains the September 23
+coordination checkpoint for the current V2 acceptance collection.
+It records offline refs/bundle/material validation and 231 Windows maintenance
+tests passed for that earlier snapshot, with 40 cases/66 variants structurally
+valid. These checks do not prove model behavior. The AT-14 native preflight
+observed 44 unrelated late iOS tool additions and a changed global config;
+without the relevant before/after configuration content it was not counted.
+One new AT-02 baseline was captured but lacked exit capability evidence and
+its own E01 assertion failed; that V1.3.1 baseline result is not a current
+candidate failure. A real-browser AT-39 baseline passed its five public
+assertions in independent review, but its CLI version differs from the current
+host and no current-source candidate pair is established. The prior AT-33
+single pair cannot supply the three valid repetitions for the changed patch
+source. Original failed, unknown and interrupted attempts remain in the
+external attempt history rather than being silently replaced.
+
+## Status reviewed on 2026-09-21
+
+The sections below record the historical V2.0.0 evaluation from 2026-09-13; their
+source hashes, counts and host limitations are not current V2.0.1 acceptance results.
+Tag `v2.0.1` was published on 2026-09-20 at
+`9db63cde0ddb3fecc0971ed16644b34121266b05` after PR #13 merged with all five required
+checks passing. No GitHub Release was created as of this review. Publication and
+offline checks do not prove behavior or native host acceptance.
+
+The later v10 collection retains 104 candidate records with 487 pass / 2 fail /
+2 unknown assertions, and 104 baseline records with 482 pass / 9 fail / 0 unknown.
+Its release checker reports 48 detected failures and 1,259 insufficient-evidence
+items, including evidence-path collisions and missing comparison/reuse metadata.
+These are checker diagnostics, not counts of failed model assertions. The v11
+collection repairs evidence references while retaining original record bytes and
+outcomes. Its updated checker returns exit 1: 2 original candidate assertion
+failures and 179 evidence gaps, with 33 comparable ordinary pairs and no eligible
+target-bound holdout pairs. All 228 original declarations and 23,879 typed reference
+uses passed the separate byte-integrity audit. That audit proves file identity,
+not source-reuse validity or release acceptance; loading and comparison gaps remain.
+Cursor's explicit native-acceptance deferral remains in effect; see
+[host support](host-support.md) for the retained historical observations and limits.
+
+## Current work-package preflight (2026-09-22)
+
+The separate current acceptance collection is still in progress. No full-release
+PASS or PR readiness is established. Historical declarations and failed attempts
+remain immutable outside the repository.
+
+- Current material contains 40 cases and 66 variants. The additional AT-28
+  warm-context variant requires exact, source-bound retained bodies and actual
+  receipt evidence. Structural validity is not an executed behavior result.
+  The new floor is 114 runs per side / 228 total executions, including required repeats and
+  holdouts; the historical 65-variant counts below retain their original scope.
+- One new AT-33 pair on Windows Codex passed independent semantic review, with
+  five assertions per side. Both actors assessed the candidate before receiving
+  the actual staged user approval. The simulated switch exited 7, changed only
+  `VERSION`, and the authorized restore exited 0 with original bytes restored.
+  This single pair does not satisfy the three-repeat gate.
+- The first AT-15 native-collaboration pair has five PASS and two UNKNOWN assertions
+  per side. Host captures retain opaque dispatch and receipt payloads. The
+  candidate also displayed its first complete prompt after dispatch, failing the
+  separate capture-order preflight. These attempts remain visible. A subsequent
+  pair using the reviewed local delegation adapter passed all seven assertions
+  per side. Exact dispatch/receipt text, real overlap, task boundaries and all five
+  comparison conditions were independently checked. These are controller-bound
+  native roots, not built-in spawn lineage. Rejected task-name attempts remain in
+  the capture. Observed source-body tool payloads were 38,320 bytes for baseline
+  and 85,955 bytes for candidate; supplied task context is recorded separately.
+  This pair does not meet the exploratory 30% loading-reduction target.
+- Independent review of historical AT-28 distinguished necessary first contract
+  loading from repeated retained text. The old E02 rationale incorrectly treated
+  three applicable first reads as unnecessary. Its loading ledger also omitted
+  their fully delivered content. The old FAIL remains unchanged with a separate
+  calibration record. Fresh ordinary and warm-context pairs independently passed
+  all 18 assertions. Warm actors received complete rule bodies and did not reread
+  retained rules. The ordinary candidate recovered a genuinely truncated return;
+  that avoidable truncation remains an advisory finding, not missing coverage.
+- These pilot actors used `gpt-6-astra` with recorded `xhigh` effort and no explicit
+  model/effort override. The frozen candidate pilot is Git `46613e6`, content
+  manifest `8f6bf7d7d291a26b67ff4e02248ef0d1768c987ea1b1af6d9768f158009bd0f7`;
+  the baseline remains V1.3.1 `137e025`. Final-source validity still needs review.
+- Windows and Ubuntu each passed 231 maintenance tests. Reference and bundle
+  checks passed. Real isolated full, single-skill closure and symbolic-link
+  installations passed against the pilot source; no global installation changed.
+- Metadata repair proposals preserve original identities and judgments. Adding
+  loading field aliases does not prove delivered coverage or comparable metrics.
+  Independent review of the first 35 historical pairs supports 29 unchanged
+  reuses and six evidence-backed supplements, all tied only to the pilot source.
+  Every correction retains the original hash and exact field differences.
+  Remaining source-reuse, loading, comparison-condition and holdout gates remain open.
+
+## Historical V2.0.0 evaluation
+
 What the V2.0 behavior evaluation actually measured, and what it did not establish. The
 figures below are the recorded outcomes carried over from the V2.0 implementation plan
 (`specs/changes/devflow-v2/tasks.md`, records T05/T24/T26/T30–T33); nothing here is
@@ -40,11 +249,13 @@ HOLDOUT-RECOV-02-r2 all passed.
 **Final aggregate — C07 still exit 1:** candidate 108 records, 497 pass / 10 fail /
 2 unknown; baseline 501 pass / 8 fail / 0 unknown.
 
-The remaining candidate failures are legacy-source history the evidence contract requires
-keeping, plus AT-16, which is blocked on both sides because the evaluation host has no
-browser interface. Every scenario runnable on that host passed on the repaired source.
-**AT-16 still needs a re-run on a browser-capable host.** A green C07 was never reached,
-and this page does not claim one.
+The historical report attributed the remaining candidate failures to retained
+legacy-source history and AT-16, which was blocked on both sides because that
+evaluation host had no browser interface. Its claim that every runnable scenario
+passed on repaired sources did not establish final-source repeats, untouched
+holdouts or native integration acceptance; the limits in [host support](host-support.md)
+still apply. **That historical AT-16 run required a browser-capable host.** A green
+C07 was never reached in this evaluation.
 
 ## Measured loading cost
 
@@ -104,7 +315,7 @@ budget, so this figure stays visible rather than drifting silently.
   (`islink` plus normalized target comparison; a copied directory posing as a link was
   rejected). The reference-driven single-skill closure resolves to 16 skills.
 - **T33** — final candidate `aa171a4`: C01–C04 all exit 0 (142 maintenance tests at the
-  time; 156 today). Full diff 51 commits / 1,670 insertions. A privacy scan confirmed the
+  time). Full diff 51 commits / 1,670 insertions. A privacy scan confirmed the
   diff carried only bundle, docs, tests, scripts and workflow files — no evidence
   workspace, transcripts or holdout copies.
 - **T34–T37** — PR #11 pushed with 5/5 CI green, merged as `c28e765`, tagged `v2.0.0`,
