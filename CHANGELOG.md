@@ -2,19 +2,19 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
-## 2.0.2 (unreleased)
+## 2.0.2 (2026-09-28 merge, limited acceptance)
 
-- Record the September 27 limited human acceptance with an environment exception: eight complete source-011 native scenarios passed, while the remaining unverified scope and historical failures stay explicit. Temporary test workspaces and trust entries were removed after evidence preservation. This is not strict patch/full V2 qualification or a published release; see the [evaluation status](docs/devflow/v2-evaluation-summary.md).
+- Record the September 27 limited human acceptance with an environment exception: eight complete source-011 native scenarios passed, while the remaining unverified scope and historical failures stay explicit. Temporary test workspaces and trust entries were removed after evidence preservation. This closeout does not satisfy strict patch or full V2 qualification; see the [evaluation status](docs/devflow/v2-evaluation-summary.md).
 - Require proposed telemetry measurements to define their observation window, counting unit, eligible population, and applicable numerator/denominator in the current deliverable. Explicit inclusion rules preserve unknown and unverified observations; source-011 AT-02/AT-30 scoped behavior passed independent review.
 - Require usage-sample analyses to distinguish same-named source identities and report every observed stage, including discovery or injection, user naming, assistant selection and read requests, with its recorded label, status or count, and identifiers. Source-002, source-003 and source-004 AT-02 default-off E01 failures remain in history; source-011 default-off passed independent review.
 - Route opt-in recording through the local recording protocol, usage-value judgments through observability guidance, and every route through the phase contract. Recording guidance reports the actual store, approved fields and stop control; pending events are not treated as received events.
 - Require installation compatibility reports to list or directly link the complete itemized path set returned by the check, with each resolved target or missing reason tied to the candidate and raw check record. A count alone cannot substantiate the installation assessment; this follows a retained AT-33 linked-install candidate failure.
-
 - Reject result and holdout declarations as capture evidence across checkpoint, release and manifest references, including filename case variants and symlink aliases.
 - Validate installation manifest schemas and complete source-derived file/link coverage. Installed bytes are checked against the supplied bundle, including files copied through internal directory links, so rewriting manifest hashes cannot conceal modified content.
 - Validate required holdout run fields before reading assertions, reporting malformed input as a controlled input error.
 - Reject synthetic evidence for release acceptance by default. The explicit `--allow-synthetic-fixtures` mode verifies tooling fixtures only and cannot report release acceptance.
 - Add release-manifest schema 2 with per-record `evidence_root` and `run_id` bindings so aggregated packages retain their own evidence paths. Original failures and insufficient evidence remain visible.
+- PR #14 merged on 2026-09-28 as `b4af837`, and the `Validate skill bundle` push run on that `main` commit passed. A `v2.0.2` tag or GitHub Release is a separate publication step and adds no acceptance evidence.
 
 ## 2.0.1 (2026-09-20 tag)
 
