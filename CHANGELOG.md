@@ -2,14 +2,15 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
-## 2.1.0 (unreleased)
+## 2.1.0 (2026-10-01 tag)
 
 - **Shared rules slimmed.** The router, `using-devflow`, and the four shared contracts are rewritten into two canonical rule files: `skills/using-devflow/references/core-rules.md` (authority and trust, phases and completion, loading and recovery), read on every route, and `skills/using-devflow/references/action-rules.md` (authorization, evidence, delivery, host capabilities), read before changing anything, running checks, or delivering. What an implementation route must read falls from 68,640 bytes (router, `using-devflow`, four contracts) to 28,663 bytes, and from about 82,800 bytes when counting the host and command guides that 2.0.2 required before every tool or command choice. A read-only route falls from 23,670 to 14,552 bytes. No rule was deleted for size; restatements, motivational prose, and duplicated summaries were.
 - The four contract files stay at their paths as situational detail pages (phase inputs, authorization records and staged grants, evidence record fields and status meanings, installation reporting and the project-policy example), so existing links keep resolving. Every skill now links to the canonical sections. The host capability and project command guides are read when the action rules point to them rather than before every choice.
 - `scripts/check-bundle.py` enforces a 30,000-byte budget on the mandatory set (router, `using-devflow`, both rule files) and reports it on every run.
 - The [rule disposition table](specs/changes/devflow-2.1-slim/rule-disposition.md) lists where each rule went. This release changes shared rule text without a new model-behavior evaluation: earlier V2 and 2.0.2 behavior results were recorded on the old text and are not claimed for 2.1.0. AT-28's warm-context material now names the two new rule files.
+- PR #16 merged as `991532c`, and the `Validate skill bundle` push run on that `main` commit passed. Tag `v2.1.0` points to `991532cbf0cc61592394a7f6bf33efd02a10ce60`; no GitHub Release was created. The tag adds no behavior evidence.
 
-## 2.0.2 (2026-09-28 merge, limited acceptance)
+## 2.0.2 (2026-09-30 tag, limited acceptance)
 
 - Record the September 27 limited human acceptance with an environment exception: eight complete source-011 native scenarios passed, while the remaining unverified scope and historical failures stay explicit. Temporary test workspaces and trust entries were removed after evidence preservation. This closeout does not satisfy strict patch or full V2 qualification; see the [evaluation status](docs/devflow/v2-evaluation-summary.md).
 - Require proposed telemetry measurements to define their observation window, counting unit, eligible population, and applicable numerator/denominator in the current deliverable. Explicit inclusion rules preserve unknown and unverified observations; source-011 AT-02/AT-30 scoped behavior passed independent review.
@@ -21,7 +22,7 @@ All notable changes to the Devflow plugin. Versions follow the `version` field i
 - Validate required holdout run fields before reading assertions, reporting malformed input as a controlled input error.
 - Reject synthetic evidence for release acceptance by default. The explicit `--allow-synthetic-fixtures` mode verifies tooling fixtures only and cannot report release acceptance.
 - Add release-manifest schema 2 with per-record `evidence_root` and `run_id` bindings so aggregated packages retain their own evidence paths. Original failures and insufficient evidence remain visible.
-- PR #14 merged on 2026-09-28 as `b4af837`, and the `Validate skill bundle` push run on that `main` commit passed. A `v2.0.2` tag or GitHub Release is a separate publication step and adds no acceptance evidence.
+- PR #14 merged on 2026-09-28 as `b4af837`, and the `Validate skill bundle` push run on that `main` commit passed. The closeout records then merged through PR #15 as `4a688d8`, and tag `v2.0.2` points to `4a688d894d723a9bce1f9242f8bd1f094954c51e`; no GitHub Release was created. The tag adds no acceptance evidence.
 
 ## 2.0.1 (2026-09-20 tag)
 
