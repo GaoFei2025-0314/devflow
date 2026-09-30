@@ -53,7 +53,10 @@ outside Git. Traceable private-record hashes are:
 
 Submission does not authorize merge, publication, a global installation switch
 or branch deletion. Required PR CI and explicit risky-merge approval remain
-separate gates. No comparative efficiency or full V1.3.1 qualification claim is
+separate gates. PR #14 later merged on 2026-09-28 as `b4af837`; the
+`Validate skill bundle` push run on that `main` commit passed. That merge adds
+no behavior evidence, and a `v2.0.2` tag or GitHub Release remains a separate
+publication step. No comparative efficiency or full V1.3.1 qualification claim is
 made. The dated sections below preserve earlier states rather than overriding
 this closeout.
 
