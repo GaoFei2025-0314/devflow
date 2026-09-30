@@ -9,7 +9,7 @@ Use focused agents only when delegation improves an approved task without weaken
 
 The controller owns route selection, the context sent to each agent, authority boundaries, integration, and completion claims. A focused agent performs the assigned work; it does not restart global discovery, rerun the full Devflow router, broaden the plan, or approve an action for the user.
 
-Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). These are the canonical sources for phase, authority, evidence, and delivery boundaries.
+Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), and [delivery rules](../using-devflow/references/action-rules.md#delivery). These are the canonical sources for phase, authority, evidence, and delivery boundaries.
 
 ## Select the Execution Mode
 

@@ -9,7 +9,7 @@ description: Conducts scoped code review across requirements, correctness, reada
 
 Review a concrete artifact against a truthful baseline and return evidence-backed findings. This skill defines the review standard. Use [requesting-code-review](../requesting-code-review/SKILL.md) to construct and dispatch a review, and [receiving-code-review](../receiving-code-review/SKILL.md) to reconcile feedback.
 
-A review-only request is read-only: inspect and report findings, but do not edit code, resolve comments, commit, push, or merge unless those actions are separately requested and authorized. A review verdict is a technical conclusion, not authorization for an edit or delivery action. Apply the canonical [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md).
+A review-only request is read-only: inspect and report findings, but do not edit code, resolve comments, commit, push, or merge unless those actions are separately requested and authorized. A review verdict is a technical conclusion, not authorization for an edit or delivery action. Apply the canonical [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery).
 
 ## Establish the Review
 

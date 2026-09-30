@@ -5,7 +5,7 @@ description: Maintains durable change artifacts across sessions, reviewers, or a
 
 # Spec Workspace
 
-Use a durable workspace to preserve change intent across sessions, reviewers, or agents. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md) for the requested endpoint, the [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before state changes, and the [Delivery Contract](../using-devflow/references/delivery-contract.md) before Git, archive, or other delivery actions.
+Use a durable workspace to preserve change intent across sessions, reviewers, or agents. Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion) for the requested endpoint, the [authorization rules](../using-devflow/references/action-rules.md#authorization) before state changes, and the [delivery rules](../using-devflow/references/action-rules.md#delivery) before Git, archive, or other delivery actions.
 
 ## When To Use
 

@@ -5,7 +5,7 @@ description: Creates a standalone, reviewable specification when requirements ne
 
 # Spec-Driven Development
 
-Create the Spec the user requested, at a depth proportionate to the change. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md) to determine the requested endpoint and the [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before any state change. A Spec defines intent and acceptance; it does not itself authorize planning, implementation, Git actions, or external delivery.
+Create the Spec the user requested, at a depth proportionate to the change. Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion) to determine the requested endpoint and the [authorization rules](../using-devflow/references/action-rules.md#authorization) before any state change. A Spec defines intent and acceptance; it does not itself authorize planning, implementation, Git actions, or external delivery.
 
 ## When To Use
 
@@ -79,7 +79,7 @@ When the requested Spec is reviewable, report **document ready** and stop if the
 
 If the current request separately includes planning or implementation and provides applicable authorization, route that phase through the Devflow router. Reuse this Spec rather than re-deriving it. Use [writing-plans](../writing-plans/SKILL.md) or [planning-and-task-breakdown](../planning-and-task-breakdown/SKILL.md) only when planning is part of the requested deliverable, and use the selected implementation and verification skills only when implementation is actually authorized.
 
-Keep the Spec current when later authorized work changes a decision or accepted scope. Version-control, pull-request, archive, and delivery actions follow project policy and the shared [Delivery Contract](../using-devflow/references/delivery-contract.md); they are not automatic consequences of maintaining the document.
+Keep the Spec current when later authorized work changes a decision or accepted scope. Version-control, pull-request, archive, and delivery actions follow project policy and the shared [delivery rules](../using-devflow/references/action-rules.md#delivery); they are not automatic consequences of maintaining the document.
 
 ## Common Errors
 

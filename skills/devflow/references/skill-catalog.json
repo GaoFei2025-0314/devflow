@@ -441,6 +441,8 @@
         "capability-fallback"
       ],
       "required_resources": [
+        "skills/using-devflow/references/core-rules.md",
+        "skills/using-devflow/references/action-rules.md",
         "skills/using-devflow/references/phase-contract.md",
         "skills/using-devflow/references/authorization-contract.md",
         "skills/using-devflow/references/evidence-contract.md",

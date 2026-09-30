@@ -9,7 +9,7 @@ description: Guides evidence-backed completion and integration of a development 
 
 Finish the current work package in the way its project requires. This skill does not impose a fixed completion menu or assume that local merge, push, pull request, branch deletion, or worktree removal is authorized.
 
-Use the [Shared Delivery Contract](../using-devflow/references/delivery-contract.md) to decide readiness and reporting state, and the [Shared Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before each state-changing action.
+Use the [delivery rules](../using-devflow/references/action-rules.md#delivery) to decide readiness and reporting state, and the [authorization rules](../using-devflow/references/action-rules.md#authorization) before each state-changing action.
 
 ## 1. Inspect the Delivery State
 
@@ -41,7 +41,7 @@ Ask only for a concrete missing decision at the first action that depends on it.
 
 ## 3. Prepare a Reviewable Pull Request
 
-Normal PR timing is the complete agreed work package, after implementation review and every check the project requires before push/PR, including CI when assigned to that gate. Resolve this gate from the effective rules before choosing operation order, using the Shared Delivery Contract. A general push/PR grant does not waive a pending, failed, or unobserved pre-PR check. Finish reviewable local material while that gate is closed. An early or draft PR requires the explicit exception provided by the user or project policy.
+Normal PR timing is the complete agreed work package, after implementation review and every check the project requires before push/PR, including CI when assigned to that gate. Resolve this gate from the effective rules before choosing operation order, using the shared delivery rules. A general push/PR grant does not waive a pending, failed, or unobserved pre-PR check. Finish reviewable local material while that gate is closed. An early or draft PR requires the explicit exception provided by the user or project policy.
 
 Before an authorized push or PR, inspect the intended diff and prepare:
 

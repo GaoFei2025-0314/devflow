@@ -7,7 +7,7 @@ description: Drives development from valid RED evidence to minimal code. Use whe
 
 ## Overview
 
-For testable behavior, obtain regression evidence before writing the code that makes it pass. For bug fixes, reproduce the bug before attempting a fix. Tests are proof — "seems right" is not done. Select and record checks under the shared [Evidence Contract](../using-devflow/references/evidence-contract.md); this skill supplies the testing technique rather than a separate evidence policy.
+For testable behavior, obtain regression evidence before writing the code that makes it pass. For bug fixes, reproduce the bug before attempting a fix. Tests are proof — "seems right" is not done. Select and record checks under the shared [evidence rules](../using-devflow/references/action-rules.md#evidence); this skill supplies the testing technique rather than a separate evidence policy.
 
 Worked code examples for every practice in this skill are in `references/examples.md`.
 
@@ -83,7 +83,7 @@ Bug report arrives
 
 Start with the focused RED/GREEN check, then trace the changed behavior across its dependency boundaries. Add related unit, integration, end-to-end, build, type, or other checks only where they address a real regression risk or a mandatory project gate. Public APIs, dependencies, build/runtime configuration, security-sensitive work, and release candidates usually require broader coverage. Do not run the full suite unconditionally after every edit or repeat a clean command without a new reason.
 
-At a bug-fix status or completion handoff, follow the Evidence Contract's [proof-reporting rule](../using-devflow/references/evidence-contract.md#report-proof-in-status-and-completion-handoffs). Preserve the applicable before/after evidence and operation so the handoff makes the original symptom coverage and its limits clear.
+At a bug-fix status or completion handoff, follow the [proof-reporting rule](../using-devflow/references/action-rules.md#report-proof). Preserve the applicable before/after evidence and operation so the handoff makes the original symptom coverage and its limits clear.
 
 Existing passing evidence may be reused when it covers the current claim and its relevant code, uncommitted inputs, dependencies, configuration, data, environment, and external state remain valid. If one input changes, invalidate only the evidence it can affect and restore that coverage. Record failures and their investigation; a justified retry supplements the failed attempt rather than replacing it.
 
@@ -199,7 +199,7 @@ For complex bug fixes, have a subagent (if your host supports them) write the re
 
 ## Verification
 
-After completing behavior implementation, apply the shared Evidence Contract and check:
+After completing behavior implementation, apply the shared evidence rules and check:
 
 - [ ] Every new testable behavior has a corresponding behavioral test
 - [ ] Each new test was observed failing before implementation for the expected behavioral reason, or an existing accurate and still-valid RED record was reused

@@ -1,6 +1,6 @@
 # Definition of Done
 
-Apply this baseline to the **current requested deliverable and work package**, together with its task-specific acceptance criteria and the project's own required gates. A documentation deliverable, implementation, review result, and final delivery have different legal endpoints; use the [Phase and Delivery Contract](../../using-devflow/references/phase-contract.md) for their status and the [Delivery Contract](../../using-devflow/references/delivery-contract.md) for later actions. If the project defines its own Definition of Done, that version wins.
+Apply this baseline to the **current requested deliverable and work package**, together with its task-specific acceptance criteria and the project's own required gates. A documentation deliverable, implementation, review result, and final delivery have different legal endpoints; use the [phase rules](../../using-devflow/references/core-rules.md#phases-and-completion) for their status and the [delivery rules](../../using-devflow/references/action-rules.md#delivery) for later actions. If the project defines its own Definition of Done, that version wins.
 
 Before calling the current deliverable complete:
 

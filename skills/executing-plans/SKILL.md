@@ -9,7 +9,7 @@ description: Execute a written implementation plan directly in the current sessi
 
 Load an approved plan, execute the authorized work in dependency order, and report the current work-package state with valid evidence.
 
-This skill is the in-session execution entry for a written plan and the fallback when the host lacks subagent support. It remains distinct from subagent-driven execution while sharing the same [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), [Delivery Contract](../using-devflow/references/delivery-contract.md), and project task status. Do not maintain a separate approval list here.
+This skill is the in-session execution entry for a written plan and the fallback when the host lacks subagent support. It remains distinct from subagent-driven execution while sharing the same [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), [delivery rules](../using-devflow/references/action-rules.md#delivery), and project task status. Do not maintain a separate approval list here.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
@@ -20,7 +20,7 @@ Use this mode when the plan is being executed directly in the current session, i
 ### Step 1: Establish the Execution State
 
 1. Read the plan and the accepted requirements and decisions it references.
-2. Derive the current phase, requested deliverable, bounded scope, effective authorization, dependencies, required checks, and legal end condition from the shared contracts and project policy.
+2. Derive the current phase, requested deliverable, bounded scope, effective authorization, dependencies, required checks, and legal end condition from the shared rules and project policy.
 3. Reuse applicable approved requirements, user answers, and decisions. Ask only about a new conflict or consequential gap, explaining which task depends on it and how the answer changes the result.
 4. Reconcile the plan with the existing project task state. Update the host's normal task tracker when useful; do not create a second mandatory record solely for this skill.
 
@@ -33,7 +33,7 @@ Choose ready tasks by dependency and authorization, then:
 1. Mark the selected task in progress in the existing task state when one exists.
 2. Follow the accepted plan and resolve routine implementation choices from established requirements and project conventions.
 3. Use `../incremental-implementation/SKILL.md` when the task benefits from verified slices.
-4. Run or reuse proportionate verification under the Evidence Contract. Record the checked object, operation, result, provenance, and material limit; a subagent report or static check proves only its actual scope.
+4. Run or reuse proportionate verification under the evidence rules. Record the checked object, operation, result, provenance, and material limit; a subagent report or static check proves only its actual scope.
 5. Reconcile every obligation in the task before marking it complete. Preserve required open or accepted deferred items and their effect on the work package.
 
 Continue all authorized tasks until the work package reaches a legal terminal state. If one task needs information, authorization, a dependency, or investigation of a failed check, pause only it and dependent tasks; keep independent authorized work moving. If the user asks for progress or an explanation, answer briefly and resume the active objective unless they explicitly cancel or replace it.
@@ -48,7 +48,7 @@ After the current work package's tasks are reconciled:
 
 1. Apply `../incremental-implementation/references/definition-of-done.md` to the current deliverable and required evidence.
 2. Report exact completed scope, valid checks and reviews, required unfinished or accepted deferred work, manual status, and the concrete pending action.
-3. Use `../finishing-a-development-branch/SKILL.md` only when branch completion or Git delivery is part of the current requested phase. Follow the Delivery Contract and project policy for commit, push, pull request, merge, deployment, installation, and cleanup authorization.
+3. Use `../finishing-a-development-branch/SKILL.md` only when branch completion or Git delivery is part of the current requested phase. Follow the delivery rules and project policy for commit, push, pull request, merge, deployment, installation, and cleanup authorization.
 
 Completing one internal task or increment is a progress state, not completion of an unfinished work package. Do not open an early or draft pull request merely to report progress; evaluate PR timing against the whole package and the project's policy.
 

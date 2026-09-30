@@ -1,42 +1,28 @@
-# Shared Phase and Delivery Contract
+# Phase Details
 
-Use this contract before selecting or changing a Devflow route. Derive the current objective, requested deliverable, allowed scope, existing authorization, and end condition from the current request, still-valid prior decisions, and project rules. Resolve questions with read-only inspection when possible. Ask only when a consequential choice cannot be derived.
+Since 2.1.0 the canonical phase rules are in [core rules: phases and completion](core-rules.md#phases-and-completion). This page keeps situational details; read it only when one of the cases below applies.
 
-Phases organize work; they never grant permission for an action. Entering a phase, saving a plan, approving a document, or finishing one phase does not authorize implementation, Git delivery, deployment, or any other later action. At each transition, apply the Human-in-the-Loop Contract and the authorization already established for that action. Existing valid authorization persists; do not request it again.
+## Phase inputs
 
-## Phase contracts
+| Phase | Needs before it starts |
+| --- | --- |
+| **Understand** | The current request, relevant project facts, valid prior decisions and authorization, allowed scope, and expected end condition. |
+| **Specify** | An understood objective plus the requested form of design, Spec, or plan and its acceptance needs. |
+| **Implement** | An explicit implementation objective or authorization, applicable accepted requirements and decisions, bounded files or systems, and identified verification work. |
+| **VerifyReview** | A concrete document or implementation, its acceptance conditions, and the checks and review its risks call for. |
+| **Deliver** | The deliverables reconciled against the request, supporting evidence, known limits, and authorization for any delivery action. |
 
-| Phase | Required input | Legal terminal states |
-| --- | --- | --- |
-| **Understand** | The current request, relevant project facts, valid prior decisions and authorization, allowed scope, and expected end condition | The requested explanation or analysis is delivered in the conversation; or the objective, deliverable, scope, and material unknowns are clear enough for the requested next phase; or a specific consequential decision is pending after independent authorized investigation is complete. Analysis does not require a file. |
-| **Specify** | An understood objective plus the requested form of design, Spec, or plan and its acceptance needs | The requested document is ready as a draft or reviewed artifact, with status, scope, acceptance conditions, limits, and the fact that implementation has not begun; or a specific product decision is pending. A document-only request ends legally here and does not start implementation. One document may contain the complete requested result. |
-| **Implement** | An explicit implementation objective or authorization, applicable accepted requirements and decisions, bounded files or systems, and identified verification work | Every explicit implementation deliverable is complete; the user has accepted a scoped deferral; or a concrete missing dependency or authorization blocks the remaining dependent work after all independent authorized work is exhausted. Merely naming unfinished work is an interim report, not a legal endpoint. A saved or accepted plan alone is not an implementation instruction. |
-| **VerifyReview** | A concrete document or implementation, its acceptance conditions, and the checks and review appropriate to its risks | The requested verification or review result is complete and reports fresh evidence accurately. For an implementation package, findings are resolved, accepted as scoped deferrals, or blocked on a concrete missing dependency or authorization after independent authorized work is exhausted; required human acceptance is identified as pending or received. Passing checks does not by itself mean the implementation or delivery is complete. |
-| **Deliver** | The current deliverables reconciled against the request, supporting evidence, known limits, and authorization for any delivery action | The requested result is delivered with completed scope, evidence, and only accepted deferred or demonstration-only items and reasons; or a specific delivery action is ready but pending its required authorization after all independent preparation is complete. For an explanation or document-only request, delivery can be the conversation or local document without Git or implementation actions. |
+Resolve missing inputs with read-only inspection when possible, and ask only when a consequential choice cannot be derived. Existing valid authorization persists across phase transitions; do not request it again.
 
-A phase may stop only when its current requested deliverable is complete, the user explicitly cancels or replaces the objective, the user accepts a scoped deferral, or a concrete missing dependency or authorization blocks the remaining dependent work after independent authorized work is exhausted. Cancellation or replacement stops work belonging only to the old objective; preserve a safe and reviewable partial result and report what completed and what did not.
+## Cancellation and replacement
 
-## Treating a new user message
+When the user cancels or replaces the objective, stop only the work that belonged to the old objective. Preserve a safe, reviewable partial result and report what completed and what did not. Keep facts and decisions that still apply to the new objective.
 
-Classify the message by its explicit effect on the active objective:
+## Reconciling obligations
 
-- **Supplemental constraint or correction:** update the affected scope, requirements, or acceptance condition. Retain the original objective, prior decisions that remain valid, and independently authorized work that can still continue.
-- **Progress or explanation question:** answer briefly in user terms, then resume the active objective. A question about status, a command, or a check neither cancels the task nor requires rerunning work solely to answer it.
-- **Explicit replacement:** replace the active objective only when the user clearly requests a different objective or the new objective is incompatible with it. Retain applicable facts and decisions, but do not continue work that belongs only to the replaced objective.
-- **Explicit cancellation:** stop the canceled objective and report its reviewable partial state. Do not infer cancellation from a question, correction, interruption, or added requirement.
+The completion check in the core rules is usually a brief internal pass; it does not require a tracking file or a user-facing table. When it is not straightforward:
 
-If one missing decision affects only part of the work, name that dependency and continue independent work already authorized. Do not guess a high-impact choice to avoid asking, and do not stop unrelated work merely because one branch is pending. A pending staged user event — a future message, receipt, or approval that the task waits on for one part of its outcome — defers only the parts that genuinely require it. Deliverables the task already owes from its current facts, such as an analysis or report that does not depend on that event, remain due now; state the event-pending part separately instead of withholding the whole deliverable to wait.
-
-## Completion language
-
-Use status claims that match the current deliverable:
-
-- **Progress or interim:** completed and unfinished items are reported accurately, but the authorized package remains active unless a legal stopping condition above applies.
-- **Document ready:** the requested analysis, design, Spec, or plan is reviewable; implementation is not implied.
-- **Implementation complete:** every explicit implementation deliverable has been reconciled and completed; verification and delivery may remain.
-- **Automated checks passed:** the named checks passed on the stated artifact; this does not substitute for missing deliverables, review, runtime evidence, or human acceptance.
-- **Human acceptance pending:** the artifact is ready for a required user or stakeholder judgment.
-- **Specific authorization pending:** a concrete action is prepared but cannot execute until the applicable approval is given.
-- **Final delivery:** every current deliverable has been reconciled, required evidence and review are complete, accepted deferrals remain recorded, and the requested delivery action has occurred.
-
-Before claiming an implementation, work package, version, or task complete, separate every explicit obligation, including multiple actions within one task, and reconcile each with actual artifacts or changes, the scope of its verification, and one disposition: completed now; already satisfied by valid, proportionate evidence; changed or deferred with user acceptance; or still pending. This can be a brief internal check; do not require a new tracking file or user-facing table. Do not silently narrow a pending obligation. Reuse valid evidence and do not edit solely to create a diff; when a requested update still has useful behavior, boundary, or artifact work remaining, complete the smallest appropriate change. If an obligation was already satisfied, cite that evidence without claiming a new action occurred. If it conflicts with an applicable constraint or depends on a missing material decision, report the discrepancy and continue independent authorized work. Any required pending obligation keeps the whole-scope status interim. A green check proves only the behavior it exercised, not that another requested action occurred.
+- Do not silently narrow a pending obligation, and do not report an obligation as done because a related one passed.
+- Reuse valid evidence, and do not edit solely to create a diff. When a requested update still has useful behavior, boundary, or artifact work remaining, make the smallest appropriate change.
+- If an obligation was already satisfied, cite that evidence without claiming a new action occurred.
+- If an obligation conflicts with an applicable constraint or depends on a missing material decision, report the discrepancy and continue the independent authorized work.

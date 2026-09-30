@@ -5,7 +5,7 @@ description: Turns materially uncertain ideas into reviewable requirements and d
 
 # Brainstorming Ideas Into Designs
 
-Shape an uncertain request into the design or requirements artifact the user actually asked for. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md) to determine the current phase and legal endpoint, and the [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before any state change. Brainstorming resolves product uncertainty; it does not authorize implementation, Git actions, or external delivery.
+Shape an uncertain request into the design or requirements artifact the user actually asked for. Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion) to determine the current phase and legal endpoint, and the [authorization rules](../using-devflow/references/action-rules.md#authorization) before any state change. Brainstorming resolves product uncertainty; it does not authorize implementation, Git actions, or external delivery.
 
 ## When To Use
 

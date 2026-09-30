@@ -698,7 +698,7 @@ class InstallToolTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertTrue(
-            (destination / "skills" / "using-devflow" / "references" / "phase-contract.md").is_file()
+            (destination / "skills" / "using-devflow" / "references" / "core-rules.md").is_file()
         )
 
         verification = self.verify(destination, bundle=REPOSITORY_ROOT)

@@ -7,7 +7,7 @@ description: Use for two or more independent read-only investigations when deleg
 
 Use parallel agents to gather facts from independent domains. Tool availability alone is not a reason to dispatch, and permission to investigate does not authorize agents to edit files, implement fixes, or take delivery actions.
 
-Apply the focused-agent contract in [subagent-driven-development](../subagent-driven-development/SKILL.md) and the canonical [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md). The controller owns permission, sources, resource limits, synthesis, conflict resolution, and every later action.
+Apply the focused-agent contract in [subagent-driven-development](../subagent-driven-development/SKILL.md) and the canonical [authorization rules](../using-devflow/references/action-rules.md#authorization). The controller owns permission, sources, resource limits, synthesis, conflict resolution, and every later action.
 
 ## Select This Route
 

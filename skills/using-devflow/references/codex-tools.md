@@ -18,7 +18,7 @@ Apply the shared [Host Capability and Fallback Contract](host-contract.md) befor
 | Run commands | a native shell/command interface | Confirm command, working-directory, environment, timeout, streaming, and result parameters. |
 | Load a skill | native skill loading or repository instructions | Confirm the loader actually exists and how it receives a skill identifier; otherwise read the applicable `SKILL.md` as instructions. |
 | Track work | a plan/task interface | Confirm the current schema and whether tracking is required; do not invent `TodoWrite` or `update_plan`. |
-| Dispatch or coordinate agents | historically `spawn_agent`, wait/result, message, and interruption operations | Confirm every callable interface and parameter. Apply the agent-choice checks in the shared contract before dispatch. |
+| Dispatch or coordinate agents | historically `spawn_agent`, wait/result, message, and interruption operations | Confirm every callable interface and parameter. Apply the agent-choice checks in the [host capability guide](host-contract.md) before dispatch. |
 | Use a browser | any currently exposed authorized browser or device interface | Confirm the operations can collect the interaction or visual evidence required; apply browser fallback when they cannot. |
 | Work with Git or pull requests | bounded shell Git or a currently exposed repository interface | Inspect first and apply the separate authorization and delivery gates before each mutation. |
 

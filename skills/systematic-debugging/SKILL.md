@@ -7,7 +7,7 @@ description: Four-phase root-cause debugging - investigate, analyze patterns, hy
 
 ## Overview
 
-Random fixes waste time and create new bugs. Quick patches mask underlying issues. This skill governs investigation and repair technique; evidence selection, validity, failures, retries, and warnings follow the shared [Evidence Contract](../using-devflow/references/evidence-contract.md).
+Random fixes waste time and create new bugs. Quick patches mask underlying issues. This skill governs investigation and repair technique; evidence selection, validity, failures, retries, and warnings follow the shared [evidence rules](../using-devflow/references/action-rules.md#evidence).
 
 **Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
 

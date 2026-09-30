@@ -11,7 +11,7 @@ Decompose work into small, verifiable tasks with explicit acceptance criteria. G
 
 **Boundary:** This skill produces an acceptance-oriented task breakdown from a spec or clear requirements. When an executor will have little or no surrounding context, use the detailed handoff guidance in `../writing-plans/SKILL.md` to expand the tasks that need it. These are two uses of one planning artifact, not a requirement to create duplicate plans: a plan may lead with a compact acceptance table and add detailed steps only where they make execution safer.
 
-Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Planning organizes later work; it does not authorize implementation, Git actions, installation, or external delivery.
+Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery). Planning organizes later work; it does not authorize implementation, Git actions, installation, or external delivery.
 
 ## When to Use
 

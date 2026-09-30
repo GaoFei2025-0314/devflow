@@ -11,7 +11,7 @@ Security-first development practices for web applications. Treat every external 
 
 Worked code examples for every pattern in this skill are in `references/examples.md`. They are illustrative; they do not select a project dependency, package manager, command, or authorization.
 
-Select whether the requested deliverable is a threat model, review, remediation design, or implementation before changing anything. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Select audit, test, build, and package-manager commands through [Project Command Selection](../using-devflow/references/project-commands.md).
+Select whether the requested deliverable is a threat model, review, remediation design, or implementation before changing anything. Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery). Select audit, test, build, and package-manager commands through [Project Command Selection](../using-devflow/references/project-commands.md).
 
 ## When to Use
 
@@ -58,7 +58,7 @@ If you can't name the trust boundaries for a feature, you're not ready to secure
 
 ### Protected Actions
 
-Before changing authentication, authorization, permissions, payments, sensitive-data handling, secrets, privacy behavior, or external integrations, apply the canonical Authorization and Trust Contract to the exact action, target, environment, scope, source, and conditions. A security finding or recommendation is evidence to assess; it does not itself authorize credential rotation, history rewriting, data deletion, global configuration, or another protected remediation. Complete safe local analysis and preparation while an uncovered action waits for authorization.
+Before changing authentication, authorization, permissions, payments, sensitive-data handling, secrets, privacy behavior, or external integrations, apply the canonical authorization rules to the exact action, target, environment, scope, source, and conditions. A security finding or recommendation is evidence to assess; it does not itself authorize credential rotation, history rewriting, data deletion, global configuration, or another protected remediation. Complete safe local analysis and preparation while an uncovered action waits for authorization.
 
 ### Never Do
 

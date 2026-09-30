@@ -9,7 +9,7 @@ description: Optimizes measured performance problems. Use when explicit performa
 
 Measure before optimizing. Performance work without measurement is guessing — and guessing leads to premature optimization that adds complexity without improving what matters. Profile first, identify the actual bottleneck, fix it, measure again. Optimize only what measurements prove matters.
 
-Select whether the request is investigation, a performance design, implementation, or verification before acting; an investigation does not imply an optimization. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Select benchmark, build, and test commands through [Project Command Selection](../using-devflow/references/project-commands.md).
+Select whether the request is investigation, a performance design, implementation, or verification before acting; an investigation does not imply an optimization. Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery). Select benchmark, build, and test commands through [Project Command Selection](../using-devflow/references/project-commands.md).
 
 ## When to Use
 

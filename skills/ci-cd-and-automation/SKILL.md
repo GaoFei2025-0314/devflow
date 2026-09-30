@@ -9,7 +9,7 @@ description: Designs and maintains CI/CD pipelines. Use when selecting automated
 
 CI should enforce the checks the project actually requires and preserve enough evidence to diagnose failures. The useful pipeline is the smallest reliable set of gates that covers the affected behavior, dependencies, risk, and project policy. CI configuration, pull-request readiness, merge, preview deployment, production deployment, rollback, recurring automation, notification, and cleanup remain distinct decisions.
 
-Apply [Project Command Selection](../using-devflow/references/project-commands.md), the shared [Evidence Contract](../using-devflow/references/evidence-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md).
+Apply [Project Command Selection](../using-devflow/references/project-commands.md), the shared [evidence rules](../using-devflow/references/action-rules.md#evidence), [authorization rules](../using-devflow/references/action-rules.md#authorization), and [delivery rules](../using-devflow/references/action-rules.md#delivery).
 
 Worked mechanisms in [references/examples.md](references/examples.md) are provider-specific examples, not universal commands, required gates, or authorization to configure an external service.
 

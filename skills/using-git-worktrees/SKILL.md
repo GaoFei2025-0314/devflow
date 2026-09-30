@@ -9,7 +9,7 @@ description: Inspects, reuses, or creates an isolated Git worktree when the curr
 
 Worktrees can isolate concurrent branches without repeated branch switching. Use one when isolation is useful and project policy allows it. Do not create a worktree merely because this skill was loaded or because a document or plan was approved.
 
-Use the [Shared Delivery Contract](../using-devflow/references/delivery-contract.md) for readiness and evidence, and the [Shared Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before creating, changing, or removing Git objects.
+Use the [delivery rules](../using-devflow/references/action-rules.md#delivery) for readiness and evidence, and the [authorization rules](../using-devflow/references/action-rules.md#authorization) before creating, changing, or removing Git objects.
 
 ## 1. Decide Whether a Worktree Is Needed
 
@@ -79,7 +79,7 @@ Do not claim a clean or passing baseline without direct applicable evidence.
 
 ## 5. Delivery and Cleanup
 
-A worktree only supplies an isolated local environment. It does not authorize commits, push, PR creation, merge, deployment, synchronization, branch deletion, or worktree removal. Evaluate those steps under the shared contracts and current project policy.
+A worktree only supplies an isolated local environment. It does not authorize commits, push, PR creation, merge, deployment, synchronization, branch deletion, or worktree removal. Evaluate those steps under the shared rules and current project policy.
 
 After integration, preserve the worktree and its branch unless removal and any branch deletion are separately authorized for those exact targets. Inspect for uncommitted or unpushed work before any authorized removal. Never use forced cleanup to hide a conflict or erase work outside the current scope.
 

@@ -9,7 +9,7 @@ description: Delivers changes as small verified slices. Use when a task feels to
 
 Build in thin vertical slices — implement one piece, test it, verify it, then expand. Avoid implementing an entire feature in one pass. Each increment should leave the system in a working, testable state. This is the execution discipline that makes large features manageable.
 
-Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md) to identify the current deliverable and legal stopping state, the [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) before state-changing actions, the [Evidence Contract](../using-devflow/references/evidence-contract.md) when selecting or reusing checks, and the [Delivery Contract](../using-devflow/references/delivery-contract.md) before commits or outward delivery. An increment is an internal execution boundary, not a new phase, approval boundary, or delivery event.
+Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion) to identify the current deliverable and legal stopping state, the [authorization rules](../using-devflow/references/action-rules.md#authorization) before state-changing actions, the [evidence rules](../using-devflow/references/action-rules.md#evidence) when selecting or reusing checks, and the [delivery rules](../using-devflow/references/action-rules.md#delivery) before commits or outward delivery. An increment is an internal execution boundary, not a new phase, approval boundary, or delivery event.
 
 ## When to Use
 
@@ -42,7 +42,7 @@ For each slice:
 
 1. **Implement** the smallest complete piece of functionality
 2. **Check** — select or reuse the focused test, content check, or other evidence appropriate to the changed behavior or artifact
-3. **Verify** — satisfy applicable broader, build, runtime, manual, and mandatory project gates under the Evidence Contract
+3. **Verify** — satisfy applicable broader, build, runtime, manual, and mandatory project gates under the evidence rules
 4. **Save a checkpoint** — preserve a reviewable state; commit only when the project's policy and applicable authorization call for it (see `git-workflow-and-versioning` for atomic commit guidance)
 5. **Move to the next slice** — carry forward, don't restart
 
@@ -189,7 +189,7 @@ Each increment should be independently revertable:
 
 ### Rule 6: Reuse Authorization and Evidence
 
-Before changing state, bind the action to the authorization record required by the shared Authorization and Trust Contract. Reuse a still-valid grant when its action, target and environment, scope, source, and conditions continue to match; a new turn, skill, agent, or increment does not require another request. If a grant no longer covers one action, pause only that action and complete safe independent preparation first.
+Before changing state, bind the action to the authorization record required by the shared authorization rules. Reuse a still-valid grant when its action, target and environment, scope, source, and conditions continue to match; a new turn, skill, agent, or increment does not require another request. If a grant no longer covers one action, pause only that action and complete safe independent preparation first.
 
 Treat successful verification as evidence about a recorded object and relevant state. Reuse it when it still covers the claim and no relevant code, uncommitted or participating untracked input, dependency, lockfile, configuration, data, environment, or external state has changed. A message or commit alone neither invalidates evidence nor proves that state stayed unchanged. After a relevant change, rerun only the affected checks plus any mandatory delivery-boundary gate.
 
@@ -257,7 +257,7 @@ After completing all increments for the current work package:
 - [ ] Required focused and broader checks have valid results for the current relevant state
 - [ ] Required review and runtime or human acceptance are complete, pending, or explicitly deferred without being mislabeled as passed
 - [ ] Open, failed, and deferred obligations remain visible with their reason and effect on package status
-- [ ] Any commit or later delivery step is evaluated separately under project policy and the shared Delivery Contract
+- [ ] Any commit or later delivery step is evaluated separately under project policy and the shared delivery rules
 
 Use the completion language for the current deliverable: implementation complete, automated checks passed, human acceptance pending, specific authorization pending, or final delivery. One completed increment is progress while required package obligations remain. Do not create a second mandatory status record when an existing plan, task state, or evidence artifact already carries the needed information.
 

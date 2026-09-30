@@ -9,7 +9,7 @@ description: Structures Git branches, commits, work packages, and versioning und
 
 Use Git to keep changes reviewable and recoverable. Branching, commits, pull requests, merges, synchronization, and cleanup are separate decisions; the current project's policy decides which apply.
 
-Before changing Git state, use the [Shared Delivery Contract](../using-devflow/references/delivery-contract.md) for readiness and evidence and the [Shared Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) for action grants. A skill recommendation, completed implementation, or passing check does not supply authorization.
+Before changing Git state, use the [delivery rules](../using-devflow/references/action-rules.md#delivery) for readiness and evidence and the [authorization rules](../using-devflow/references/action-rules.md#authorization) for action grants. A skill recommendation, completed implementation, or passing check does not supply authorization.
 
 ## Inspect Before Acting
 
@@ -84,7 +84,7 @@ PR material should let a reviewer assess the final change without conversational
 - API and data impact;
 - known residual risks and accepted deferrals.
 
-Before push or PR creation, apply the Shared Delivery Contract's check-to-action mapping to the effective rules and actual results. A general action grant does not waive a failed, pending, or unobserved check that policy requires before push/PR; keep complete reviewable material local until that gate passes or an explicit applicable timing exception exists. Required merge CI, review, and branch protection remain gates after the PR exists and cannot be bypassed by local integration.
+Before push or PR creation, apply the check-to-action mapping in the [delivery details](../using-devflow/references/delivery-contract.md) to the effective rules and actual results. A general action grant does not waive a failed, pending, or unobserved check that policy requires before push/PR; keep complete reviewable material local until that gate passes or an explicit applicable timing exception exists. Required merge CI, review, and branch protection remain gates after the PR exists and cannot be bypassed by local integration.
 
 ## Merge Policy
 
@@ -92,7 +92,7 @@ Apply the actual project policy to the exact reviewable PR. Passing CI establish
 
 Some projects grant standing merge authorization for presentation-only changes. Use it only when every stated condition holds, including narrow and reversible scope, presentation-only behavior, all required checks and browser evidence, and no logic, state, persistence, auth, security, privacy, API, database, dependency, configuration, infrastructure, payment, monitoring, integration, secret, generated-artifact, unrelated-change, or unresolved-review impact. If any condition fails or risk is uncertain, prepare reviewable material, perform only delivery steps whose own gates pass, and wait for authorization for the concrete merge.
 
-Never bypass required CI or branch protection. History rewrites, force-pushes, direct pushes to a default branch, and branch deletion require matching authorization under the shared contract and project policy.
+Never bypass required CI or branch protection. History rewrites, force-pushes, direct pushes to a default branch, and branch deletion require matching authorization under the shared rules and project policy.
 
 ## After Integration
 
