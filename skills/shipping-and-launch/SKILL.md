@@ -9,7 +9,7 @@ description: Prepares production launches. Use when preparing to deploy to produ
 
 Prepare a release so its artifact, target, risks, verification, rollout, and recovery are reviewable before any protected action. A launch should be observable and recoverable, with scope and decision criteria suited to the project. Preparation can finish independently; deploying, releasing, rolling back, changing infrastructure, migrating production data, notifying people, and cleanup are separate actions.
 
-Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md).
+Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery).
 
 ## When to Use
 
@@ -30,7 +30,7 @@ Launch preparation should resolve:
 - health checks, observability, recovery options, and residual risks; and
 - each protected or outward-facing action that still needs authorization.
 
-Completing this preparation does not execute or authorize a deployment. Immediately before each state-changing action, establish the authorization record required by the Authorization and Trust Contract. Reuse an effective grant when its action, target, environment, scope, source, conditions, and current validity still match. A changed environment, artifact, scope, or unavailable approval source requires a new decision only for the affected action.
+Completing this preparation does not execute or authorize a deployment. Immediately before each state-changing action, establish the authorization record required by the authorization rules. Reuse an effective grant when its action, target, environment, scope, source, conditions, and current validity still match. A changed environment, artifact, scope, or unavailable approval source requires a new decision only for the affected action.
 
 Merge approval is not deployment or public-release approval. A deployment grant does not cover rollback, production-data cleanup, a different environment, notifications, or later branch and worktree removal unless its terms explicitly include them.
 

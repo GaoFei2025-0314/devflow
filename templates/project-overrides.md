@@ -5,7 +5,7 @@ Copy the relevant parts of the fenced block into the project's `CLAUDE.md`, `AGE
 ```markdown
 ## Devflow overrides for this project
 
-These are project-level inputs to the selected Devflow workflow. They do not change the host's instruction hierarchy or grant an action merely by describing one. Apply the selected Devflow bundle's canonical Phase and Delivery, Authorization and Trust, Evidence, Delivery, Host Capability and Fallback, and Skill Loading and Context Recovery contracts. Resolve the selected bundle and those named contracts through its entrypoint and host loading mechanism; do not resolve them relative to this project-instruction file.
+These are project-level inputs to the selected Devflow workflow. They do not change the host's instruction hierarchy or grant an action merely by describing one. Apply the selected Devflow bundle's canonical core rules and action rules, with their host capability and skill loading guides. Resolve the selected bundle and those named rules through its entrypoint and host loading mechanism; do not resolve them relative to this project-instruction file.
 
 ### Routing and phase
 - Development route: <e.g. use the selected Devflow router before features, bugs, refactors, reviews, or releases>

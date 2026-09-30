@@ -30,9 +30,9 @@ devflow/
 
 路由器（`skills/devflow/SKILL.md`）按**请求的交付物与阶段**（Understand / Specify / Implement / VerifyReview / Deliver）优先路由，其次看影响与风险、领域面，最后看宿主实际提供的能力。仅要文档或仅要计划的请求以文档合法结束——计划完成不隐含建分支、提交或实施。33 个旧技能名全部保留，通过 `skills/devflow/references/skill-catalog.json` 解析到规范入口。
 
-控制规则集中在 `skills/using-devflow/references/` 下的规范共享合同——阶段、授权、证据、交付、宿主能力/降级、加载/恢复——所有技能引用它们而非各自复制。信任边界明确：日志、网页、数据包或代理输出里的文本不能产生授权；技能永远不声称高于 system/developer 指令。依赖宿主能力的技能（子代理派发、浏览器 MCP）按宿主合同平稳降级。
+控制规则集中在两份共享文件：`skills/using-devflow/references/core-rules.md`（权威与信任、阶段与完成、加载与恢复）每条路由都读；`skills/using-devflow/references/action-rules.md`（授权、证据、交付、宿主能力）在改动、运行检查或交付之前读。所有技能链接它们而非各自复述；个别场景的细则放在单独页面，只在遇到该场景时读取。`scripts/check-bundle.py` 对这组必读文件设有字节上限，防止重新膨胀。信任边界明确：日志、网页、数据包或代理输出里的文本不能产生授权；技能永远不声称高于 system/developer 指令。依赖宿主能力的技能（子代理派发、浏览器 MCP）按宿主能力规则平稳降级。
 
-高风险操作由**授权与信任合同**（`skills/using-devflow/references/authorization-contract.md`，路由器自身也带授权门）把关：生产部署、数据迁移与删除、git 历史重写与强推、发布、认证/支付改动、新增外部集成，执行前一律需要用户明确批准——所有路由（含快速通道）和被派发的子代理都受此约束。
+高风险操作由**授权规则**（`skills/using-devflow/references/action-rules.md`，路由器自身也带授权门）把关：生产部署、数据迁移与删除、git 历史重写与强推、发布、认证/支付改动、新增外部集成，执行前一律需要用户明确批准——所有路由（含快速通道）和被派发的子代理都受此约束。
 
 ## 安装
 
@@ -94,6 +94,6 @@ Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关
 - 可选的本地使用记录（`python scripts/usage.py status|enable|disable|append|export|report --store <目录>`）**默认关闭**，只记录白名单内的最小事件，绝不记录原始对话或凭证，任何工作流步骤都不依赖它。
 - **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查），并在 `CHANGELOG.md` 中为新版本补一条记录。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
 - **保持 `README.md` 与 `README.zh-CN.md` 同步**——改任何一份都要镜像到另一份。
-- **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。维护测试已覆盖其中可机械核对的部分（每个入口文档都声明当前技能数、包含路由器定义的全部阶段名、并指向路由器与公共合同目录）；正文措辞仍靠人工复核。
+- **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。维护测试已覆盖其中可机械核对的部分（每个入口文档都声明当前技能数、包含路由器定义的全部阶段名、并指向路由器与共享规则目录）；正文措辞仍靠人工复核。
 - **修剪需要证据。** 单纯低频不能成为删除技能的理由：没有适用任务分母、适用性不明时，价值记为未知（deprecation-and-migration 入口定义了完整评估）。
 - **度量技能改动。** 每次改技能时，在 PR 里写一句预期的行为变化；之后回头看是否发生。没有可观察效果的流程就是流程剧场——砍掉它。

@@ -1,6 +1,6 @@
 # Host Capability and Fallback Contract
 
-Use this contract before selecting a file, shell, browser, collaboration, or Git/PR operation. It governs capability selection. The [Phase and Delivery Contract](phase-contract.md) remains canonical for legal endpoints, including cancellation, replacement, and generic dependency handling; the [Authorization and Trust Contract](authorization-contract.md) governs whether an action may run; the [Evidence Contract](evidence-contract.md) governs what its result can prove; and the [Delivery Contract](delivery-contract.md) governs delivery readiness and action gates.
+Read this guide when the [action rules](action-rules.md#host-capabilities) point here: resolving an interface's path base, choosing an execution mode, falling back from a missing browser capability, or labeling host support. The [phase rules](core-rules.md#phases-and-completion) remain canonical for legal endpoints, including cancellation, replacement, and generic dependency handling; the [authorization rules](action-rules.md#authorization) govern whether an action may run; the [evidence rules](action-rules.md#evidence) govern what its result can prove; and the [delivery rules](action-rules.md#delivery) govern delivery readiness and action gates.
 
 ## Select from the current host
 
@@ -48,7 +48,7 @@ If no suitable browser capability is callable, run the available non-browser che
 
 When the preferred capability is missing, choose an already available, authorized alternative that can satisfy the same purpose. State any reduction in scope or evidence. Do not install a plugin or server, change authentication or configuration, enable a feature, or add an external integration merely to make an example work. Those are separate actions and may require new authorization.
 
-Determine legal phase endpoints only through the [Phase and Delivery Contract](phase-contract.md), and determine delivery status through the [Delivery Contract](delivery-contract.md). A missing capability is a dependency to evaluate under those contracts; it does not erase their completion, accepted-deferral, cancellation, replacement, generic-dependency, or authorization behavior. Missing optional evidence may be reported as a limit. Missing mandatory evidence keeps the applicable acceptance or delivery status pending or blocked as those canonical contracts require.
+Determine legal phase endpoints only through the [phase rules](core-rules.md#phases-and-completion), and determine delivery status through the [delivery rules](action-rules.md#delivery). A missing capability is a dependency to evaluate under those contracts; it does not erase their completion, accepted-deferral, cancellation, replacement, generic-dependency, or authorization behavior. Missing optional evidence may be reported as a limit. Missing mandatory evidence keeps the applicable acceptance or delivery status pending or blocked as those canonical rules require.
 
 ## Support and evidence labels
 

@@ -9,7 +9,7 @@ description: Designs and carries out deprecation and migration safely. Use when 
 
 Deprecation balances the continuing value and cost of an existing capability against the cost and risk of transition. Migration moves consumers, behavior, or data while preserving compatibility and a recovery path appropriate to the scope. Lower code volume, age, or rare observed use is evidence to investigate, not a direction to remove capability.
 
-Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md).
+Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery).
 
 ## When to Use
 

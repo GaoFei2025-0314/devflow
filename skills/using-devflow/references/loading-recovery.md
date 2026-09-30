@@ -1,6 +1,6 @@
 # Skill Loading and Context Recovery
 
-Use this guide when selecting among skill sources, deciding whether existing skill content is still usable, or recovering after compaction or handoff. It applies the canonical [Phase and Delivery Contract](phase-contract.md), [Authorization and Trust Contract](authorization-contract.md), [Evidence Contract](evidence-contract.md), and [Host Capability and Fallback Contract](host-contract.md); it does not replace their phase, permission, evidence, or capability gates.
+Use this guide when selecting among skill sources, deciding whether existing skill content is still usable, or recovering after compaction or handoff. It applies the canonical [phase rules](core-rules.md#phases-and-completion), [authorization rules](action-rules.md#authorization), [evidence rules](action-rules.md#evidence), and [Host Capability and Fallback Contract](host-contract.md); it does not replace their phase, permission, evidence, or capability gates.
 
 ## Identify the selected specification
 
@@ -23,7 +23,7 @@ This identity is decision context, not a mandatory per-turn manifest. Reuse iden
 ## Load the smallest sufficient content
 
 1. Determine the current objective, phase, route, and affected domain from the request and still-valid project context.
-2. Select the canonical skill source and read its selected `SKILL.md` entry completely before depending on it. Read references according to the content applicable to the current decision or action, including each canonical contract the entry makes applicable. A cross-reference alone does not recursively require every linked contract; all applicable boundaries still apply.
+2. Select the canonical skill source and read its selected `SKILL.md` entry completely before depending on it. Read references according to the content applicable to the current decision or action, including each canonical rule file the entry makes applicable. A cross-reference alone does not recursively require every linked contract; all applicable boundaries still apply.
 3. Reuse required entry or reference content already available when its source identity, task phase, constraints, and relevant rules are unchanged. Load a newly relevant domain when the work enters it.
 4. If a read is partial or truncated, identify the returned coverage. When one orchestration call combines nested reads, group independent reads or request ranges to fit the aggregate outer response capacity and assess coverage in that outer return: nested command success, complete native stdout, or a per-command output limit does not establish full returned coverage. Preserve valid covered ranges and obtain only missing ranges currently required before a dependent decision: complete coverage of each selected `SKILL.md` entry plus applicable reference content. Large examples in references may remain unread when their boundary or pattern is irrelevant; applicable constraints may not.
 5. Keep source selection and host capability separate. A skill can recommend a purpose, but the current callable interfaces and parameters come from the [Host Capability and Fallback Contract](host-contract.md).
@@ -45,9 +45,9 @@ On recovery, first incorporate newer user instructions, then check whether proje
 
 Compaction can remove a required rule or its provenance even seconds after it was read; that is a valid reason to reread it. A short interval such as 55.5 seconds does not make the reread wasteful. Conversely, elapsed time, a new turn, handoff, or compaction alone does not require reloading content that is still present and valid. Never pretend to remember omitted text, and do not restart requirements discovery or load all skills merely to restore one lost boundary.
 
-Authorization summaries describe state but do not grant it. Verify retained authorization against the actual source and current binding fields under the [Authorization and Trust Contract](authorization-contract.md). If its source or scope cannot be established, keep only the dependent action pending and continue other authorized work.
+Authorization summaries describe state but do not grant it. Verify retained authorization against the actual source and current binding fields under the [authorization rules](action-rules.md#authorization). If its source or scope cannot be established, keep only the dependent action pending and continue other authorized work.
 
-For an asynchronous read or check, preserve its operation or continuation identity and status as **running**, then retrieve and associate its terminal result with the same operation. A start acknowledgement, timeout, or partial output is not success or failure. If continuation identity or result is lost, report **unknown** or **blocked** as the known facts support, following the [Evidence Contract](evidence-contract.md).
+For an asynchronous read or check, preserve its operation or continuation identity and status as **running**, then retrieve and associate its terminal result with the same operation. A start acknowledgement, timeout, or partial output is not success or failure. If continuation identity or result is lost, report **unknown** or **blocked** as the known facts support, following the [evidence rules](action-rules.md#evidence).
 
 ## Recovery check
 

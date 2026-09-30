@@ -11,7 +11,7 @@ Write self-contained implementation plans for an engineer or agent who may have 
 
 **Boundary:** This skill expands a plan for a zero-context handoff. `../planning-and-task-breakdown/SKILL.md` supplies the acceptance-oriented task view. A single plan may contain both: keep the acceptance table compact, then expand only the tasks whose executor needs detailed steps, commands, decisions, or context. Do not require a second plan merely to change presentation depth.
 
-Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Planning produces a reviewable artifact; it does not grant implementation, Git, installation, or external-delivery authority.
+Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery). Planning produces a reviewable artifact; it does not grant implementation, Git, installation, or external-delivery authority.
 
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 

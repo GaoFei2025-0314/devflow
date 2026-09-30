@@ -11,7 +11,7 @@ Simplification reduces cognitive load without changing observable behavior. Fewe
 
 First identify the requested deliverable and authority. A request to review or suggest simplifications is read-only: report candidates and evidence without editing. Modify code only when simplification is requested or otherwise covered by an effective local-edit grant, and stay within its files and behavior. Review feedback, an `Approve` verdict, or completion of a prior phase does not grant mutation or delivery authority.
 
-Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Use [code-review-and-quality](../code-review-and-quality/SKILL.md) for the quality standard.
+Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery). Use [code-review-and-quality](../code-review-and-quality/SKILL.md) for the quality standard.
 
 ## Core Principles
 

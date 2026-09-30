@@ -9,7 +9,7 @@ description: Guides stable API and interface design. Use when creating or changi
 
 Design stable, well-documented interfaces that are hard to misuse. Good interfaces make the right thing easy and the wrong thing hard. This applies to REST APIs, GraphQL schemas, module boundaries, component props, and any surface where one piece of code talks to another.
 
-Select the requested deliverable before acting. An API design request may end with a reviewable contract; it does not imply implementation, Git delivery, or migration. Apply the shared [Phase and Delivery Contract](../using-devflow/references/phase-contract.md), [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md), [Evidence Contract](../using-devflow/references/evidence-contract.md), and [Delivery Contract](../using-devflow/references/delivery-contract.md). Select any project commands through [Project Command Selection](../using-devflow/references/project-commands.md).
+Select the requested deliverable before acting. An API design request may end with a reviewable contract; it does not imply implementation, Git delivery, or migration. Apply the shared [phase rules](../using-devflow/references/core-rules.md#phases-and-completion), [authorization rules](../using-devflow/references/action-rules.md#authorization), [evidence rules](../using-devflow/references/action-rules.md#evidence), and [delivery rules](../using-devflow/references/action-rules.md#delivery). Select any project commands through [Project Command Selection](../using-devflow/references/project-commands.md).
 
 ## When to Use
 
@@ -283,7 +283,7 @@ function getTask(id: TaskId): Promise<Task> { ... }
 
 ## Verification
 
-Review an API design against the applicable items below. If implementation is also in scope, select focused contract and compatibility checks from the changed behavior, project gates, and shared Evidence Contract; reuse still-valid evidence and do not claim runtime behavior from a design review alone.
+Review an API design against the applicable items below. If implementation is also in scope, select focused contract and compatibility checks from the changed behavior, project gates, and shared evidence rules; reuse still-valid evidence and do not claim runtime behavior from a design review alone.
 
 - [ ] Every endpoint has typed input and output schemas
 - [ ] Error responses follow a single consistent format

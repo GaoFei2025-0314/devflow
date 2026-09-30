@@ -290,6 +290,56 @@ class BundleCheckerTests(unittest.TestCase):
         self.assertEqual(int(match.group(2)), 33, result.stdout)
         self.assertGreater(int(match.group(1)), 100_000, result.stdout)
 
+    def write_shared_rules(self, size):
+        rules = (
+            "skills/using-devflow/references/core-rules.md",
+            "skills/using-devflow/references/action-rules.md",
+        )
+        self.write_skill("using-devflow", support_files=rules)
+        for relative in rules:
+            (self.root / relative).write_text("x" * size + "\n", encoding="utf-8")
+        self.write_catalog(
+            [self.catalog_skill("using-devflow", required_resources=list(rules))]
+        )
+
+    def test_shared_rules_over_the_mandatory_budget_are_rejected(self):
+        # Each file stays under the per-entry budget; together they exceed what
+        # an implementation route must read before it can act.
+        self.write_shared_rules(16_000)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("mandatory load", result.stdout)
+        self.assertIn("-byte budget", result.stdout)
+
+    def test_shared_rules_within_the_mandatory_budget_pass_and_are_reported(self):
+        self.write_shared_rules(4_000)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertRegex(result.stdout, r"MANDATORY LOAD: \d+ bytes across 3 files")
+
+    def test_repository_mandatory_load_covers_router_entry_and_shared_rules(self):
+        result = subprocess.run(
+            [sys.executable, str(CHECKER), "--root", str(REPOSITORY_ROOT)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        match = re.search(
+            r"MANDATORY LOAD: (\d+) bytes across (\d+) files \(budget (\d+)\)",
+            result.stdout,
+        )
+        self.assertIsNotNone(match, result.stdout)
+        self.assertEqual(int(match.group(2)), 4, result.stdout)
+        self.assertLessEqual(int(match.group(1)), int(match.group(3)), result.stdout)
+
     def write_template_pair(self, *, identical=True, declare_mirror=True):
         self.write_skill("using-devflow")
         authoritative = (
@@ -611,6 +661,8 @@ class BundleCheckerTests(unittest.TestCase):
             skill for skill in catalog["skills"] if skill["id"] == "using-devflow"
         )
         shared_contracts = [
+            "skills/using-devflow/references/core-rules.md",
+            "skills/using-devflow/references/action-rules.md",
             "skills/using-devflow/references/phase-contract.md",
             "skills/using-devflow/references/authorization-contract.md",
             "skills/using-devflow/references/evidence-contract.md",

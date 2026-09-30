@@ -23,6 +23,16 @@ ENTRY_LINE_BUDGET = 310
 # per line, V2 averages 67), so the entry budget is also enforced in bytes —
 # what a host actually pays to read the entry.
 ENTRY_BYTE_BUDGET = 18_000
+# The files an implementation route must read before it can act: the router,
+# the session entry, and the two shared rule files. 2.1.0 cut this set from
+# about 68.6 KB to about 28.7 KB; the budget keeps it from drifting back.
+MANDATORY_LOAD = (
+    "skills/devflow/SKILL.md",
+    "skills/using-devflow/SKILL.md",
+    "skills/using-devflow/references/core-rules.md",
+    "skills/using-devflow/references/action-rules.md",
+)
+MANDATORY_LOAD_BUDGET = 30_000
 TEMPLATE_MIRROR = "templates/project-overrides.md"
 TEMPLATE_AUTHORITATIVE = "skills/using-devflow/references/project-overrides.md"
 # Authored instruction surfaces that ship with the bundle. Their cross-links are
@@ -348,6 +358,24 @@ def validate(root: Path, catalog: dict[str, Any]) -> tuple[list[str], dict[str, 
                 f"exceeds the {ENTRY_BYTE_BUDGET}-byte entry byte budget"
             )
 
+    mandatory_bytes = 0
+    mandatory_count = 0
+    for relative in MANDATORY_LOAD:
+        path = root / relative
+        if not path.is_file():
+            continue
+        try:
+            mandatory_bytes += len(path.read_bytes())
+        except OSError as error:
+            errors.append(f"{relative}: cannot measure mandatory load: {error}")
+            continue
+        mandatory_count += 1
+    if mandatory_bytes > MANDATORY_LOAD_BUDGET:
+        errors.append(
+            f"mandatory load {mandatory_bytes} bytes across {mandatory_count} files "
+            f"exceeds the {MANDATORY_LOAD_BUDGET}-byte budget ({', '.join(MANDATORY_LOAD)})"
+        )
+
     # Driven by which copies exist, never by the catalog entry this check guards:
     # dropping the mirror from required_resources must not switch the check off.
     mirror = root / TEMPLATE_MIRROR
@@ -402,6 +430,8 @@ def validate(root: Path, catalog: dict[str, Any]) -> tuple[list[str], dict[str, 
         "entry_bytes": entry_bytes,
         "entry_count": len(declared_ids & actual_ids),
         "largest_entry": largest_entry,
+        "mandatory_bytes": mandatory_bytes,
+        "mandatory_count": mandatory_count,
     }
     return errors, statistics
 
@@ -440,6 +470,10 @@ def main() -> int:
     print(
         f"ENTRY LOAD: {statistics['entry_bytes']} bytes across "
         f"{statistics['entry_count']} entries{detail}"
+    )
+    print(
+        f"MANDATORY LOAD: {statistics['mandatory_bytes']} bytes across "
+        f"{statistics['mandatory_count']} files (budget {MANDATORY_LOAD_BUDGET})"
     )
     return 0
 

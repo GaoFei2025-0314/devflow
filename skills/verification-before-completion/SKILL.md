@@ -9,7 +9,7 @@ Claiming work is complete without valid verification evidence is dishonesty, not
 
 **Core principle:** Evidence before claims, always.
 
-Apply the shared [Evidence Contract](../using-devflow/references/evidence-contract.md) for check selection, evidence records and statuses, relevant-state validity, asynchronous continuation, retries, warnings, and human acceptance boundaries. Apply the [Phase and Delivery Contract](../using-devflow/references/phase-contract.md) for completion language, the [Delivery Contract](../using-devflow/references/delivery-contract.md) for delivery-step gates, and the [Authorization and Trust Contract](../using-devflow/references/authorization-contract.md) for source authority and protected actions.
+Apply the shared [evidence rules](../using-devflow/references/action-rules.md#evidence) for check selection, evidence records and statuses, relevant-state validity, asynchronous continuation, retries, warnings, and human acceptance boundaries. Apply the [phase rules](../using-devflow/references/core-rules.md#phases-and-completion) for completion language, the [delivery rules](../using-devflow/references/action-rules.md#delivery) for delivery-step gates, and the [authorization rules](../using-devflow/references/action-rules.md#authorization) for source authority and protected actions.
 
 ## The Iron Law
 
@@ -30,7 +30,7 @@ Before claiming any status:
 5. **READ AND RECORD** the actual output, exit/result, coverage, environment, time, and source. Use `planned`, `running`, `pass`, `fail`, `unknown`, `not run`, `blocked`, or `not applicable` truthfully.
 6. **THEN CLAIM** only what the valid evidence proves. A failed mandatory check blocks the dependent completion or delivery conclusion.
 
-The status or completion response itself must follow the Evidence Contract's [proof-reporting rule](../using-devflow/references/evidence-contract.md#report-proof-in-status-and-completion-handoffs). Carry the concrete object, operation, result, provenance, and coverage limit in that handoff or cite a stable record that identifies them; do not rely on collapsed commentary or unnamed tool output.
+The status or completion response itself must follow the [proof-reporting rule](../using-devflow/references/action-rules.md#report-proof). Carry the concrete object, operation, result, provenance, and coverage limit in that handoff or cite a stable record that identifies them; do not rely on collapsed commentary or unnamed tool output.
 
 ## What Each Claim Requires
 
