@@ -14,7 +14,7 @@ Read the [core rules](../using-devflow/references/core-rules.md) on every route;
 3. **Domain:** add only the guidance the affected surface needs.
 4. **Capabilities:** select an execution, review, browser, or subagent workflow only when the host provides it; otherwise use the fallback in [using-devflow](../using-devflow/SKILL.md).
 
-Load metadata until a route selects a skill, then read each selected `SKILL.md` in full. Start with one short line naming the phase, stack, and purpose, for example `Using devflow: Implement — systematic debugging + verification to reproduce and fix the reported failure.` Tell the user when the route, risk, phase, or a material finding changes.
+Load metadata until a route selects a skill, then read each selected `SKILL.md` in full. Do not announce the route; tell the user only when a change of plan, a risk, or a finding matters to them.
 
 ## Choose the deliverable and phase
 

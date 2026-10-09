@@ -2,6 +2,12 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
+## 2.2.0 (unreleased)
+
+- Remove three clauses that the [October 2026 ablation experiment](docs/devflow/experiments/2026-10-ablation/README.md) tied to unrequested process. The router and `AGENTS.md` no longer require an opening line announcing the phase, stack, and purpose. When the user explicitly asks for a push, pull request, or similar step and no project policy requires prior checks, the request is enough, and a step that changes no code needs no new check. Delivery summaries name the next decision only when one is genuinely pending, without generic reminders that later actions need authorization.
+- `using-devflow` loads a skill when the task matches its purpose; a question or a small, clear change usually needs none.
+- Add the experiment record: 48 runs across three arms (no Devflow, 2.1.0, shared rules only) on eight tasks, with automated checks and blind review. Every arm had zero boundary violations and zero under-actions, quality differed within noise, and only the Devflow arms drew ceremony flags while using 10–17% more tokens. Its limits are stated in the record. The 2.2.0 text changes were not themselves re-run through the experiment.
+
 ## 2.1.0 (2026-10-01 tag)
 
 - **Shared rules slimmed.** The router, `using-devflow`, and the four shared contracts are rewritten into two canonical rule files: `skills/using-devflow/references/core-rules.md` (authority and trust, phases and completion, loading and recovery), read on every route, and `skills/using-devflow/references/action-rules.md` (authorization, evidence, delivery, host capabilities), read before changing anything, running checks, or delivering. What an implementation route must read falls from 68,640 bytes (router, `using-devflow`, four contracts) to 28,663 bytes, and from about 82,800 bytes when counting the host and command guides that 2.0.2 required before every tool or command choice. A read-only route falls from 23,670 to 14,552 bytes. No rule was deleted for size; restatements, motivational prose, and duplicated summaries were.

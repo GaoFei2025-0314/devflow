@@ -9,7 +9,7 @@ If you were dispatched as a subagent for a specific task, do not reroute it or l
 
 # Using Devflow
 
-**Check for a matching skill before responding or acting**, including before asking clarifying questions, exploring the codebase, or entering plan mode. Checking is cheap: descriptions only. Loading is the cost to ration, so load the smallest useful set for the current phase and follow the [router](../devflow/SKILL.md). When a skill you follow has a checklist, track each item so none is silently skipped.
+**Load a skill when the task matches its purpose**; a question or a small, clear change usually needs none. Checking descriptions is cheap, loading is the cost to ration, so load the smallest useful set and follow the [router](../devflow/SKILL.md). When a skill you follow has a checklist, track each item so none is silently skipped.
 
 The shared rules live in two files: the [core rules](references/core-rules.md) apply on every route, and the [action rules](references/action-rules.md) apply before changing anything, running checks, or delivering. A request states what to do, not how; "add X" or "fix Y" does not skip the workflow.
 
