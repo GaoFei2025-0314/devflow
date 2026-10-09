@@ -24,7 +24,7 @@ For conflicting instructions and staged or conditional approvals, see [authoriza
 
 ## Evidence
 
-**Choose checks from impact and risk.** Name what changed, what it touches, its risk, and every mandatory project gate, then use the smallest check that covers each risk: documentation gets content, structure, and link checks; UI gets the applicable build, browser, interaction, accessibility, and visual checks; a logic fix gets a regression check for the original symptom plus surrounding behavior; public APIs, dependencies, configuration, security, and releases get broader checks. Mandatory project gates always apply; full suites do not run by reflex.
+**Choose checks from impact and risk.** Name what changed, what it touches, its risk, and every mandatory project gate, then use the smallest check that covers each risk: documentation gets content, structure, and link checks; UI gets the applicable build, browser, interaction, accessibility, and visual checks; a logic fix gets a regression check for the original symptom plus surrounding behavior; public APIs, dependencies, configuration, security, and releases get broader checks. Mandatory project gates always apply; full suites do not run by reflex, and a step that changes no code, such as pushing an existing commit or answering a question, needs no new check unless project policy requires one.
 
 **Record against the real object:** what was checked and why, the exact object and state (commit plus working-tree edits, participating untracked files, dependencies, configuration, data, environment), the command or scenario, where and when it ran, and the result. `HEAD` alone is not a state identity; a subagent report or "looks right" is not proof.
 
@@ -56,11 +56,11 @@ Each step has its own readiness gate and its own grant:
 | **Cleanup** | Each branch, worktree, or artifact to remove is named and safe to remove. | Its own grant. |
 
 - A failed, pending, or unobserved required check blocks the action it gates; a local run does not replace required CI.
-- A request to push or open a pull request grants that action subject to readiness; it creates no early or draft-PR exception unless the user or project states one. If policy allows a PR before CI passes, disclose the state; those checks still block the merge.
+- Readiness gates come from project policy. When the user explicitly asks for a push, pull request, or similar step and no policy requires prior checks, the request is enough: do it without adding checks. It creates no early or draft-PR exception unless the user or project states one. If policy allows a PR before CI passes, disclose the state; those checks still block the merge.
 - Re-evaluate a prepared action when its artifact, target, environment, scope, risk, checks, or conditions change. Project policy decides branch, commit, PR, merge, and cleanup conventions.
 - Before an installation or release step, or when adapting delivery rules to a project, see [delivery details](delivery-contract.md).
 
-**Delivery summary:** the exact completed scope; valid evidence with results and limits; anything unfinished, failed, pending, or deferred, and who accepted a deferral; and the concrete pending action with its target.
+**Delivery summary:** the exact completed scope; valid evidence with results and limits; anything unfinished, failed, pending, or deferred, and who accepted a deferral; and the next decision the user needs to make, when one is genuinely pending. Do not append generic reminders that later actions need authorization.
 
 ## Host capabilities
 

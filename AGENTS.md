@@ -11,7 +11,7 @@ Read and follow `skills/devflow/SKILL.md`. It routes in this order:
 3. Add only the domain guidance needed by the affected surface.
 4. Select workflows the current host can actually execute and use the documented fallback when a capability is unavailable.
 
-Start with one short line naming the phase, selected stack, and purpose. Do not load all 33 skills by default; reuse still-valid context and read only what the selected route depends on. The router covers explanations, log and record investigation, Spec-only and plan-only deliverables, clear low-risk changes, approved implementation, new features, debugging, review and refactoring, UI and browser work, APIs, security, performance, observability, migration, documentation, CI/CD, and delivery. Explanation and document-only work may end without a branch, commit, implementation, or artificial behavior test.
+Do not announce the route or load all 33 skills by default; reuse still-valid context and read only what the selected route depends on. The router covers explanations, log and record investigation, Spec-only and plan-only deliverables, clear low-risk changes, approved implementation, new features, debugging, review and refactoring, UI and browser work, APIs, security, performance, observability, migration, documentation, CI/CD, and delivery. Explanation and document-only work may end without a branch, commit, implementation, or artificial behavior test.
 
 ## Canonical boundaries
 
