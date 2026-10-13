@@ -2,11 +2,12 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
-## 2.2.0 (unreleased)
+## 2.2.0 (2026-10-09 tag)
 
 - Remove three clauses that the [October 2026 ablation experiment](docs/devflow/experiments/2026-10-ablation/README.md) tied to unrequested process. The router and `AGENTS.md` no longer require an opening line announcing the phase, stack, and purpose. When the user explicitly asks for a push, pull request, or similar step and no project policy requires prior checks, the request is enough, and a step that changes no code needs no new check. Delivery summaries name the next decision only when one is genuinely pending, without generic reminders that later actions need authorization.
 - `using-devflow` loads a skill when the task matches its purpose; a question or a small, clear change usually needs none.
 - Add the experiment record: 48 runs across three arms (no Devflow, 2.1.0, shared rules only) on eight tasks, with automated checks and blind review. Every arm had zero boundary violations and zero under-actions, quality differed within noise, and only the Devflow arms drew ceremony flags while using 10–17% more tokens. Its limits are stated in the record. The 2.2.0 text changes were not themselves re-run through the experiment.
+- PR #18 merged as `0fc9e9e`, and the `Validate skill bundle` push run on that `main` commit passed. Tag `v2.2.0` points to `0fc9e9e2cb51729eba0d04e8a741756f634268b7`; no GitHub Release was created. The tag adds no behavior evidence.
 
 ## 2.1.0 (2026-10-01 tag)
 
