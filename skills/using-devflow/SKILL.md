@@ -1,6 +1,6 @@
 ---
 name: using-devflow
-description: Explains how to find, invoke, and prioritize the Devflow skills, including platform tool mappings for non-Claude-Code hosts and the shared no-subagent fallback contract. Use at session start when this bundle is loaded, or whenever unsure which skill applies or how skills are invoked on your platform.
+description: Explains how Devflow skills are found and invoked, tool mappings for non-Claude-Code hosts, and the no-subagent fallback. Use when unsure which skill applies or how to invoke one on your host.
 ---
 
 <SUBAGENT-STOP>

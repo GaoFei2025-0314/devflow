@@ -1,6 +1,6 @@
 ---
 name: performance-optimization
-description: Optimizes measured performance problems. Use when explicit performance requirements exist, profiling reveals a bottleneck, a regression is suspected, or Core Web Vitals and load times need improvement. Not for speculative optimization with no measurement — profile first.
+description: Optimizes measured performance problems. Use for explicit performance targets, a profiled bottleneck, a suspected regression, or Core Web Vitals. Not for speculative optimization; measure first.
 ---
 
 # Performance Optimization

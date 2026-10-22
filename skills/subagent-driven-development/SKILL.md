@@ -1,6 +1,6 @@
 ---
 name: subagent-driven-development
-description: Use when executing an approved plan whose tasks can be delegated with bounded context, authority, writes, cost, evidence, and review. Select this route only when the host and task conditions support it.
+description: Executes an approved plan by delegating tasks with bounded context, authority, writes, and review. Use only when the host supports subagents and the tasks are independent enough to delegate.
 ---
 
 # Subagent-Driven Development

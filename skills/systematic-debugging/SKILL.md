@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: Four-phase root-cause debugging - investigate, analyze patterns, hypothesize, then fix when authorized. Use for diagnosing or repairing a bug, test failure, or unexpected behavior, especially under time pressure or after a previous fix failed. Not for designing new behavior.
+description: Finds root causes before fixing: investigate, compare patterns, test hypotheses, then fix when authorized. Use for bugs, test failures, or unexpected behavior, especially after a failed fix.
 ---
 
 # Systematic Debugging

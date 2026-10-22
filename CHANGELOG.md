@@ -2,6 +2,12 @@
 
 All notable changes to the Devflow plugin. Versions follow the `version` field in `.claude-plugin/plugin.json`; installed plugins pick up a release via `/plugin update devflow`.
 
+## 2.2.1 (2026-10-22)
+
+- Shorten the 16 skill descriptions that exceeded 200 characters, keeping each one's trigger and its "not for" boundary. Descriptions now total 5,818 characters, down from 7,172; the longest falls from 428 to 199. Hosts that list every skill description in each session load less. The `using-devflow` description no longer asks to be loaded at session start, matching 2.2.0's rule that a skill loads when the task matches its purpose.
+- Changelog entries are dated in the release PR itself as `## X.Y.Z (YYYY-MM-DD)` and are final when it merges; tags are no longer recorded in a follow-up PR. The READMEs and the release checklist state this.
+- Add a 2.2.0 rerun to the [October 2026 experiment record](docs/devflow/experiments/2026-10-ablation/README.md): 10 new runs on five tasks, blind-judged alongside the matching 2.1.0 replies. Boundary violations and under-actions stayed at zero, and quality was unchanged at 4.7. Route announcements fell from 4 of 10 replies to 0, a pre-push test run on an explicit push request from 2 of 2 to 0, and total reply length by 15%. One reply still ended with a generic release-authorization reminder. The sample is small; the record states its limits.
+
 ## 2.2.0 (2026-10-09 tag)
 
 - Remove three clauses that the [October 2026 ablation experiment](docs/devflow/experiments/2026-10-ablation/README.md) tied to unrequested process. The router and `AGENTS.md` no longer require an opening line announcing the phase, stack, and purpose. When the user explicitly asks for a push, pull request, or similar step and no project policy requires prior checks, the request is enough, and a step that changes no code needs no new check. Delivery summaries name the next decision only when one is genuinely pending, without generic reminders that later actions need authorization.

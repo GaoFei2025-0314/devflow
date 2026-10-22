@@ -1,6 +1,6 @@
 ---
 name: code-review-and-quality
-description: Conducts scoped code review across requirements, correctness, readability, architecture, security, performance, and maintainability. Use when asked to review code, when evaluating code produced by another agent or a human, or as an applicable quality gate for a completed change. Not for requesting a review or responding to feedback you received — those are the requesting-code-review and receiving-code-review workflow skills.
+description: Reviews code for requirements, correctness, readability, architecture, security, and performance. Use to review a change or gate finished work. Not for requesting a review or handling feedback.
 ---
 
 # Code Review and Quality

@@ -1,6 +1,6 @@
 ---
 name: planning-and-task-breakdown
-description: Breaks work into ordered tasks. Use when you have a spec or clear requirements and need implementable tasks, when a task feels too large to start, or when parallel work needs coordination. Not for shaping unclear requirements — use brainstorming or spec-driven-development first.
+description: Breaks clear requirements into ordered, implementable tasks. Use when work is too large to start or parallel work needs coordination. Not for shaping unclear requirements; use brainstorming first.
 ---
 
 # Planning and Task Breakdown

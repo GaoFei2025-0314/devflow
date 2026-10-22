@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: Turns materially uncertain ideas into reviewable requirements and design decisions. Use when the request has consequential ambiguity or multiple viable directions; skip when still-valid requirements already settle the work.
+description: Turns materially uncertain ideas into reviewable requirements and design decisions. Use for consequential ambiguity or several viable directions; skip when valid requirements already settle the work.
 ---
 
 # Brainstorming Ideas Into Designs
