@@ -15,7 +15,7 @@ Pre-push checklist for a Devflow release candidate. CI runs the offline part on 
 - [ ] `python scripts/check-bundle.py --root .` exits 0 (33 skills, shared contracts declared)
 - [ ] `python -m unittest discover -s tests/maintenance -p 'test_*.py'` — all maintenance tests pass
 - [ ] `python scripts/check-behavior.py validate --cases tests/behavior/cases` exits 0 (scenario materials valid — materials, not behavior)
-- [ ] `.claude-plugin/plugin.json` version bumped for any skill-content change; CHANGELOG entry present
+- [ ] `.claude-plugin/plugin.json` version bumped for any skill-content change; CHANGELOG entry present and dated `## X.Y.Z (YYYY-MM-DD)` in the release PR itself, with no follow-up PR to record the tag
 - [ ] README files in sync (README and README dot zh-CN); routing changes mirrored to `AGENTS.md`
 - [ ] `git diff --check` and an impact table cover the full `v2.0.1` to final candidate diff, including uncommitted changes before freezing
 - [ ] Changed checker/installer rejection paths still reject missing fields, wrong hashes, declarations posing as captures, alias/link bypass, missing dependencies and unintended overwrites

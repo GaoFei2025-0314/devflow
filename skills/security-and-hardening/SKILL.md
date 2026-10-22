@@ -1,6 +1,6 @@
 ---
 name: security-and-hardening
-description: Hardens code against vulnerabilities. Use when a change touches untrusted input, authentication or sessions, secrets, data storage, or third-party integrations, and when running a security pass over a completed change. Not for general code quality review with no security surface.
+description: Hardens code against vulnerabilities. Use when a change touches untrusted input, auth or sessions, secrets, data storage, or third-party integrations, or for a security pass over finished work.
 ---
 
 # Security and Hardening

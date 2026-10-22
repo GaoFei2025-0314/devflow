@@ -1,6 +1,6 @@
 ---
 name: spec-driven-development
-description: Creates a standalone, reviewable specification when requirements need a written source of truth and no durable change workspace is requested. Use for one-document Specs; skip when valid requirements already suffice for the requested phase.
+description: Writes a standalone, reviewable Spec when requirements need a written source of truth and no durable workspace is requested. Skip when valid requirements already suffice for the requested phase.
 ---
 
 # Spec-Driven Development

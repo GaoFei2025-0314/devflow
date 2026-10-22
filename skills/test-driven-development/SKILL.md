@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: Drives development from valid RED evidence to minimal code. Use when implementing testable behavior, fixing a reported bug, or modifying logic that existing tests cover. Not for configuration changes, documentation, static content, or throwaway prototypes.
+description: Drives development from a failing test to minimal code. Use when implementing testable behavior, fixing a reported bug, or changing tested logic. Not for config, docs, static content, or prototypes.
 ---
 
 # Test-Driven Development
