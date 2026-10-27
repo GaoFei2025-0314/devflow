@@ -1,6 +1,6 @@
 ---
 name: code-simplification
-description: Simplifies working code for clarity while preserving behavior. Use when code works but is harder to read, maintain, or extend than it should be, or after a feature lands and accumulated complexity needs a bounded cleanup pass. Not for bug hunting (use code-review-and-quality) or performance tuning (use performance-optimization).
+description: Simplifies working code for clarity while preserving behavior. Use when code works but is hard to read or extend, or for a bounded cleanup after a feature. Not for bug hunting or performance tuning.
 ---
 
 # Code Simplification

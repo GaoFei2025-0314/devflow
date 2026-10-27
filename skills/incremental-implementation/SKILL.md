@@ -1,6 +1,6 @@
 ---
 name: incremental-implementation
-description: Delivers changes as small verified slices. Use when a task feels too big to complete in one step, when you're about to write a large amount of code at once, or when a plan's tasks need sequencing into independently reviewable increments. Not for single-file edits or changes already small enough to verify in one pass.
+description: Delivers changes as small verified slices. Use when a task is too big for one step or a plan's tasks need independently reviewable increments. Not for changes small enough to verify in one pass.
 ---
 
 # Incremental Implementation

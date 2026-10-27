@@ -92,7 +92,7 @@ Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关
 - 提交技能改动前运行 `bash scripts/check-refs.sh`——它校验 frontmatter、反引号引用、体积预算，并委托给 `python scripts/check-bundle.py`：后者解析包内每一条 Markdown 链接与反引号路径、检查目录与模板镜像、并按每入口的行数与字节双预算报出总入口加载量。再跑 `python -m unittest discover -s tests/maintenance -p 'test_*.py'` 执行工具链维护测试，当前测试数量与结果以运行输出为准。CI 在每次 push 时运行以上全部检查。
 - 安装或切换安装：`python scripts/install-bundle.py plan|stage|verify` 配合[安装与切换指南](docs/devflow/installation.md)——可审差异、仅限 bundle 自有路径的备份、显式切换授权、有界恢复。
 - 可选的本地使用记录（`python scripts/usage.py status|enable|disable|append|export|report --store <目录>`）**默认关闭**，只记录白名单内的最小事件，绝不记录原始对话或凭证，任何工作流步骤都不依赖它。
-- **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查），并在 `CHANGELOG.md` 中为新版本补一条记录。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
+- **任何改动技能内容的 PR 都要升级 `.claude-plugin/plugin.json` 里的 `version`**（CI 会在 PR 上强制检查），并在 `CHANGELOG.md` 中为新版本补一条记录，标题写成 `## X.Y.Z (YYYY-MM-DD)`，日期用发版 PR 的日期。PR 合并时这条记录即为定稿：标签和合并提交不再另开 PR 补记。已安装的插件只在版本号变化时才会收到更新——内容改了而版本号不动，`/plugin update` 的用户永远拿不到新内容。
 - **保持 `README.md` 与 `README.zh-CN.md` 同步**——改任何一份都要镜像到另一份。
 - **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。维护测试已覆盖其中可机械核对的部分（每个入口文档都声明当前技能数、包含路由器定义的全部阶段名、并指向路由器与共享规则目录）；正文措辞仍靠人工复核。
 - **修剪需要证据。** 单纯低频不能成为删除技能的理由：没有适用任务分母、适用性不明时，价值记为未知（deprecation-and-migration 入口定义了完整评估）。

@@ -1,6 +1,6 @@
 ---
 name: git-workflow-and-versioning
-description: Structures Git branches, commits, work packages, and versioning under the current project's delivery and authorization policy. Use when deciding Git state or actions, commit granularity, PR timing, integration, or cleanup.
+description: Structures branches, commits, and versioning under the project's delivery and authorization policy. Use when deciding Git actions, commit granularity, PR timing, integration, or cleanup.
 ---
 
 # Git Workflow and Versioning
