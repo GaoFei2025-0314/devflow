@@ -37,6 +37,13 @@ jobs:
       - name: Validate behavior scenario materials
         run: python scripts/check-behavior.py validate --cases tests/behavior/cases
 
+  version-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check plugin version and CHANGELOG consistency
+        run: python scripts/check-version.py consistency
+
   version-bump:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -45,17 +52,4 @@ jobs:
         with:
           fetch-depth: 0
       - name: Require plugin version bump when skill content changes
-        run: |
-          BASE="origin/${{ github.base_ref }}"
-          git fetch -q origin "${{ github.base_ref }}"
-          if git diff --quiet "$BASE"...HEAD -- skills/ SKILL.md AGENTS.md templates/; then
-            echo "No skill content changes — version bump not required."
-            exit 0
-          fi
-          OLD=$(git show "$BASE:.claude-plugin/plugin.json" | python3 -c "import json,sys; print(json.load(sys.stdin)['version'])")
-          NEW=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
-          if [ "$OLD" = "$NEW" ]; then
-            echo "::error file=.claude-plugin/plugin.json::Skill content changed but plugin version is still $OLD — bump it so installed plugins receive the update."
-            exit 1
-          fi
-          echo "Skill content changed and version bumped ($OLD -> $NEW) — OK."
+        run: python scripts/check-version.py bump --base-ref "origin/${{ github.base_ref }}"
