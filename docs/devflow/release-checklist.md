@@ -20,6 +20,10 @@ Pre-push checklist for a Devflow release candidate. CI runs the offline part on 
 - [ ] `git diff --check` and an impact table cover the full `v2.0.1` to final candidate diff, including uncommitted changes before freezing
 - [ ] Changed checker/installer rejection paths still reject missing fields, wrong hashes, declarations posing as captures, alias/link bypass, missing dependencies and unintended overwrites
 
+## Before tagging
+
+- [ ] `python scripts/check-version.py consistency --tag vX.Y.Z` exits 0 before the tag is created. Replace `vX.Y.Z` with that tag. The tag must equal `v` plus the `.claude-plugin/plugin.json` version; a non-zero exit blocks the tag.
+
 ## Behavior (human/independent review — CI cannot do this)
 
 - [ ] Checkpoint/release behavior results reviewed against actual traces (not self-reports); failures preserved, not retried to green
