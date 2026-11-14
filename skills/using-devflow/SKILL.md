@@ -38,3 +38,5 @@ Process skills come first because they decide how to approach the task: "let's b
 ## Project adaptation and recording
 
 To adapt Devflow to a project, copy the relevant fenced content of the [project overrides template](references/project-overrides.md) into the project's `CLAUDE.md`, `AGENTS.md`, or equivalent and fill it in; the copy is self-contained. Usage recording is off by default; only after the user opts in to a named store, follow [local recording](references/local-recording.md).
+
+<!-- version-bump demonstration; do not merge -->
