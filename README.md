@@ -98,3 +98,7 @@ Devflow's skill examples are TypeScript/web-flavored, but the rules are stack-ag
 - **Routing edits propagate.** Any change to routes, fast-path conditions, or gates in `skills/devflow/SKILL.md` must be mirrored in `AGENTS.md` and both READMEs' route summaries — the router is the source of truth, the other three are condensed copies. The maintenance tests enforce the mechanical half of this (each entrypoint states the current skill count, names every router phase, and points at the router and the shared rules); the prose itself is still reviewed by hand.
 - **Pruning needs evidence.** Low observed frequency alone does not justify removing a skill: without an applicable-task denominator and known applicability, record the value as unknown (the deprecation-and-migration entry defines the full evaluation).
 - **Measure skill edits.** When you change a skill, write one line in the PR about the behavior change you expect; check later whether it happened. Process without observed effect is process theater — cut it.
+
+## License
+
+This project is licensed under the Apache License, Version 2.0 (Apache-2.0). See [LICENSE](LICENSE), [NOTICE](NOTICE), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

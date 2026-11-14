@@ -97,3 +97,7 @@ Devflow 技能里的示例偏 TypeScript/Web，但规则本身与技术栈无关
 - **路由改动必须传播。** 对 `skills/devflow/SKILL.md` 中路由、快速通道条件或门禁的任何修改，都要镜像到 `AGENTS.md` 和两份 README 的路由摘要——路由器是唯一事实来源，其余三处是浓缩副本。维护测试已覆盖其中可机械核对的部分（每个入口文档都声明当前技能数、包含路由器定义的全部阶段名、并指向路由器与共享规则目录）；正文措辞仍靠人工复核。
 - **修剪需要证据。** 单纯低频不能成为删除技能的理由：没有适用任务分母、适用性不明时，价值记为未知（deprecation-and-migration 入口定义了完整评估）。
 - **度量技能改动。** 每次改技能时，在 PR 里写一句预期的行为变化；之后回头看是否发生。没有可观察效果的流程就是流程剧场——砍掉它。
+
+## 许可证
+
+本项目以 Apache License 2.0（Apache-2.0）授权。见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
